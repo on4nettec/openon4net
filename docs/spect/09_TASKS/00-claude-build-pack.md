@@ -132,6 +132,7 @@ MVP زمانی Done است که:
 - Connectors Spec: `docs/spect/02_ARCHITECTURE/07-connectors-and-tools.md`
 - Marketplace Service: `docs/spect/02_ARCHITECTURE/12-marketplace-service.md`
 - Four-Plane Architecture: `docs/spect/02_ARCHITECTURE/13-four-plane-architecture.md`
+- Monorepo Layout: `docs/spect/02_ARCHITECTURE/14-monorepo-layout.md`
 - MVP Guardrails: `docs/spect/09_TASKS/08-scope-guardrails-mvp.md`
 - Production Artifacts: `docs/spect/09_TASKS/10-production-artifacts.md`
 - i18n/l10n: `docs/spect/00_VISION/08-i18n-l10n.md`

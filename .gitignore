@@ -1,3 +1,7 @@
 # Ignore application code folders (requested)
 /app/
-/apps/
+
+# Ignore everything under /apps, but keep documentation READMEs
+/apps/*
+!/apps/**/
+!/apps/**/README.md
