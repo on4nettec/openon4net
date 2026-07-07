@@ -1,0 +1,926 @@
+openapi: 3.1.0
+info:
+  title: Open on4net (O₂N) API
+  version: 0.1.0
+  description: |
+    قرارداد اجرایی API برای پیاده‌سازی MVP.
+
+    نکته:
+    - فایل‌های `01-rest-api-spec.md` و سایر Bibleها برای انسان خواناست.
+    - این فایل، منبع حقیقت برای پیاده‌سازی و کلاینت‌هاست.
+servers:
+  - url: https://api.on4net.com/v1
+security:
+  - BearerAuth: []
+tags:
+  - name: Auth
+  - name: Agents
+  - name: Memory
+  - name: Skills
+  - name: Governance
+  - name: Billing
+  - name: Marketplace
+  - name: Connectors
+  - name: Tools
+paths:
+  /auth/token:
+    post:
+      tags: [Auth]
+      summary: Issue access token
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [api_key, organization_id]
+              properties:
+                api_key:
+                  type: string
+                  description: O₂N API key (format: o2n_...)
+                organization_id:
+                  type: string
+      responses:
+        "200":
+          description: Token issued
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [token, expires_in]
+                properties:
+                  token: { type: string }
+                  expires_in: { type: integer }
+        "400":
+          $ref: "#/components/responses/Error"
+
+  /agents:
+    get:
+      tags: [Agents]
+      summary: List agents
+      parameters:
+        - $ref: "#/components/parameters/XOrganizationId"
+        - $ref: "#/components/parameters/XWorkspaceId"
+      responses:
+        "200":
+          description: Agents
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [agents, total]
+                properties:
+                  agents:
+                    type: array
+                    items: { $ref: "#/components/schemas/Agent" }
+                  total: { type: integer }
+        "401": { $ref: "#/components/responses/Error" }
+        "403": { $ref: "#/components/responses/Error" }
+    post:
+      tags: [Agents]
+      summary: Create agent
+      parameters:
+        - $ref: "#/components/parameters/XOrganizationId"
+        - $ref: "#/components/parameters/XWorkspaceId"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AgentCreateRequest"
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [agent, status]
+                properties:
+                  agent: { $ref: "#/components/schemas/Agent" }
+                  status: { type: string, enum: [created] }
+        "400": { $ref: "#/components/responses/Error" }
+        "401": { $ref: "#/components/responses/Error" }
+        "403": { $ref: "#/components/responses/Error" }
+
+  /agents/{agent_id}/chat:
+    post:
+      tags: [Agents]
+      summary: Chat with agent
+      parameters:
+        - $ref: "#/components/parameters/XOrganizationId"
+        - $ref: "#/components/parameters/XWorkspaceId"
+        - name: agent_id
+          in: path
+          required: true
+          schema: { type: string }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AgentChatRequest"
+      responses:
+        "200":
+          description: Agent response
+          headers:
+            X-Trace-Id:
+              schema: { type: string }
+              description: Trace id for correlation
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AgentChatResponse"
+        "202":
+          description: Requires approval
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApprovalRequiredResponse"
+        "400": { $ref: "#/components/responses/Error" }
+        "401": { $ref: "#/components/responses/Error" }
+        "403": { $ref: "#/components/responses/Error" }
+        "402": { $ref: "#/components/responses/Error" }
+
+  /agents/{agent_id}/chat/stream:
+    post:
+      tags: [Agents]
+      summary: Stream chat response (SSE)
+      description: Server-Sent Events stream. Client must accept `text/event-stream`.
+      parameters:
+        - $ref: "#/components/parameters/XOrganizationId"
+        - $ref: "#/components/parameters/XWorkspaceId"
+        - name: agent_id
+          in: path
+          required: true
+          schema: { type: string }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AgentChatRequest"
+      responses:
+        "200":
+          description: SSE stream
+          content:
+            text/event-stream:
+              schema:
+                type: string
+        "202":
+          description: Requires approval (no stream)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApprovalRequiredResponse"
+
+  /memory/write:
+    post:
+      tags: [Memory]
+      summary: Write memory record
+      parameters:
+        - $ref: "#/components/parameters/XOrganizationId"
+        - $ref: "#/components/parameters/XWorkspaceId"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/MemoryWriteRequest"
+      responses:
+        "200":
+          description: Stored
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [memory_id, graph_updated]
+                properties:
+                  memory_id: { type: string }
+                  graph_updated: { type: boolean }
+        "400": { $ref: "#/components/responses/Error" }
+        "401": { $ref: "#/components/responses/Error" }
+        "403": { $ref: "#/components/responses/Error" }
+
+  /memory/search:
+    post:
+      tags: [Memory]
+      summary: Search memory
+      parameters:
+        - $ref: "#/components/parameters/XOrganizationId"
+        - $ref: "#/components/parameters/XWorkspaceId"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/MemorySearchRequest"
+      responses:
+        "200":
+          description: Results
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MemorySearchResponse"
+        "400": { $ref: "#/components/responses/Error" }
+        "401": { $ref: "#/components/responses/Error" }
+        "403": { $ref: "#/components/responses/Error" }
+
+  /memory/graph:
+    post:
+      tags: [Memory]
+      summary: Query memory graph
+      parameters:
+        - $ref: "#/components/parameters/XOrganizationId"
+        - $ref: "#/components/parameters/XWorkspaceId"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/MemoryGraphQueryRequest"
+      responses:
+        "200":
+          description: Graph
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [graph, summary]
+                properties:
+                  graph:
+                    type: object
+                    required: [nodes, edges]
+                    properties:
+                      nodes: { type: array, items: { type: object } }
+                      edges: { type: array, items: { type: object } }
+                  summary: { type: string }
+        "400": { $ref: "#/components/responses/Error" }
+
+  /skills:
+    get:
+      tags: [Skills]
+      summary: List skills
+      parameters:
+        - $ref: "#/components/parameters/XOrganizationId"
+        - $ref: "#/components/parameters/XWorkspaceId"
+        - name: agent_id
+          in: query
+          required: false
+          schema: { type: string }
+      responses:
+        "200":
+          description: Skills
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [skills]
+                properties:
+                  skills:
+                    type: array
+                    items: { $ref: "#/components/schemas/Skill" }
+    post:
+      tags: [Skills]
+      summary: Create skill (manual)
+      parameters:
+        - $ref: "#/components/parameters/XOrganizationId"
+        - $ref: "#/components/parameters/XWorkspaceId"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SkillCreateRequest"
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [skill_id, status]
+                properties:
+                  skill_id: { type: string }
+                  status: { type: string, enum: [created] }
+
+  /skills/{skill_id}/execute:
+    post:
+      tags: [Skills]
+      summary: Execute skill
+      parameters:
+        - $ref: "#/components/parameters/XOrganizationId"
+        - $ref: "#/components/parameters/XWorkspaceId"
+        - name: skill_id
+          in: path
+          required: true
+          schema: { type: string }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                params: { type: object, additionalProperties: true }
+      responses:
+        "200":
+          description: Executed
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [status, duration_ms]
+                properties:
+                  status: { type: string }
+                  duration_ms: { type: integer }
+                  result: { type: string }
+
+  /skills/proposals/{proposal_id}/approve:
+    post:
+      tags: [Skills]
+      summary: Approve skill proposal
+      parameters:
+        - $ref: "#/components/parameters/XOrganizationId"
+        - $ref: "#/components/parameters/XWorkspaceId"
+        - name: proposal_id
+          in: path
+          required: true
+          schema: { type: string }
+      responses:
+        "200":
+          description: Approved
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [status, skill_id]
+                properties:
+                  status: { type: string }
+                  skill_id: { type: string }
+
+  /audit:
+    get:
+      tags: [Governance]
+      summary: List audit logs
+      parameters:
+        - $ref: "#/components/parameters/XOrganizationId"
+        - $ref: "#/components/parameters/XWorkspaceId"
+        - name: agent_id
+          in: query
+          required: false
+          schema: { type: string }
+        - name: from
+          in: query
+          required: false
+          schema: { type: string, format: date }
+        - name: to
+          in: query
+          required: false
+          schema: { type: string, format: date }
+      responses:
+        "200":
+          description: Logs
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [logs]
+                properties:
+                  logs:
+                    type: array
+                    items: { type: object }
+
+  /approvals/pending:
+    get:
+      tags: [Governance]
+      summary: List pending approvals
+      parameters:
+        - $ref: "#/components/parameters/XOrganizationId"
+        - $ref: "#/components/parameters/XWorkspaceId"
+      responses:
+        "200":
+          description: Pending approvals
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [pending]
+                properties:
+                  pending:
+                    type: array
+                    items: { type: object }
+
+  /approvals/{approval_id}/approve:
+    post:
+      tags: [Governance]
+      summary: Approve a pending action
+      parameters:
+        - $ref: "#/components/parameters/XOrganizationId"
+        - $ref: "#/components/parameters/XWorkspaceId"
+        - name: approval_id
+          in: path
+          required: true
+          schema: { type: string }
+      responses:
+        "200":
+          description: Approved
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [status]
+                properties:
+                  status: { type: string }
+
+  /approvals/{approval_id}/reject:
+    post:
+      tags: [Governance]
+      summary: Reject a pending action
+      parameters:
+        - $ref: "#/components/parameters/XOrganizationId"
+        - $ref: "#/components/parameters/XWorkspaceId"
+        - name: approval_id
+          in: path
+          required: true
+          schema: { type: string }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [reason]
+              properties:
+                reason: { type: string }
+      responses:
+        "200":
+          description: Rejected
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [status]
+                properties:
+                  status: { type: string }
+
+  /billing/wallet:
+    get:
+      tags: [Billing]
+      summary: Get wallet balance
+      parameters:
+        - $ref: "#/components/parameters/XOrganizationId"
+        - $ref: "#/components/parameters/XWorkspaceId"
+      responses:
+        "200":
+          description: Wallet
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [currency, balance_credits]
+                properties:
+                  currency: { type: string }
+                  balance_credits: { type: integer }
+                  updated_at: { type: string, format: date-time }
+
+  /billing/transactions:
+    get:
+      tags: [Billing]
+      summary: List credit transactions
+      parameters:
+        - $ref: "#/components/parameters/XOrganizationId"
+        - $ref: "#/components/parameters/XWorkspaceId"
+        - name: limit
+          in: query
+          required: false
+          schema: { type: integer, default: 50 }
+      responses:
+        "200":
+          description: Transactions
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [transactions]
+                properties:
+                  transactions:
+                    type: array
+                    items: { type: object }
+
+  /marketplace/plugins:
+    get:
+      tags: [Marketplace]
+      summary: List/search plugins
+      parameters:
+        - name: category
+          in: query
+          required: false
+          schema: { type: string }
+        - name: query
+          in: query
+          required: false
+          schema: { type: string }
+      responses:
+        "200":
+          description: Plugins
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [plugins]
+                properties:
+                  plugins:
+                    type: array
+                    items: { type: object }
+                  total: { type: integer }
+
+  /marketplace/plugins/{plugin_id}:
+    get:
+      tags: [Marketplace]
+      summary: Plugin details
+      parameters:
+        - name: plugin_id
+          in: path
+          required: true
+          schema: { type: string }
+      responses:
+        "200":
+          description: Plugin
+          content:
+            application/json:
+              schema:
+                type: object
+
+  /marketplace/plugins/{plugin_id}/install:
+    post:
+      tags: [Marketplace]
+      summary: Install plugin
+      parameters:
+        - $ref: "#/components/parameters/XOrganizationId"
+        - $ref: "#/components/parameters/XWorkspaceId"
+        - name: plugin_id
+          in: path
+          required: true
+          schema: { type: string }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                workspace_id: { type: string }
+                config: { type: object, additionalProperties: true }
+      responses:
+        "200":
+          description: Installed
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [install_id, status]
+                properties:
+                  install_id: { type: string }
+                  status: { type: string }
+
+  /connectors/installs:
+    get:
+      tags: [Connectors]
+      summary: List connector installs
+      parameters:
+        - $ref: "#/components/parameters/XOrganizationId"
+        - $ref: "#/components/parameters/XWorkspaceId"
+      responses:
+        "200":
+          description: Installs
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [installs]
+                properties:
+                  installs:
+                    type: array
+                    items: { type: object }
+    post:
+      tags: [Connectors]
+      summary: Create connector install
+      parameters:
+        - $ref: "#/components/parameters/XOrganizationId"
+        - $ref: "#/components/parameters/XWorkspaceId"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [workspace_id, plugin_install_id, connector_type]
+              properties:
+                workspace_id: { type: string }
+                plugin_install_id: { type: string }
+                connector_type: { type: string }
+                config: { type: object, additionalProperties: true }
+      responses:
+        "200":
+          description: Created
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [install_id, status]
+                properties:
+                  install_id: { type: string }
+                  status: { type: string }
+
+  /connectors/installs/{install_id}/oauth/start:
+    post:
+      tags: [Connectors]
+      summary: Start OAuth
+      parameters:
+        - $ref: "#/components/parameters/XOrganizationId"
+        - $ref: "#/components/parameters/XWorkspaceId"
+        - name: install_id
+          in: path
+          required: true
+          schema: { type: string }
+      responses:
+        "200":
+          description: Auth URL
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [auth_url]
+                properties:
+                  auth_url: { type: string }
+
+  /connectors/oauth/callback:
+    post:
+      tags: [Connectors]
+      summary: OAuth callback (server-side exchange)
+      parameters:
+        - $ref: "#/components/parameters/XOrganizationId"
+        - $ref: "#/components/parameters/XWorkspaceId"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [install_id, code]
+              properties:
+                install_id: { type: string }
+                code: { type: string }
+                state: { type: string }
+      responses:
+        "200":
+          description: Connected
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [status]
+                properties:
+                  status: { type: string, enum: [connected] }
+
+  /connectors/installs/{install_id}/sync:
+    post:
+      tags: [Connectors]
+      summary: Run sync job
+      parameters:
+        - $ref: "#/components/parameters/XOrganizationId"
+        - $ref: "#/components/parameters/XWorkspaceId"
+        - name: install_id
+          in: path
+          required: true
+          schema: { type: string }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                mode: { type: string, enum: [delta, full], default: delta }
+      responses:
+        "200":
+          description: Job queued
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [job_id, status]
+                properties:
+                  job_id: { type: string }
+                  status: { type: string }
+
+  /connectors/sync-jobs/{job_id}:
+    get:
+      tags: [Connectors]
+      summary: Get sync job status
+      parameters:
+        - $ref: "#/components/parameters/XOrganizationId"
+        - $ref: "#/components/parameters/XWorkspaceId"
+        - name: job_id
+          in: path
+          required: true
+          schema: { type: string }
+      responses:
+        "200":
+          description: Job status
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status: { type: string }
+                  stats: { type: object, additionalProperties: true }
+                  trace_id: { type: string }
+
+  /tools/execute:
+    post:
+      tags: [Tools]
+      summary: Execute a tool (connector/tool registry)
+      parameters:
+        - $ref: "#/components/parameters/XOrganizationId"
+        - $ref: "#/components/parameters/XWorkspaceId"
+        - $ref: "#/components/parameters/IdempotencyKey"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ToolExecuteRequest"
+      responses:
+        "200":
+          description: Completed
+          headers:
+            X-Trace-Id:
+              schema: { type: string }
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [status]
+                properties:
+                  status: { type: string }
+                  result: { type: object, additionalProperties: true }
+        "202":
+          description: Requires approval
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApprovalRequiredResponse"
+
+components:
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+  parameters:
+    XOrganizationId:
+      name: X-Organization-Id
+      in: header
+      required: true
+      schema: { type: string }
+    XWorkspaceId:
+      name: X-Workspace-Id
+      in: header
+      required: false
+      schema: { type: string }
+    IdempotencyKey:
+      name: Idempotency-Key
+      in: header
+      required: false
+      schema: { type: string, maxLength: 128 }
+  responses:
+    Error:
+      description: Error
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/Error"
+  schemas:
+    Error:
+      type: object
+      required: [code, message]
+      properties:
+        code: { type: string }
+        message: { type: string }
+        details: { type: object, additionalProperties: true }
+    Agent:
+      type: object
+      required: [id, name, role, status]
+      properties:
+        id: { type: string }
+        name: { type: string }
+        role: { type: string }
+        status: { type: string }
+        department: { type: string }
+        reports_to: { type: string }
+        monthly_budget_cents: { type: integer }
+        model_preferences: { type: object, additionalProperties: true }
+    AgentCreateRequest:
+      type: object
+      required: [name, role]
+      properties:
+        name: { type: string }
+        role: { type: string }
+        department: { type: string }
+        reports_to: { type: string }
+        monthly_budget_cents: { type: integer }
+        model_preferences: { type: object, additionalProperties: true }
+    AgentChatRequest:
+      type: object
+      required: [message]
+      properties:
+        message: { type: string }
+        context: { type: object, additionalProperties: true }
+    AgentChatResponse:
+      type: object
+      required: [response, model_used, cost_cents]
+      properties:
+        response: { type: string }
+        model_used: { type: string }
+        cost_cents: { type: integer }
+        skills_used:
+          type: array
+          items: { type: string }
+        memory_updated: { type: boolean }
+    ApprovalRequiredResponse:
+      type: object
+      required: [status, approval_id]
+      properties:
+        status: { type: string, enum: [requires_approval] }
+        approval_id: { type: string }
+    MemoryWriteRequest:
+      type: object
+      required: [agent_id, layer, content]
+      properties:
+        agent_id: { type: string }
+        layer: { type: integer, minimum: 1, maximum: 6 }
+        content: { type: object, additionalProperties: true }
+        context: { type: object, additionalProperties: true }
+    MemorySearchRequest:
+      type: object
+      required: [agent_id, query]
+      properties:
+        agent_id: { type: string }
+        query: { type: string }
+        layers:
+          type: array
+          items: { type: integer, minimum: 1, maximum: 6 }
+        limit: { type: integer, default: 5 }
+        min_score: { type: number, default: 0.7 }
+        max_tokens: { type: integer }
+    MemorySearchResponse:
+      type: object
+      required: [results, total]
+      properties:
+        results:
+          type: array
+          items:
+            type: object
+            properties:
+              layer: { type: integer }
+              score: { type: number }
+              content: { type: object, additionalProperties: true }
+              context: { type: object, additionalProperties: true }
+        total: { type: integer }
+    MemoryGraphQueryRequest:
+      type: object
+      required: [query]
+      properties:
+        query: { type: string }
+        depth: { type: integer, default: 2 }
+        start_nodes:
+          type: array
+          items: { type: string }
+    Skill:
+      type: object
+      required: [id, name, version]
+      properties:
+        id: { type: string }
+        name: { type: string }
+        version: { type: string }
+        executions: { type: integer }
+        success_rate: { type: number }
+        avg_duration_ms: { type: integer }
+    SkillCreateRequest:
+      type: object
+      required: [agent_id, name, definition]
+      properties:
+        agent_id: { type: string }
+        name: { type: string }
+        description: { type: string }
+        definition: { type: object, additionalProperties: true }
+    ToolExecuteRequest:
+      type: object
+      required: [tool_id]
+      properties:
+        tool_id: { type: string }
+        connector_install_id: { type: string }
+        params: { type: object, additionalProperties: true }

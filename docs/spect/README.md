@@ -3,7 +3,7 @@
 > **شرکت:** on4net
 > **محصول:** AI Operating System شرکتی
 > **آخرین بروزرسانی:** July 2026
-> **فایل‌ها:** ۴۳ | **حجم:** ~۵۳۰KB
+> **فایل‌ها:** ۴۷ | **حجم:** ~۵۹۰KB
 
 ---
 
@@ -12,7 +12,7 @@
 ```
 docs/spect/
 │
-├── 00_VISION/ (۷ فایل)
+├── 00_VISION/ (۸ فایل)
 │   ├── 01-executive-summary.md   ✅ | خلاصه اجرایی، Vision، Mission، Business Model
 │   ├── 02-market-analysis.md     ✅ | تحلیل بازار و رقبا، GTM Strategy
 │   ├── 03-memory-engine.md       ✅ | ۶ لایه حافظه + Memory Graph
@@ -20,11 +20,12 @@ docs/spect/
 │   ├── 05-ux-ui-design.md        ✅ | طراحی UI/UX کامل
 │   ├── 06-glossary.md            ✅ | دیکشنری تخصصی O₂N
 │   └── 07-competitive-positioning.md ✅ | تفاوت با OpenClaw/Hermes + پیام محصول
+│   └── 08-i18n-l10n.md           ✅ | چندزبانه (RTL/LTR) + زبان در prompt/memory
 │
 ├── 01_ROADMAP/ (۱ فایل)
 │   └── 01-roadmap-12-months.md   ✅ | ۶ فاز · ۴۸ هفته · تحویل هر فاز
 │
-├── 02_ARCHITECTURE/ (۱۳ فایل)
+├── 02_ARCHITECTURE/ (۱۴ فایل)
 │   ├── 01-system-overview.md     ✅ | معماری کلی، Tech Stack، Data Flow
 │   ├── 02-ai-gateway.md          ✅ | Model Router · Cost · Failover
 │   ├── 03-skill-engine.md        ✅ | Skill Engine + Plugin SDK + Marketplace
@@ -38,12 +39,14 @@ docs/spect/
 │   └── 11-secrets-and-key-management.md ✅ | Secret store + envelope encryption + rotation
 │   └── 12-marketplace-service.md  ✅ | Marketplace architecture (review/registry/signing)
 │   └── 13-four-plane-architecture.md ✅ | معماری ۴ بخش (Runtime/AI Control/Memory/Marketplace)
+│   └── 15-rbac-default-matrix.md  ✅ | ماتریس نقش/دسترسی پیش‌فرض (MVP)
 │
 ├── 03_DATABASE/ (۲ فایل)
 │   ├── 01-schema-master.md       ✅ | PostgreSQL + Redis + Neo4j کامل
 │   └── 02-billing-schema.md      ✅ | Wallet/Credits + Ledger + Publisher schema
 │
-├── 04_API/ (۳ فایل)
+├── 04_API/ (۴ فایل)
+│   ├── 00-openapi-v0.1.yaml      ✅ | OpenAPI قرارداد اجرایی MVP
 │   ├── 01-rest-api-spec.md       ✅ | REST + WebSocket + Webhook + Error Codes
 │   └── 02-billing-and-marketplace-api.md ✅ | Billing + Marketplace + Publisher API
 │   └── 03-connectors-memory-ingestion-api.md ✅ | Connectors + Memory ingestion + Skill manual create
@@ -63,7 +66,7 @@ docs/spect/
 │   └── 03-testing.md             ✅ | Testing Bible · Unit·Integration·E2E·AI
 │   └── 04-threat-model.md         ✅ | STRIDE threat model + LLM-specific threats
 │
-├── 09_TASKS/ (۹ فایل)
+├── 09_TASKS/ (۱۰ فایل)
 │   ├── 00-claude-build-pack.md   ✅ | CTO Spec برای ساخت پروژه توسط Claude
 │   ├── 01-current-sprint.md      ✅ | Sprint 0 · ۸ Task اولویت‌بندی شده
 │   ├── 02-deployment.md          ✅ | Docker · K8s · Helm · Monitoring
@@ -73,6 +76,7 @@ docs/spect/
 │   └── 06-onboarding.md          ✅ | Onboarding · ۵ مرحله · ۴۵ دقیقه
 │   └── 07-security-ops-runbook.md ✅ | Incident response + rotation + kill switch
 │   └── 08-scope-guardrails-mvp.md ✅ | Guardrails برای جلوگیری از scope creep در MVP
+│   └── 10-production-artifacts.md ✅ | OpenAPI + migrations + OTel configs + RBAC + i18n
 │
 └── README.md                     ✅ | این فایل
 ```
@@ -83,8 +87,8 @@ docs/spect/
 
 | شاخص | مقدار |
 |------|-------|
-| **فایل‌ها** | ۴۳ |
-| **حجم کل** | ~۵۳۰KB |
+| **فایل‌ها** | ۴۷ |
+| **حجم کل** | ~۵۹۰KB |
 | **بخش‌ها** | ۱۰ از ۱۰ تکمیل ✅ |
 | **عمق متوسط** | ~۱۲KB per file |
 | **وضعیت** | ✅ کامل |

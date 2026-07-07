@@ -1,0 +1,34 @@
+groups:
+  - name: o2n-alerts
+    rules:
+      - alert: O2NHighErrorRate
+        expr: |
+          sum(rate(http_requests_total{status=~"5.."}[5m])) /
+          sum(rate(http_requests_total[5m])) > 0.02
+        for: 5m
+        labels:
+          severity: P1
+        annotations:
+          summary: "High 5xx error rate"
+          description: "HTTP 5xx rate > 2% for 5 minutes."
+
+      - alert: O2NHighLatencyP95
+        expr: |
+          histogram_quantile(0.95, sum(rate(http_request_duration_seconds_bucket[5m])) by (le)) > 0.5
+        for: 10m
+        labels:
+          severity: P2
+        annotations:
+          summary: "High API latency (p95)"
+          description: "p95 latency > 500ms for 10 minutes."
+
+      - alert: O2NCreditSpendSpike
+        expr: |
+          sum(rate(usage_events_total_credits[10m])) > 100000
+        for: 10m
+        labels:
+          severity: P2
+        annotations:
+          summary: "Credits spend spike"
+          description: "Credits consumption exceeded threshold."
+

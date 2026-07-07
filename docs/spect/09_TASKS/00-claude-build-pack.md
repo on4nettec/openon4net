@@ -125,6 +125,7 @@ MVP زمانی Done است که:
 - DB master: `docs/spect/03_DATABASE/01-schema-master.md`
 - Billing: `docs/spect/03_DATABASE/02-billing-schema.md`
 - API: `docs/spect/04_API/01-rest-api-spec.md`
+- OpenAPI: `docs/spect/04_API/00-openapi-v0.1.yaml`
 - Billing API: `docs/spect/04_API/02-billing-and-marketplace-api.md`
 - Connectors API: `docs/spect/04_API/03-connectors-memory-ingestion-api.md`
 - Economy: `docs/spect/02_ARCHITECTURE/06-economy-and-marketplace.md`
@@ -132,6 +133,9 @@ MVP زمانی Done است که:
 - Marketplace Service: `docs/spect/02_ARCHITECTURE/12-marketplace-service.md`
 - Four-Plane Architecture: `docs/spect/02_ARCHITECTURE/13-four-plane-architecture.md`
 - MVP Guardrails: `docs/spect/09_TASKS/08-scope-guardrails-mvp.md`
+- Production Artifacts: `docs/spect/09_TASKS/10-production-artifacts.md`
+- i18n/l10n: `docs/spect/00_VISION/08-i18n-l10n.md`
+- RBAC Defaults: `docs/spect/02_ARCHITECTURE/15-rbac-default-matrix.md`
 
 ---
 

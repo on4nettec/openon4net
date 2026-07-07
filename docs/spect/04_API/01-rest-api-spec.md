@@ -17,6 +17,7 @@
 
 > APIهای Billing/Credits و Marketplace/Publisher در فایل جدا آمده‌اند: `04_API/02-billing-and-marketplace-api.md`
 > APIهای Connectorها و ingestion حافظه در فایل جدا آمده‌اند: `04_API/03-connectors-memory-ingestion-api.md`
+> قرارداد اجرایی (OpenAPI) در فایل جدا آمده است: `04_API/00-openapi-v0.1.yaml`
 
 ### Tenant Headers (برای multi-tenant)
 - `X-Organization-Id` (اجباری در اکثر endpointها)

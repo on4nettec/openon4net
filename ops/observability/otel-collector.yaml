@@ -1,0 +1,42 @@
+# OpenTelemetry Collector (reference)
+receivers:
+  otlp:
+    protocols:
+      http:
+      grpc:
+
+processors:
+  memory_limiter:
+    check_interval: 1s
+    limit_mib: 512
+  batch:
+    timeout: 5s
+    send_batch_size: 1024
+  attributes/o2n-defaults:
+    actions:
+      - key: service.namespace
+        action: upsert
+        value: o2n
+
+exporters:
+  # For local dev you can point to Tempo/Jaeger OTLP endpoint.
+  otlp/tempo:
+    endpoint: tempo:4317
+    tls:
+      insecure: true
+  prometheus:
+    endpoint: 0.0.0.0:9464
+  logging:
+    loglevel: info
+
+service:
+  pipelines:
+    traces:
+      receivers: [otlp]
+      processors: [memory_limiter, attributes/o2n-defaults, batch]
+      exporters: [otlp/tempo, logging]
+    metrics:
+      receivers: [otlp]
+      processors: [memory_limiter, batch]
+      exporters: [prometheus]
+
