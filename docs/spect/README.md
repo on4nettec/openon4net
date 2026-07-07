@@ -3,64 +3,74 @@
 > **شرکت:** on4net
 > **محصول:** AI Operating System شرکتی
 > **آخرین بروزرسانی:** July 2026
+> **فایل‌ها:** ۲۷ | **حجم:** ~۳۱۶KB
 
 ---
 
-## ساختار مستندات
+## ساختار کامل مستندات
 
 ```
-on4net/
+docs/spect/
 │
-├── 00_VISION/
-│   ├── 01-executive-summary.md    ✅ | خلاصه اجرایی، Vision، Mission، Business Model
-│   ├── 02-market-analysis.md      ✅ | تحلیل بازار و رقبا
-│   ├── 03-memory-engine.md        ✅ | معماری ۶ لایه حافظه + Memory Graph
-│   └── 04-digital-employee.md     ✅ | Digital Employee + Governance + Outcome
+├── 00_VISION/ (۶ فایل)
+│   ├── 01-executive-summary.md   ✅ | خلاصه اجرایی، Vision، Mission، Business Model
+│   ├── 02-market-analysis.md     ✅ | تحلیل بازار و رقبا، GTM Strategy
+│   ├── 03-memory-engine.md       ✅ | ۶ لایه حافظه + Memory Graph
+│   ├── 04-digital-employee.md    ✅ | Digital Employee + Governance + Outcome
+│   ├── 05-ux-ui-design.md        ✅ | طراحی UI/UX کامل
+│   └── 06-glossary.md            ✅ | دیکشنری تخصصی O₂N
 │
-├── 01_ROADMAP/
-│   └── 01-roadmap-12-months.md    ✅ | نقشه راه ۱۲ ماهه - ۶ فاز
+├── 01_ROADMAP/ (۱ فایل)
+│   └── 01-roadmap-12-months.md   ✅ | ۶ فاز · ۴۸ هفته · تحویل هر فاز
 │
-├── 02_ARCHITECTURE/
-│   ├── 01-system-overview.md      ✅ | معماری کلی، Tech Stack، Data Flow
-│   ├── 02-ai-gateway.md           ✅ | Model Router، Cost، Failover
-│   └── 03-skill-engine.md         ✅ | Skill Engine + Plugin SDK + Marketplace
+├── 02_ARCHITECTURE/ (۵ فایل)
+│   ├── 01-system-overview.md     ✅ | معماری کلی، Tech Stack، Data Flow
+│   ├── 02-ai-gateway.md          ✅ | Model Router · Cost · Failover
+│   ├── 03-skill-engine.md        ✅ | Skill Engine + Plugin SDK + Marketplace
+│   ├── 04-agent-communication.md ✅ | پروتکل ارتباط بین Agentها
+│   └── 05-workflow-engine.md     ✅ | Workflow Engine · DAG · State Machine
 │
-├── 03_DATABASE/
-│   └── 01-schema-master.md        ✅ | PostgreSQL + Redis + Neo4j schema کامل
+├── 03_DATABASE/ (۱ فایل)
+│   └── 01-schema-master.md       ✅ | PostgreSQL + Redis + Neo4j کامل
 │
-├── 04_API/
-│   └── 01-rest-api-spec.md        ✅ | REST + WebSocket + Webhook
+├── 04_API/ (۱ فایل)
+│   └── 01-rest-api-spec.md       ✅ | REST + WebSocket + Webhook + Error Codes
 │
-├── 05_DECISIONS/
-│   └── 01-adr-index.md            ✅ | ۷ Architecture Decision Record
+├── 05_DECISIONS/ (۱ فایل)
+│   └── 01-adr-index.md           ✅ | ۷ ADR معماری
 │
-├── 06_MEETINGS/
-│   └── 01-template.md             ✅ | قالب صورت جلسات
+├── 06_MEETINGS/ (۱ فایل)
+│   └── 01-template.md            ✅ | قالب صورت جلسات
 │
-├── 07_PROMPTS/
-│   └── 01-master-prompts.md       ✅ | System + Agent + Template Prompts
+├── 07_PROMPTS/ (۱ فایل)
+│   └── 01-master-prompts.md      ✅ | System + Agent + Template Prompts
 │
-├── 08_CODING_STANDARD/
-│   ├── 01-standards.md            ✅ | TypeScript + Testing + Git
-│   └── 02-security.md             ✅ | Security Bible
+├── 08_CODING_STANDARD/ (۳ فایل)
+│   ├── 01-standards.md           ✅ | TypeScript · Testing · Git
+│   ├── 02-security.md            ✅ | Security Bible · چندلایه
+│   └── 03-testing.md             ✅ | Testing Bible · Unit·Integration·E2E·AI
 │
-├── 09_TASKS/
-│   ├── 01-current-sprint.md       ✅ | Sprint 0 - ۸ Task اجرایی
-│   └── 02-deployment.md           ✅ | Deployment Bible
+├── 09_TASKS/ (۶ فایل)
+│   ├── 01-current-sprint.md      ✅ | Sprint 0 · ۸ Task اولویت‌بندی شده
+│   ├── 02-deployment.md          ✅ | Docker · K8s · Helm · Monitoring
+│   ├── 03-monitoring.md          ✅ | Prometheus · Grafana · Alerts
+│   ├── 04-performance.md         ✅ | Caching · Pooling · Optimization
+│   ├── 05-disaster-recovery.md   ✅ | RTO·RPO · Backup · Failover
+│   └── 06-onboarding.md          ✅ | Onboarding · ۵ مرحله · ۴۵ دقیقه
 │
-└── README.md                      ✅ | این فایل
+└── README.md                     ✅ | این فایل
 ```
 
-## آمار
+---
+
+## آمار نهایی
 
 | شاخص | مقدار |
 |------|-------|
-| **فایل‌ها** | ۱۷ |
-| **حجم کل** | ~۱۱۰KB |
+| **فایل‌ها** | ۲۷ |
+| **حجم کل** | ~۳۱۶KB |
 | **بخش‌ها** | ۱۰ از ۱۰ تکمیل ✅ |
-| **Sprint 0 Tasks** | ۸ Task اولویت‌بندی شده |
+| **عمق متوسط** | ~۱۲KB per file |
+| **وضعیت** | ✅ کامل |
 
-## وضعیت: ✅ کامل
-
-تمامی ۱۰ بخش مستندات specs تکمیل شده و در GitHub موجود است:
-https://github.com/on4nettec/openon4net/tree/main/docs/spect
+---
