@@ -130,6 +130,8 @@ MVP زمانی Done است که:
 - Economy: `docs/spect/02_ARCHITECTURE/06-economy-and-marketplace.md`
 - Connectors Spec: `docs/spect/02_ARCHITECTURE/07-connectors-and-tools.md`
 - Marketplace Service: `docs/spect/02_ARCHITECTURE/12-marketplace-service.md`
+- Four-Plane Architecture: `docs/spect/02_ARCHITECTURE/13-four-plane-architecture.md`
+- MVP Guardrails: `docs/spect/09_TASKS/08-scope-guardrails-mvp.md`
 
 ---
 

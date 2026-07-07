@@ -3,7 +3,7 @@
 > **شرکت:** on4net
 > **محصول:** AI Operating System شرکتی
 > **آخرین بروزرسانی:** July 2026
-> **فایل‌ها:** ۴۱ | **حجم:** ~۵۰۰KB
+> **فایل‌ها:** ۴۳ | **حجم:** ~۵۳۰KB
 
 ---
 
@@ -24,7 +24,7 @@ docs/spect/
 ├── 01_ROADMAP/ (۱ فایل)
 │   └── 01-roadmap-12-months.md   ✅ | ۶ فاز · ۴۸ هفته · تحویل هر فاز
 │
-├── 02_ARCHITECTURE/ (۱۲ فایل)
+├── 02_ARCHITECTURE/ (۱۳ فایل)
 │   ├── 01-system-overview.md     ✅ | معماری کلی، Tech Stack، Data Flow
 │   ├── 02-ai-gateway.md          ✅ | Model Router · Cost · Failover
 │   ├── 03-skill-engine.md        ✅ | Skill Engine + Plugin SDK + Marketplace
@@ -37,6 +37,7 @@ docs/spect/
 │   └── 10-rbac-and-policy.md      ✅ | RBAC + Policy enforcement (ABAC-lite)
 │   └── 11-secrets-and-key-management.md ✅ | Secret store + envelope encryption + rotation
 │   └── 12-marketplace-service.md  ✅ | Marketplace architecture (review/registry/signing)
+│   └── 13-four-plane-architecture.md ✅ | معماری ۴ بخش (Runtime/AI Control/Memory/Marketplace)
 │
 ├── 03_DATABASE/ (۲ فایل)
 │   ├── 01-schema-master.md       ✅ | PostgreSQL + Redis + Neo4j کامل
@@ -48,7 +49,7 @@ docs/spect/
 │   └── 03-connectors-memory-ingestion-api.md ✅ | Connectors + Memory ingestion + Skill manual create
 │
 ├── 05_DECISIONS/ (۱ فایل)
-│   └── 01-adr-index.md           ✅ | ۱۰ ADR معماری
+│   └── 01-adr-index.md           ✅ | ۱۱ ADR معماری
 │
 ├── 06_MEETINGS/ (۱ فایل)
 │   └── 01-template.md            ✅ | قالب صورت جلسات
@@ -62,7 +63,7 @@ docs/spect/
 │   └── 03-testing.md             ✅ | Testing Bible · Unit·Integration·E2E·AI
 │   └── 04-threat-model.md         ✅ | STRIDE threat model + LLM-specific threats
 │
-├── 09_TASKS/ (۸ فایل)
+├── 09_TASKS/ (۹ فایل)
 │   ├── 00-claude-build-pack.md   ✅ | CTO Spec برای ساخت پروژه توسط Claude
 │   ├── 01-current-sprint.md      ✅ | Sprint 0 · ۸ Task اولویت‌بندی شده
 │   ├── 02-deployment.md          ✅ | Docker · K8s · Helm · Monitoring
@@ -71,6 +72,7 @@ docs/spect/
 │   ├── 05-disaster-recovery.md   ✅ | RTO·RPO · Backup · Failover
 │   └── 06-onboarding.md          ✅ | Onboarding · ۵ مرحله · ۴۵ دقیقه
 │   └── 07-security-ops-runbook.md ✅ | Incident response + rotation + kill switch
+│   └── 08-scope-guardrails-mvp.md ✅ | Guardrails برای جلوگیری از scope creep در MVP
 │
 └── README.md                     ✅ | این فایل
 ```
@@ -81,8 +83,8 @@ docs/spect/
 
 | شاخص | مقدار |
 |------|-------|
-| **فایل‌ها** | ۴۱ |
-| **حجم کل** | ~۵۰۰KB |
+| **فایل‌ها** | ۴۳ |
+| **حجم کل** | ~۵۳۰KB |
 | **بخش‌ها** | ۱۰ از ۱۰ تکمیل ✅ |
 | **عمق متوسط** | ~۱۲KB per file |
 | **وضعیت** | ✅ کامل |

@@ -13,12 +13,13 @@
 | 002 | Neo4j برای Memory Graph | ✅ پذیرفته | July 2026 |
 | 003 | 6-Layer Memory Architecture | ✅ پذیرفته | July 2026 |
 | 004 | TypeScript + Fastify برای Backend | ✅ پذیرفته | July 2026 |
-| 005 | Plugin SDK با WASM Sandbox | ⏳ پیشنهاد | July 2026 |
+| 005 | Plugin SDK با WASM Sandbox | ↩️ جایگزین شد (ADR-009) | July 2026 |
 | 006 | Monorepo با Turborepo | ✅ پذیرفته | July 2026 |
 | 007 | Auto-Skill Detection با Frequency Analysis | ✅ پذیرفته | July 2026 |
 | 008 | Credits/Coin داخلی + Revenue Share برای Marketplace | ✅ پذیرفته | July 2026 |
 | 009 | Plugin Sandbox: WASM + Capability-based Host Functions | ✅ پذیرفته | July 2026 |
 | 010 | Marketplace Architecture: Module (MVP) → Service (v0.2+) | ✅ پذیرفته | July 2026 |
+| 011 | Four-Plane Architecture (Runtime/AI Control/Memory/Marketplace) | ✅ پذیرفته | July 2026 |
 
 ---
 
@@ -122,7 +123,7 @@ Fastify + TypeScript برای API. Hono برای Edge functions.
 
 ## ADR-005: Plugin Sandbox
 
-### وضعیت: ⏳ پیشنهاد (نیاز به بررسی)
+### وضعیت: ↩️ جایگزین شد
 
 ### Context
 Pluginهای第三方 باید امن اجرا شوند.
@@ -135,8 +136,8 @@ Pluginهای第三方 باید امن اجرا شوند.
 | **VM** | بسیار امن، بسیار سنگین |
 | **Sandboxed Node.js (vm2)** | سبک، اما امنیت کمتر |
 
-### تصمیم اولیه
-WASM Sandbox با fallback به Docker برای pluginهای سنگین.
+### یادداشت
+این ADR با ADR-009 جایگزین شده است و تصمیم نهایی Sandbox در `02_ARCHITECTURE/09-plugin-sandbox.md` آمده است.
 
 ---
 
@@ -285,3 +286,45 @@ Marketplace برای plugin/connector/tool نیاز به:
 - ❌ نیاز به discipline در boundaryها
 
 ارجاع: `02_ARCHITECTURE/12-marketplace-service.md`
+
+---
+
+## ADR-011: Four-Plane Architecture
+
+### وضعیت: ✅ پذیرفته
+
+### Context
+O₂N باید هم‌زمان:
+- قابل نصب روی سرور مشتری (self-host/on-prem) باشد
+- هزینه/مدیریت AI را به شکل مرکزی و ساده ارائه کند (activation + credits)
+- حافظه بلندمدت را به صورت self-host یا managed ارائه کند
+- اکوسیستم plugin/connector و marketplace درآمدزا داشته باشد
+
+اگر این‌ها در یک توده‌ی واحد بدون boundary تعریف شوند، نتیجه:
+- coupling زیاد
+- امنیت/اعتماد مبهم
+- و توسعه/استخراج سرویس‌ها سخت
+خواهد بود.
+
+### گزینه‌ها
+| گزینه | مزایا | معایب |
+|-------|-------|-------|
+| **یک سیستم واحد (بدون plane)** | ساده در ظاهر | مرزبندی نامشخص، سخت در self-host + marketplace + managed AI |
+| **۴ Plane (Runtime/AI Control/Memory/Marketplace)** | trust boundary واضح، مرحله‌بندی آسان، امکان hybrid | نیاز به تعریف contractها و ownership |
+
+### تصمیم
+معماری رسمی O₂N به صورت **۴ Plane** پذیرفته شد:
+1) Customer Runtime (Core / On‑Prem)
+2) AI Control Plane (activation + credits + optional managed AI)
+3) Long‑Term Memory Plane (managed یا self-host)
+4) Marketplace Plane (publish/review/registry/pricing)
+
+شبکه “Compute Providers / VM incentives” و شبکه “Memory providers” به عنوان **فاز آینده و opt‑in** تعریف می‌شوند تا الزامات Enterprise (عدم خروج داده) نقض نشود.
+
+### پیامدها
+- ✅ self-host و enterprise story قوی‌تر
+- ✅ اقتصاد و marketplace قابل توسعه و امن‌تر
+- ✅ جداسازی مسئولیت‌ها (ownership) واضح
+- ❌ نیاز به اجرای دقیق contractها (API namespaces، signing، tracing، billing)
+
+ارجاع: `02_ARCHITECTURE/13-four-plane-architecture.md`

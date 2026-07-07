@@ -280,6 +280,8 @@ Proposal:
 | **Audit** | همه فعالیت‌های Plugin لاگ می‌شود |
 | **Kill Switch** | قابلیت غیرفعال کردن لحظه‌ای |
 
+> توضیح اجرایی: هدف نهایی برای third-party plugins اجرای WASM است، اما در MVP خیلی اولیه ممکن است plugins first-party به‌صورت محدود in-process اجرا شوند. spec کامل sandbox و مسیر مهاجرت در `02_ARCHITECTURE/09-plugin-sandbox.md` آمده است.
+
 ---
 
 > **خلاصه:** Skill Engine + Plugin SDK = اکوسیستم. Agentها یاد می‌گیرند، مهارت می‌سازند، و توسعه‌دهندگان Plugin می‌نویسند. مثل WordPress اما برای AI Agentها.

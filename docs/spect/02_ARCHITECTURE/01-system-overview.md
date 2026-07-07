@@ -89,3 +89,11 @@ Agent A → Communication Bus → Governance Check
 ---
 
 > معماری ماژولار و مقیاس‌پذیر. هر کامپوننت مستقل scale می‌شود.
+
+---
+
+## ۵. معماری رسمی ۴ بخشی (4-Plane)
+
+برای هم‌زمان پشتیبانی از self-host، کنترل هزینه AI (credits/activation)، حافظه بلندمدت managed/self-host و marketplace، معماری O₂N به صورت ۴ Plane تعریف می‌شود.
+
+جزئیات: `02_ARCHITECTURE/13-four-plane-architecture.md`

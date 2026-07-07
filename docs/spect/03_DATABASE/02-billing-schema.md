@@ -118,6 +118,8 @@ CREATE TABLE publishers (
 ALTER TABLE plugins
   ADD COLUMN publisher_account_id UUID REFERENCES publishers(id);
 
+> پیشنهاد: در مسیر Marketplace، فیلد canonical برای مالکیت پلاگین `publisher_account_id` است. فیلد `publisher_id` (در schema-master) می‌تواند برای سناریوهای ساده/گذرا استفاده شود.
+
 CREATE INDEX idx_plugins_publisher ON plugins(publisher_account_id);
 ```
 
@@ -144,3 +146,14 @@ CREATE TABLE marketplace_purchases (
 
 > **خلاصه:** این schema یک ledger شفاف برای credits، رویدادهای مصرف برای گزارش‌گیری/Revenue Share، و اجزای لازم برای marketplace monetization فراهم می‌کند.
 
+---
+
+## ۷) جلوگیری از تداخل با schema-master
+
+برای پیاده‌سازی:
+- `03_DATABASE/01-schema-master.md` جدول‌های اصلی (organizations/workspaces/users/agents/skills/plugins/...) را دارد.
+- این فایل (billing schema) جدول‌های **تکمیلی اقتصاد/Marketplace** را اضافه می‌کند.
+
+اگر شما schema را از روی `03_DATABASE/01-schema-master.md` ایجاد می‌کنید، `publisher_account_id` ممکن است از قبل در جدول `plugins` وجود داشته باشد. در این صورت:
+- `ALTER TABLE` را اجرا نکنید
+- یا migration را طوری بنویسید که idempotent باشد.

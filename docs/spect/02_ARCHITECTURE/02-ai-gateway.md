@@ -16,6 +16,17 @@ AI Gateway مغز O₂N است. تمام درخواست‌های Agentها به 
 
 ---
 
+## ۱.۱) حالت‌های استقرار (Self-host vs Managed)
+
+AI Gateway در معماری ۴ بخشی می‌تواند در دو حالت کار کند:
+
+- **Self-host (BYOK):** AI Gateway داخل Customer Runtime اجرا می‌شود و کلید providerها توسط خود سازمان تنظیم می‌شود.
+- **Managed (Credits-based, opt-in):** Customer Runtime درخواست‌های مدل را به AI Control Plane ارسال می‌کند و هزینه با credits تسویه می‌شود.
+
+این تفکیک برای enterprise مهم است: داده‌های حساس می‌توانند policy داشته باشند که فقط self-host/BYOK مجاز است.
+
+ارجاع: `02_ARCHITECTURE/13-four-plane-architecture.md`
+
 ## ۲. Model Router (مسیریاب هوشمند)
 
 ### قوانین مسیریابی پیش‌فرض:

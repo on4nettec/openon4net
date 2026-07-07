@@ -217,22 +217,22 @@ Context Package → Prompt Builder
 // Write
 POST /memory/write
 {
-  "agentId": "marketing-01",
+  "agent_id": "marketing-01",
   "layer": 2,
   "content": { ... },
   "context": {
-    "project": "alpha",
-    "relatedTo": ["decision-123", "file-456"]
+    "project_id": "alpha",
+    "related_to": ["decision-123", "file-456"]
   }
 }
 
-// Read
-POST /memory/read
+// Search / Read
+POST /memory/search
 {
-  "agentId": "marketing-01",
+  "agent_id": "marketing-01",
   "query": "بودجه تبلیغات ۱۴۰۵",
   "layers": [2, 3, 4],
-  "maxTokens": 4000
+  "max_tokens": 4000
 }
 
 // Graph Query
@@ -240,16 +240,18 @@ POST /memory/graph
 {
   "query": "چه کسی تصمیم به Docker گرفت؟",
   "depth": 2,
-  "startNodes": ["decision-docker"]
+  "start_nodes": ["decision-docker"]
 }
 
 // Prune
 POST /memory/prune
 {
   "layers": [1, 2],
-  "olderThan": "2026-01-01"
+  "older_than": "2026-01-01"
 }
 ```
+
+> منبع API اجرایی: `04_API/01-rest-api-spec.md` و برای عملیات‌های ingest/reindex/import/export: `04_API/03-connectors-memory-ingestion-api.md`
 
 ---
 
@@ -271,3 +273,18 @@ POST /memory/prune
 ---
 
 > **خلاصه:** Memory Engine قلب O₂N است. ۶ لایه حافظه + Memory Graph به Agentها می‌دهد که نه فقط "مکالمه قبل رو یادشونه" بلکه "شرکت، پروژه، افراد، تصمیم‌ها و روابط بینشان را می‌دانند". این است که Agent را از یک chatbot به یک Digital Employee تبدیل می‌کند.
+
+---
+
+## ۸. حالت‌های استقرار حافظه (Self-host vs Managed)
+
+با اینکه معماری حافظه ۶ لایه است، backend هر لایه می‌تواند با policy انتخاب شود:
+- **Self-host (پیش‌فرض Enterprise):** همه لایه‌ها داخل زیرساخت سازمان (Postgres/Redis/Neo4j/MinIO)
+- **Managed Long-term Memory (اختیاری):** بخشی از لایه‌های بلندمدت (معمولاً ۳/۴/۶) می‌تواند به یک سرویس مدیریت‌شده منتقل شود
+
+قواعد کلیدی:
+- L1/L2 معمولاً برای latency باید local بمانند.
+- داده‌های حساس باید بتوانند policy داشته باشند که “خروج از محیط سازمان” ممنوع است.
+- در حالت managed، باید از envelope encryption و BYOK پشتیبانی شود.
+
+ارجاع: `02_ARCHITECTURE/13-four-plane-architecture.md` و `02_ARCHITECTURE/11-secrets-and-key-management.md`

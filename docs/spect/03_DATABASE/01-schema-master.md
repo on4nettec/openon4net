@@ -121,7 +121,8 @@ CREATE TABLE skills (
 -- Pluginها
 CREATE TABLE plugins (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    publisher_id UUID REFERENCES users(id),
+    publisher_id UUID REFERENCES users(id), -- legacy/simple publisher link (اختیاری)
+    publisher_account_id UUID, -- مرجع به حساب Publisher (Marketplace) - در صورت فعال بودن Marketplace
     name VARCHAR(255) NOT NULL,
     package_name VARCHAR(255) UNIQUE NOT NULL, -- com.on4net.sms-sender
     version VARCHAR(20) NOT NULL,
@@ -145,6 +146,8 @@ CREATE TABLE plugin_installs (
     UNIQUE(organization_id, plugin_id)
 );
 ```
+
+> نکته: مدل کامل Marketplace (publisher accounts, pricing و ledger) در `03_DATABASE/02-billing-schema.md` آمده است و ممکن است ستون‌ها/جدول‌های تکمیلی به schema اضافه کند.
 
 ### ۲.۴ Memory System
 
@@ -406,3 +409,9 @@ CREATE INDEX idx_memory_nodes_embedding
 Schema مربوط به Wallet/Credits ledger، usage events و publisherها در فایل جدا نگهداری می‌شود:
 
 - `03_DATABASE/02-billing-schema.md`
+
+## ۷. Connectors (Integrations) و RBAC/Policies
+
+برای جلوگیری از تداخل، schema به صورت ماژولار نگهداری می‌شود:
+- **Connectors/Integrations** (install/credentials/sync jobs): تعریف پیشنهادی در `02_ARCHITECTURE/07-connectors-and-tools.md`
+- **RBAC/Policies** (roles/policies tables): تعریف پیشنهادی در `02_ARCHITECTURE/10-rbac-and-policy.md`

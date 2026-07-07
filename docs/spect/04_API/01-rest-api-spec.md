@@ -18,6 +18,10 @@
 > APIهای Billing/Credits و Marketplace/Publisher در فایل جدا آمده‌اند: `04_API/02-billing-and-marketplace-api.md`
 > APIهای Connectorها و ingestion حافظه در فایل جدا آمده‌اند: `04_API/03-connectors-memory-ingestion-api.md`
 
+### Tenant Headers (برای multi-tenant)
+- `X-Organization-Id` (اجباری در اکثر endpointها)
+- `X-Workspace-Id` (اختیاری؛ برای scope دقیق‌تر)
+
 ---
 
 ## ۲. Authentication
@@ -26,7 +30,7 @@
 ```
 POST /auth/token
 {
-    "api_key": "sk-xxxxx",
+    "api_key": "o2n_abcde_xxxxxxxxxxxxxxxxxxxxxxxx",
     "organization_id": "org-xxx"
 }
 → { "token": "eyJ...", "expires_in": 3600 }
