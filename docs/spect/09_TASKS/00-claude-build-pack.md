@@ -117,6 +117,10 @@ MVP زمانی Done است که:
 - Differentiation: `docs/spect/00_VISION/07-competitive-positioning.md`
 - Architecture: `docs/spect/02_ARCHITECTURE/01-system-overview.md`
 - AI Gateway: `docs/spect/02_ARCHITECTURE/02-ai-gateway.md`
+- OpenTelemetry: `docs/spect/02_ARCHITECTURE/08-observability-otel.md`
+- Sandbox: `docs/spect/02_ARCHITECTURE/09-plugin-sandbox.md`
+- RBAC/Policy: `docs/spect/02_ARCHITECTURE/10-rbac-and-policy.md`
+- Secrets/KMS: `docs/spect/02_ARCHITECTURE/11-secrets-and-key-management.md`
 - Memory: `docs/spect/00_VISION/03-memory-engine.md`
 - DB master: `docs/spect/03_DATABASE/01-schema-master.md`
 - Billing: `docs/spect/03_DATABASE/02-billing-schema.md`
@@ -125,6 +129,7 @@ MVP زمانی Done است که:
 - Connectors API: `docs/spect/04_API/03-connectors-memory-ingestion-api.md`
 - Economy: `docs/spect/02_ARCHITECTURE/06-economy-and-marketplace.md`
 - Connectors Spec: `docs/spect/02_ARCHITECTURE/07-connectors-and-tools.md`
+- Marketplace Service: `docs/spect/02_ARCHITECTURE/12-marketplace-service.md`
 
 ---
 

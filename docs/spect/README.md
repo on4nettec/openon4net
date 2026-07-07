@@ -3,7 +3,7 @@
 > **شرکت:** on4net
 > **محصول:** AI Operating System شرکتی
 > **آخرین بروزرسانی:** July 2026
-> **فایل‌ها:** ۳۴ | **حجم:** ~۳۹۰KB
+> **فایل‌ها:** ۴۱ | **حجم:** ~۵۰۰KB
 
 ---
 
@@ -24,7 +24,7 @@ docs/spect/
 ├── 01_ROADMAP/ (۱ فایل)
 │   └── 01-roadmap-12-months.md   ✅ | ۶ فاز · ۴۸ هفته · تحویل هر فاز
 │
-├── 02_ARCHITECTURE/ (۷ فایل)
+├── 02_ARCHITECTURE/ (۱۲ فایل)
 │   ├── 01-system-overview.md     ✅ | معماری کلی، Tech Stack، Data Flow
 │   ├── 02-ai-gateway.md          ✅ | Model Router · Cost · Failover
 │   ├── 03-skill-engine.md        ✅ | Skill Engine + Plugin SDK + Marketplace
@@ -32,6 +32,11 @@ docs/spect/
 │   ├── 05-workflow-engine.md     ✅ | Workflow Engine · DAG · State Machine
 │   └── 06-economy-and-marketplace.md ✅ | Credits/Coin داخلی + Marketplace monetization
 │   └── 07-connectors-and-tools.md ✅ | Connector/Tool/Plugin spec + Google Drive/Social ingest
+│   └── 08-observability-otel.md   ✅ | OpenTelemetry spec (tracing/attrs/sampling/export)
+│   └── 09-plugin-sandbox.md       ✅ | Sandbox spec (WASM/capabilities/metering)
+│   └── 10-rbac-and-policy.md      ✅ | RBAC + Policy enforcement (ABAC-lite)
+│   └── 11-secrets-and-key-management.md ✅ | Secret store + envelope encryption + rotation
+│   └── 12-marketplace-service.md  ✅ | Marketplace architecture (review/registry/signing)
 │
 ├── 03_DATABASE/ (۲ فایل)
 │   ├── 01-schema-master.md       ✅ | PostgreSQL + Redis + Neo4j کامل
@@ -43,7 +48,7 @@ docs/spect/
 │   └── 03-connectors-memory-ingestion-api.md ✅ | Connectors + Memory ingestion + Skill manual create
 │
 ├── 05_DECISIONS/ (۱ فایل)
-│   └── 01-adr-index.md           ✅ | ۸ ADR معماری
+│   └── 01-adr-index.md           ✅ | ۱۰ ADR معماری
 │
 ├── 06_MEETINGS/ (۱ فایل)
 │   └── 01-template.md            ✅ | قالب صورت جلسات
@@ -51,12 +56,13 @@ docs/spect/
 ├── 07_PROMPTS/ (۱ فایل)
 │   └── 01-master-prompts.md      ✅ | System + Agent + Template Prompts
 │
-├── 08_CODING_STANDARD/ (۳ فایل)
+├── 08_CODING_STANDARD/ (۴ فایل)
 │   ├── 01-standards.md           ✅ | TypeScript · Testing · Git
 │   ├── 02-security.md            ✅ | Security Bible · چندلایه
 │   └── 03-testing.md             ✅ | Testing Bible · Unit·Integration·E2E·AI
+│   └── 04-threat-model.md         ✅ | STRIDE threat model + LLM-specific threats
 │
-├── 09_TASKS/ (۷ فایل)
+├── 09_TASKS/ (۸ فایل)
 │   ├── 00-claude-build-pack.md   ✅ | CTO Spec برای ساخت پروژه توسط Claude
 │   ├── 01-current-sprint.md      ✅ | Sprint 0 · ۸ Task اولویت‌بندی شده
 │   ├── 02-deployment.md          ✅ | Docker · K8s · Helm · Monitoring
@@ -64,6 +70,7 @@ docs/spect/
 │   ├── 04-performance.md         ✅ | Caching · Pooling · Optimization
 │   ├── 05-disaster-recovery.md   ✅ | RTO·RPO · Backup · Failover
 │   └── 06-onboarding.md          ✅ | Onboarding · ۵ مرحله · ۴۵ دقیقه
+│   └── 07-security-ops-runbook.md ✅ | Incident response + rotation + kill switch
 │
 └── README.md                     ✅ | این فایل
 ```
@@ -74,8 +81,8 @@ docs/spect/
 
 | شاخص | مقدار |
 |------|-------|
-| **فایل‌ها** | ۳۴ |
-| **حجم کل** | ~۳۹۰KB |
+| **فایل‌ها** | ۴۱ |
+| **حجم کل** | ~۵۰۰KB |
 | **بخش‌ها** | ۱۰ از ۱۰ تکمیل ✅ |
 | **عمق متوسط** | ~۱۲KB per file |
 | **وضعیت** | ✅ کامل |

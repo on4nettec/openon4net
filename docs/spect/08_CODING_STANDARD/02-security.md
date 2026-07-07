@@ -55,6 +55,11 @@ o2n_xxxxx_xxxxxxxxxxxxxxxxxxxxxxx
 | **Kill Switch** | غیرفعالسازی لحظه‌ای توسط Admin |
 | **Audit** | همه فعالیت‌های Plugin لاگ می‌شود |
 
+> Spec اجرایی Sandbox (levels, host functions, metering, network policy) در: `02_ARCHITECTURE/09-plugin-sandbox.md`
+> Threat Model (STRIDE) در: `08_CODING_STANDARD/04-threat-model.md`
+> RBAC/Policy model در: `02_ARCHITECTURE/10-rbac-and-policy.md`
+> Secrets/KMS strategy در: `02_ARCHITECTURE/11-secrets-and-key-management.md`
+
 ### Permission Levels:
 ```yaml
 permissions:

@@ -17,6 +17,8 @@
 | 006 | Monorepo با Turborepo | ✅ پذیرفته | July 2026 |
 | 007 | Auto-Skill Detection با Frequency Analysis | ✅ پذیرفته | July 2026 |
 | 008 | Credits/Coin داخلی + Revenue Share برای Marketplace | ✅ پذیرفته | July 2026 |
+| 009 | Plugin Sandbox: WASM + Capability-based Host Functions | ✅ پذیرفته | July 2026 |
+| 010 | Marketplace Architecture: Module (MVP) → Service (v0.2+) | ✅ پذیرفته | July 2026 |
 
 ---
 
@@ -218,3 +220,68 @@ Frequency-based + Pattern-based (روش ترکیبی). ML-based در v2.
 - ✅ گزارش‌گیری/حسابرسی دقیق
 - ✅ کنترل بودجه و approval chain ساده‌تر
 - ❌ در صورت نیاز به token عمومی، باید به‌عنوان ماژول جدا طراحی شود
+
+---
+
+## ADR-009: Plugin Sandbox (WASM + Capabilities)
+
+### وضعیت: ✅ پذیرفته
+
+### Context
+می‌خواهیم اکوسیستم plugin/tool داشته باشیم، اما اجرای third-party باید امن باشد:
+- دسترسی‌ها قابل کنترل (permissions)
+- شبکه/فایل محدود
+- منابع محدود (CPU/RAM/time)
+- همه چیز audit/tracing داشته باشد
+
+### گزینه‌ها
+| گزینه | مزایا | معایب |
+|-------|-------|-------|
+| **WASM Sandbox** | قابلیت‌محور، محدودسازی دقیق، مناسب marketplace | نیاز به طراحی host functions، پیچیده‌تر از in-process |
+| **Docker per plugin** | isolation قوی | سنگین، latency بالا، هزینه اجرا |
+| **vm2 / sandboxed Node** | ساده‌تر برای JS | ریسک‌های امنیتی بیشتر، escape risk |
+
+### تصمیم
+هدف برای third-party plugins: **WASM sandbox با capability-based host functions**.  
+برای MVP خیلی اولیه، فقط plugins first-party ممکن است in-process اجرا شوند؛ اما مسیر مهاجرت به WASM باید از ابتدا در contractها لحاظ شود.
+
+### پیامدها
+- ✅ امنیت و کنترل بهتر برای marketplace
+- ✅ امکان metering و محدودسازی دقیق
+- ✅ هم‌راستا با governance/audit
+- ❌ نیازمند پیاده‌سازی runtime و host APIs
+
+ارجاع: `02_ARCHITECTURE/09-plugin-sandbox.md`
+
+---
+
+## ADR-010: Marketplace Module → Service
+
+### وضعیت: ✅ پذیرفته
+
+### Context
+Marketplace برای plugin/connector/tool نیاز به:
+- review pipeline
+- artifact registry + signing
+- pricing + revenue share
+- security controls (kill switch)
+دارد؛ و این حوزه معمولاً به مرور بزرگ و جدا می‌شود.
+
+### گزینه‌ها
+| گزینه | مزایا | معایب |
+|-------|-------|-------|
+| **از ابتدا سرویس جدا** | مرزبندی واضح، مقیاس‌پذیری بهتر | هزینه MVP بالا، پیچیدگی deployment |
+| **ماژول داخل API (MVP) سپس استخراج** | سریع‌تر برای v0.1، migration تدریجی | ریسک coupling اگر contract رعایت نشود |
+
+### تصمیم
+در v0.1 به شکل **ماژول داخل API** پیاده می‌شود، اما:
+- namespaceهای جدا (`/marketplace`, `/publisher`, `/billing`)
+- interfaceهای registry/signing جدا
+تا در v0.2+ به **Marketplace Service** مستقل استخراج شود.
+
+### پیامدها
+- ✅ سرعت MVP
+- ✅ مسیر مقیاس‌پذیری مشخص
+- ❌ نیاز به discipline در boundaryها
+
+ارجاع: `02_ARCHITECTURE/12-marketplace-service.md`

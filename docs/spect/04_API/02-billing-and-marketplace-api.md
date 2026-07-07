@@ -140,6 +140,8 @@ POST /publisher/plugins
 
 > انتشار واقعی باید review + security scan داشته باشد (ارجاع به 08_CODING_STANDARD/02-security.md).
 
+> معماری کامل Marketplace و مسیر “ماژول در MVP → سرویس مستقل” در: `02_ARCHITECTURE/12-marketplace-service.md`
+
 ### ۶.۳) درآمد/گزارش سازنده
 ```
 GET /publisher/earnings?from=2026-07-01&to=2026-07-07
@@ -163,4 +165,3 @@ GET /publisher/earnings?from=2026-07-01&to=2026-07-07
 ---
 
 > **خلاصه:** این APIها کنترل credits، تخمین هزینه، نصب/مدیریت marketplace، و مسیرهای publisher را فراهم می‌کند تا «سازنده منتفع شود» و مصرف‌کننده با credits داخلی مصرف کند.
-

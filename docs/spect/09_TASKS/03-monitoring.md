@@ -178,6 +178,8 @@ User Request
 - **Jaeger / Grafana Tempo:** visualization
 - **Baggage:** context propagation بین سرویس‌ها
 
+> Spec دقیق OpenTelemetry (span naming, attributes, sampling, exporters) در: `02_ARCHITECTURE/08-observability-otel.md`
+
 ---
 
 ## ۶. Alerts
