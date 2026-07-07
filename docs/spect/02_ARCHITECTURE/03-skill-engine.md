@@ -1,0 +1,283 @@
+# Skill Engine & Plugin SDK — Open on4net
+
+> **فایل:** 02_ARCHITECTURE/03-skill-engine.md
+> **نسخه:** 1.0
+
+---
+
+## ۱. Skill Engine چیست؟
+
+وقتی یک Agent کاری را ۱۰ بار انجام می‌دهد، باید پیشنهاد دهد:
+
+> **"این کار را ۱۰ بار انجام دادم. می‌خواهی به عنوان یک Skill ذخیره شود؟ دفعه بعد در ۲ ثانیه انجامش می‌دهم."**
+
+Skill Engine مغز یادگیری O₂N است. Agentها از تجربه یاد می‌گیرند و مهارت می‌سازند.
+
+---
+
+## ۲. چرخه عمر یک Skill (Skill Lifecycle)
+
+```
+┌─────────────────────────────────────────────────────────┐
+│                   SKILL LIFECYCLE                        │
+├─────────────────────────────────────────────────────────┤
+│                                                          │
+│  ۱. Detection ──── Agent کاری را تکرار می‌کند            │
+│       │                                                  │
+│       ▼                                                  │
+│  ۲. Proposal ──── Agent پیشنهاد Skill می‌دهد             │
+│       │                                                  │
+│       ▼                                                  │
+│  ۳. Review ──── کاربر یا CEO Agent تأیید می‌کند           │
+│       │                                                  │
+│       ▼                                                  │
+│  ۴. Training ──── Agent مراحل را مستند می‌کند             │
+│       │                                                  │
+│       ▼                                                  │
+│  ۵. Activation ──── Skill فعال و قابل استفاده            │
+│       │                                                  │
+│       ▼                                                  │
+│  ۶. Improvement ──── Agent Skill را بهینه می‌کند          │
+│       │                                                  │
+│       ▼                                                  │
+│  ۷. Sharing ──── می‌تواند در Marketplace منتشر شود       │
+│                                                          │
+└─────────────────────────────────────────────────────────┘
+```
+
+---
+
+## ۳. معماری Skill Engine
+
+```
+┌─────────────────────────────────────────────────────────┐
+│                    SKILL ENGINE                          │
+├─────────────────────────────────────────────────────────┤
+│                                                          │
+│  ┌─────────────────┐  ┌─────────────────────────────┐   │
+│  │ Pattern Detector │  │  Skill Registry             │   │
+│  │ - تکرار کارها   │  │  - ثبت Skill                │   │
+│  │ - الگوهای مشترک │  │  - ورژن‌بندی                │   │
+│  │ - time-based     │  │  - dependency management    │   │
+│  └─────────────────┘  └─────────────────────────────┘   │
+│                                                          │
+│  ┌─────────────────┐  ┌─────────────────────────────┐   │
+│  │ Skill Executor   │  │  Skill Validator            │   │
+│  │ - اجرای Skill   │  │  - تست Skill                │   │
+│  │ - context注入    │  │  - validation rules         │   │
+│  │ - parallel exec  │  │  - safety check             │   │
+│  └─────────────────┘  └─────────────────────────────┘   │
+│                                                          │
+└─────────────────────────────────────────────────────────┘
+```
+
+---
+
+## ۴. فرمت یک Skill
+
+```yaml
+name: "send-weekly-report"
+version: "2.1.0"
+description: "ارسال گزارش هفتگی عملکرد به ایمیل تیم"
+created_by: "marketing-agent-01"
+created_at: "2026-07-01"
+executions: 127
+
+trigger:
+  type: "scheduled"  # scheduled | manual | event
+  schedule: "0 9 * * 1"  # هر دوشنبه ساعت ۹
+
+steps:
+  - id: "fetch-data"
+    type: "query"
+    source: "database"
+    query: "SELECT * FROM weekly_kpi WHERE week = $week"
+
+  - id: "generate-report"
+    type: "prompt"
+    model: "gpt-4o"
+    template: "weekly-report-prompt-v2"
+    input: "$fetch-data.result"
+
+  - id: "send-email"
+    type: "tool"
+    tool: "email-sender"
+    params:
+      to: "team@company.com"
+      subject: "Weekly Report - Week $week"
+      body: "$generate-report.result"
+
+conditions:
+  - if: "fetch-data.count == 0"
+    action: "skip"
+    message: "No data for this week"
+
+errors:
+  - type: "email-failed"
+    action: "retry"
+    max_retries: 3
+    fallback: "save-to-draft"
+
+metrics:
+  - avg_duration: 45s
+  - success_rate: 98.7%
+  - last_improved: "2026-07-05"
+```
+
+---
+
+## ۵. Plugin SDK (مثل WordPress)
+
+### چرا Plugin SDK؟
+
+- هر برنامه‌نویسی می‌تواند Plugin بنویسد
+- شرکت‌ها می‌توانند نیازهای خاص خود را پیاده کنند
+- Marketplace برای فروش Pluginها
+- اکوسیستم مانند WordPress
+
+### ساختار یک Plugin:
+
+```
+my-plugin/
+├── manifest.json        # اطلاعات Plugin
+├── main.ts              # کد اصلی
+├── actions/
+│   ├── send-sms.ts
+│   └── check-status.ts
+├── prompts/
+│   └── system-prompt.md
+├── assets/
+│   └── icon.svg
+└── README.md
+```
+
+### manifest.json:
+```json
+{
+  "id": "com.on4net.sms-sender",
+  "name": "SMS Sender",
+  "version": "1.0.0",
+  "description": "ارسال SMS از طریق Kavenegar",
+  "author": "on4net",
+  "license": "MIT",
+  "permissions": [
+    "http:send",
+    "memory:read"
+  ],
+  "models": ["gpt-4o-mini"],
+  "hooks": [
+    "after:agent-response"
+  ]
+}
+```
+
+### Plugin SDK API:
+```typescript
+import { createPlugin, Action, Tool } from '@on4net/sdk';
+
+const plugin = createPlugin({
+  id: 'sms-sender',
+  name: 'SMS Sender',
+});
+
+// تعریف یک Tool
+plugin.defineTool('send-sms', {
+  description: 'ارسال SMS',
+  parameters: {
+    to: { type: 'string', required: true },
+    message: { type: 'string', required: true },
+  },
+  execute: async (params, context) => {
+    const api = new KavenegarAPI(context.config.apiKey);
+    return api.send(params.to, params.message);
+  },
+});
+
+// تعریف یک Action
+plugin.defineAction('verify-phone', {
+  description: 'ارسال کد تأیید',
+  execute: async (params, context) => {
+    const code = Math.random().toString().slice(2, 8);
+    await context.tools['send-sms']({
+      to: params.phone,
+      message: `کد تأیید: ${code}`,
+    });
+    await context.memory.write('verification-codes', {
+      phone: params.phone,
+      code,
+      expiresAt: Date.now() + 300000,
+    });
+    return { success: true };
+  },
+});
+
+export default plugin;
+```
+
+---
+
+## ۶. Marketplace
+
+### برای مصرف‌کنندگان:
+```
+Marketplace
+├── Productivity (۲۳ Plugin)
+├── Communication (۱۵ Plugin)
+├── Analytics (۱۲ Plugin)
+├── Development (۳۴ Plugin)
+├── Marketing (۴۲ Plugin)
+└── Custom (۸۷ Plugin)
+```
+
+### برای توسعه‌دهندگان:
+- ۷۰٪ درآمد فروش Plugin به توسعه‌دهنده
+- ۳۰٪ به O₂N
+- امکان Free + Premium
+- Verified Publisher Program
+
+---
+
+## ۷. Auto-Skill Detection
+
+### الگوریتم تشخیص:
+
+```
+Pattern Detector:
+├── Frequency Analysis ──── کار > ۵ بار در هفته؟ → Candidate
+├── Similarity Analysis ──── قدم‌های مشابه هر بار؟ → Candidate
+├── Duration Analysis ──── زمان ثابت هر بار؟ → Candidate
+└── Complexity Check ──── آیا به اندازه کافی general است؟ → Skill
+
+اگر ۳ از ۴ شرط ✅ → Proposal به کاربر
+```
+
+### مثال:
+```
+Pattern Detected:
+├── Action: "گرفتن گزارش فروش از دیتابیس"
+├── Frequency: ۱۲ بار در ۳ روز
+├── Steps: همیشه یکسان
+├── Duration: ~۱۰ ثانیه
+└── Confidence: ۹۵٪
+
+Proposal:
+▶ "کاربر گرامی، 'گرفتن گزارش فروش' را ۱۲ بار تکرار کرده‌اید.
+   می‌خواهم آن را به Skill تبدیل کنم؟
+   مزیت: دفعه بعد در ۱ ثانیه انجام می‌شود"
+```
+
+---
+
+## ۸. Security & Sandbox
+
+| ویژگی | توضیح |
+|-------|--------|
+| **WASM Sandbox** | Pluginها در WebAssembly Sandbox اجرا می‌شوند |
+| **Permission System** | هر Plugin فقط دسترسی‌هایی که در manifest گفته دارد |
+| **Rate Limit** | محدودیت درخواست برای هر Plugin |
+| **Audit** | همه فعالیت‌های Plugin لاگ می‌شود |
+| **Kill Switch** | قابلیت غیرفعال کردن لحظه‌ای |
+
+---
+
+> **خلاصه:** Skill Engine + Plugin SDK = اکوسیستم. Agentها یاد می‌گیرند، مهارت می‌سازند، و توسعه‌دهندگان Plugin می‌نویسند. مثل WordPress اما برای AI Agentها.
