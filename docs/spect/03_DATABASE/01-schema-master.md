@@ -398,3 +398,11 @@ CREATE INDEX idx_memory_nodes_embedding
 ---
 
 > **خلاصه:** دیتابیس O₂N ترکیبی از PostgreSQL (داده اصلی + وکتور), Redis (کش + حافظه کوتاه), Neo4j (گراف حافظه) و MinIO (فایل‌ها) است. این ترکیب هم ACID را می‌دهد، هم جستجوی معنایی، هم گراف روابط و هم مقیاس‌پذیری.
+
+---
+
+## ۶. Billing & Marketplace (Credits/Coin)
+
+Schema مربوط به Wallet/Credits ledger، usage events و publisherها در فایل جدا نگهداری می‌شود:
+
+- `03_DATABASE/02-billing-schema.md`

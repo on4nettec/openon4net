@@ -235,6 +235,8 @@ Marketplace
 - امکان Free + Premium
 - Verified Publisher Program
 
+> جزئیات Credits/Coin داخلی، ledger و مدل قیمت‌گذاری پلاگین‌ها در `02_ARCHITECTURE/06-economy-and-marketplace.md` آمده است.
+
 ---
 
 ## ۷. Auto-Skill Detection

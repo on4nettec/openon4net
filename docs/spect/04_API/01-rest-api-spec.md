@@ -15,6 +15,9 @@
 | **Format** | JSON |
 | **Rate Limit** | ۱۰۰ req/min (free), ۱۰۰۰ req/min (paid) |
 
+> APIهای Billing/Credits و Marketplace/Publisher در فایل جدا آمده‌اند: `04_API/02-billing-and-marketplace-api.md`
+> APIهای Connectorها و ingestion حافظه در فایل جدا آمده‌اند: `04_API/03-connectors-memory-ingestion-api.md`
+
 ---
 
 ## ۲. Authentication
