@@ -9,7 +9,7 @@
 
 | اصل | توضیح |
 |-----|--------|
-| **TypeScript First** | همه کدها TypeScript، حتی backend |
+| **TypeScript First** | همه‌ی بک‌اندها و کلاینت وب TypeScript هستند. **استثنا:** کلاینت چندسکویی (`apps/openon4net-runtime/mobile`) با Flutter/Dart نوشته می‌شود؛ برای آن بخش، conventionهای Dart رسمی (نه این سند) مرجع است. |
 | **Test Coverage > 80%** | unit + integration + e2e |
 | **Documentation as Code** | TSDoc برای همه functions |
 | **Clean Code** | SOLID, DRY, KISS |
@@ -19,31 +19,11 @@
 
 ## ۲. ساختار پروژه
 
-```
-on4net/
-├── apps/
-│   ├── api/              # REST API (Fastify)
-│   ├── web/              # Dashboard (Next.js)
-│   ├── agent/            # Agent Runtime
-│   └── gateway/          # AI Gateway
-├── packages/
-│   ├── memory-engine/    # Memory Engine Core
-│   ├── skill-engine/     # Skill Engine
-│   ├── governance/       # Governance Service
-│   ├── ai-router/        # Model Router
-│   ├── plugin-sdk/       # Plugin SDK
-│   └── shared/           # Types, Utils
-├── tools/
-│   ├── cli/              # CLI Tool
-│   └── migrations/       # Database Migrations
-├── docker/
-│   ├── Dockerfile.api
-│   ├── Dockerfile.web
-│   └── docker-compose.yml
-└── docs/
-    ├── api/
-    └── architecture/
-```
+ساختار پوشه‌ها دیگر در این فایل تکرار نمی‌شود تا از drift بین اسناد جلوگیری شود.
+
+**مرجع واحد ساختار monorepo:** `02_ARCHITECTURE/14-monorepo-layout.md`
+
+آن سند ساختار plane-محور (`apps/openon4net-runtime`, `apps/openon4net-control-plane`, `apps/openon4net-memory`, `apps/openon4net-marketplace` + `packages/*` مشترک) را مشخص می‌کند، چون هر Plane واحد دیپلوی مستقلی با مالکیت و مدل مالی متفاوت است (Runtime رایگان/self-hosted روی سرور مشتری؛ بقیه SaaS مرکزی on4net). naming conventionهای زیر (فایل، کلاس، تابع و…) صرف‌نظر از اینکه کد در کدام app/package باشد، یکسان اعمال می‌شوند.
 
 ---
 
