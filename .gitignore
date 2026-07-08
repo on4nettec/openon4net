@@ -1,9 +1,20 @@
-# Ignore application code folders (requested)
-/apps/
+# Node / build artifacts (root + all packages)
+node_modules/
+dist/
+build/
+.next/
+.turbo/
+coverage/
+*.log
+.env
+.env.local
 
-# Ignore everything under /apps, but keep documentation READMEs
-/apps/*
-/openon4net-control-plane/
-/openon4net-marketplace/
-/openon4net-memory/
-/openon4net-runtime/
+# Not-yet-built planes (register as submodules when their sprint starts).
+# openon4net-runtime is NOT listed here — it is a registered git submodule.
+/apps/openon4net-control-plane/
+/apps/openon4net-memory/
+/apps/openon4net-marketplace/
+
+# OS
+.DS_Store
+Thumbs.db
