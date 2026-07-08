@@ -10,7 +10,7 @@ export default [
       "**/.next/**",
       "**/.turbo/**",
       "**/node_modules/**",
-      "apps/openon4net-runtime/**",
+      "**/next-env.d.ts",
     ],
   },
   {
