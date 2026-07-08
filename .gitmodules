@@ -1,0 +1,3 @@
+[submodule "apps/openon4net-runtime"]
+	path = apps/openon4net-runtime
+	url = git@github.com:on4nettec/openon4net-runtime.git
