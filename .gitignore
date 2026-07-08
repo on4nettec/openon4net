@@ -3,4 +3,7 @@
 
 # Ignore everything under /apps, but keep documentation READMEs
 /apps/*
-
+/openon4net-control-plane/
+/openon4net-marketplace/
+/openon4net-memory/
+/openon4net-runtime/
