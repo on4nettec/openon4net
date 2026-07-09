@@ -10,7 +10,7 @@ import type { UserRole } from '@o2n/shared';
  * backing table in Sprint 0's migrations and is a later-sprint upgrade.
  */
 export const ROLE_PERMISSIONS: Record<UserRole, string[]> = {
-  admin: ['agents:*', 'memory:*', 'audit:read', 'approvals:*', 'billing:wallet:read'],
+  admin: ['agents:*', 'memory:*', 'audit:read', 'approvals:*', 'billing:wallet:read', 'tools:*'],
   manager: [
     'agents:create',
     'agents:read',
@@ -20,11 +20,21 @@ export const ROLE_PERMISSIONS: Record<UserRole, string[]> = {
     'memory:write',
     'approvals:read',
     'approvals:approve',
+    'tools:read',
+    'tools:telegram-send',
   ],
-  editor: ['agents:read', 'agents:update', 'agents:chat', 'memory:read', 'memory:write'],
+  editor: [
+    'agents:read',
+    'agents:update',
+    'agents:chat',
+    'memory:read',
+    'memory:write',
+    'tools:read',
+    'tools:telegram-send',
+  ],
   // viewer is deliberately read-only: it can inspect agents/memory/audit but
-  // cannot chat (spends budget) or approve/reject anything.
-  viewer: ['agents:read', 'memory:read', 'audit:read'],
+  // cannot chat (spends budget), approve/reject, or execute tools.
+  viewer: ['agents:read', 'memory:read', 'audit:read', 'tools:read'],
 };
 
 export function hasPermission(role: UserRole, permission: string): boolean {

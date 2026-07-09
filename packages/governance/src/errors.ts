@@ -68,3 +68,10 @@ export class AgentNotActiveError extends O2NError {
     this.name = 'AgentNotActiveError';
   }
 }
+
+export class ToolExecutionError extends O2NError {
+  constructor(toolId: string, cause?: unknown) {
+    super('TOOL_EXECUTION_FAILED', `Tool ${toolId} failed to execute`, 502, cause);
+    this.name = 'ToolExecutionError';
+  }
+}

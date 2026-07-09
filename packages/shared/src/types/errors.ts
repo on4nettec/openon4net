@@ -12,6 +12,7 @@ export type ErrorCode =
   | 'RATE_LIMITED'
   | 'REQUIRES_APPROVAL'
   | 'AGENT_NOT_ACTIVE'
+  | 'TOOL_EXECUTION_FAILED'
   | 'INTERNAL_ERROR';
 
 export interface ErrorEnvelope {
