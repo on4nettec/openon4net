@@ -19,7 +19,10 @@ export const AgentCreateSchema = z.object({
   schedule: z.record(z.unknown()).default({}),
   kpiConfig: z.record(z.unknown()).default({}),
 });
+/** Post-validation shape (defaults already applied) — what server code works with after safeParse(). */
 export type AgentCreateInput = z.infer<typeof AgentCreateSchema>;
+/** Pre-validation shape — what a client actually needs to send; defaulted fields are optional. */
+export type AgentCreateRequest = z.input<typeof AgentCreateSchema>;
 
 export const AgentUpdateSchema = AgentCreateSchema.partial().extend({
   status: z.enum(['active', 'paused', 'archived', 'terminated']).optional(),

@@ -6,3 +6,4 @@ export * from './types/errors.js';
 
 export * from './schemas/agent.js';
 export * from './schemas/chat.js';
+export * from './schemas/auth.js';
