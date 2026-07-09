@@ -11,6 +11,7 @@ export type ErrorCode =
   | 'MODEL_UNAVAILABLE'
   | 'RATE_LIMITED'
   | 'REQUIRES_APPROVAL'
+  | 'AGENT_NOT_ACTIVE'
   | 'INTERNAL_ERROR';
 
 export interface ErrorEnvelope {

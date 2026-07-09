@@ -61,3 +61,10 @@ export class RateLimitedError extends O2NError {
     this.name = 'RateLimitedError';
   }
 }
+
+export class AgentNotActiveError extends O2NError {
+  constructor(agentId: string, status: string) {
+    super('AGENT_NOT_ACTIVE', `Agent ${agentId} is ${status}, not active`, 409);
+    this.name = 'AgentNotActiveError';
+  }
+}

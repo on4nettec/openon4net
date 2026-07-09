@@ -11,8 +11,17 @@ import type { UserRole } from '@o2n/shared';
  */
 export const ROLE_PERMISSIONS: Record<UserRole, string[]> = {
   admin: ['agents:*', 'memory:*', 'audit:read', 'approvals:*', 'billing:wallet:read'],
-  manager: ['agents:create', 'agents:read', 'agents:update', 'memory:read', 'memory:write'],
-  editor: ['agents:read', 'agents:update', 'memory:read', 'memory:write'],
+  manager: [
+    'agents:create',
+    'agents:read',
+    'agents:update',
+    'agents:chat',
+    'memory:read',
+    'memory:write',
+  ],
+  editor: ['agents:read', 'agents:update', 'agents:chat', 'memory:read', 'memory:write'],
+  // viewer is deliberately read-only: it can inspect agents/memory/audit but
+  // cannot chat (spends budget) or approve/reject anything.
   viewer: ['agents:read', 'memory:read', 'audit:read'],
 };
 
