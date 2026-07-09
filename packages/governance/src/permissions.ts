@@ -18,6 +18,8 @@ export const ROLE_PERMISSIONS: Record<UserRole, string[]> = {
     'agents:chat',
     'memory:read',
     'memory:write',
+    'approvals:read',
+    'approvals:approve',
   ],
   editor: ['agents:read', 'agents:update', 'agents:chat', 'memory:read', 'memory:write'],
   // viewer is deliberately read-only: it can inspect agents/memory/audit but
