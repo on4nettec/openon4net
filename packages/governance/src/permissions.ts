@@ -10,7 +10,15 @@ import type { UserRole } from '@o2n/shared';
  * backing table in Sprint 0's migrations and is a later-sprint upgrade.
  */
 export const ROLE_PERMISSIONS: Record<UserRole, string[]> = {
-  admin: ['agents:*', 'memory:*', 'audit:read', 'approvals:*', 'billing:wallet:read', 'tools:*'],
+  admin: [
+    'agents:*',
+    'memory:*',
+    'audit:read',
+    'approvals:*',
+    'billing:wallet:read',
+    'tools:*',
+    'config:write',
+  ],
   manager: [
     'agents:create',
     'agents:read',

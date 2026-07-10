@@ -9,3 +9,4 @@ export * from './schemas/agent.js';
 export * from './schemas/chat.js';
 export * from './schemas/auth.js';
 export * from './schemas/tool.js';
+export * from './schemas/config.js';
