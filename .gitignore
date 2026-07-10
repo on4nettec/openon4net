@@ -14,7 +14,7 @@ coverage/
 /apps/openon4net-control-plane/
 /apps/openon4net-memory/
 /apps/openon4net-marketplace/
-
+/apps/openon4net-runtime/
 # OS
 .DS_Store
 Thumbs.db
