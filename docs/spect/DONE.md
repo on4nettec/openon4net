@@ -22,13 +22,13 @@
 
 ## خلاصه وضعیت
 
-| بخش                               | وضعیت                                                                                                               |
-| --------------------------------- | ------------------------------------------------------------------------------------------------------------------- |
-| Runtime — Sprint 0 (T-001..T-008) | ۸ از ۸ تکمیل، همه تست‌شده                                                                                           |
-| Runtime — کارهای بعد از Sprint 0  | ۷ فیچر تکمیل، همه تست‌شده به‌جز ارسال واقعی تلگرام                                                                  |
-| Control Plane (Plane 2)           | CP-SP-01 + CP-SP-02 کد کامل، در workspace ثبت شده، ⚠️ lint/typecheck/build سبز (نه end-to-end)؛ T-CP-007 عمداً معلق |
-| Memory (Plane 3)                  | فقط اسکلت اولیه `service/` (Fastify+Zod، روت‌ها 501)                                                                |
-| Marketplace (Plane 4)             | شروع نشده — فقط README                                                                                              |
+| بخش                               | وضعیت                                                                                                                       |
+| --------------------------------- | --------------------------------------------------------------------------------------------------------------------------- |
+| Runtime — Sprint 0 (T-001..T-008) | ۸ از ۸ تکمیل، همه تست‌شده                                                                                                   |
+| Runtime — کارهای بعد از Sprint 0  | ۷ فیچر تکمیل، همه تست‌شده به‌جز ارسال واقعی تلگرام                                                                          |
+| Control Plane (Plane 2)           | CP-SP-01 + CP-SP-02 کامل و end-to-end با curl واقعی تأیید شده (CP-001)؛ فقط web در مرورگر و T-CP-007 (Runtime client) مونده |
+| Memory (Plane 3)                  | اسکلت اولیه `service/` (Fastify+Zod، روت‌ها 501) + CI پایه (🔧 نوشته شده، push نشده)                                        |
+| Marketplace (Plane 4)             | شروع نشده — فقط README                                                                                                      |
 
 ---
 
@@ -63,6 +63,7 @@
 | صفحه Roles & Permissions در داشبورد (UI برای RBAC بالا، قبلاً فقط curl)                                          | ✅         | ✅ با Playwright واقعی: چک‌باکس `agents:chat` روی نقش `editor` برداشته و ذخیره شد، بعد از reload صفحه هنوز غیرفعال بود (persist شدن تأیید شد)، بعد به حالت اول برگردونده شد و با query مستقیم DB مطابقت کامل با baseline تأیید شد                                                     |
 | مدیریت کاربران (`POST`/`GET /v1/users` + صفحه Users) — تکمیل RBAC با امکان ساخت کاربر دوم و sign-in به‌عنوان اون | ✅         | ✅ با Playwright واقعی: کاربر `viewer` جدید ساخته شد، با email همون کاربر (همون API key مشترک) لاگین شد، nav لینک‌های admin-only مخفی بودن، تلاش برای چت با پیام «Missing permission: agents:chat» درست رد شد — یعنی binding واقعی برای یک کاربر غیر از admin bootstrap هم کار می‌کنه |
 | Audit log viewer (RT-001: `GET /v1/audit` + صفحه Audit Log)                                                      | ✅         | ✅ با Playwright واقعی: یک چت واقعی فرستاده شد، همون لحظه ردیف `agent-chat` با نام agent (نه uuid خام)، status/model/cost درست، بالای لاگ ظاهر شد؛ pagination با شمارش واقعی (۱–۲۵ از ۳۱) روی تاریخچه‌ی واقعی این نشست کار کرد                                                        |
+| Workspace CRUD (RT-002: `GET`/`POST /v1/workspaces` + صفحه Workspaces + انتخاب‌گر workspace در فرم ساخت agent)   | ✅         | ✅ با Playwright واقعی: workspace دوم ساخته شد، توی picker فرم ساخت agent ظاهر شد، یک agent باهاش ساخته شد، و با join مستقیم DB تأیید شد `workspace_id` واقعاً به workspace جدید اشاره می‌کنه نه پیش‌فرض                                                                              |
 
 > **یادداشت CI — الگوی تکرارشونده (2026-07-10):** این دومین باره این اتفاق افتاده:
 >
@@ -86,44 +87,50 @@
 
 > شروع: 2026-07-09، به‌صراحت درخواست کاربر. همه‌چیز فقط داخل
 > `apps/openon4net-control-plane/` (بدون دست‌زدن به `openon4net-runtime`).
-> **2026-07-10:** با اجازه کاربر، `apps/openon4net-control-plane/{gateway,web}`
-> در `pnpm-workspace.yaml` ریشه ثبت شد (تنها تغییر لازم — `.gitignore` عمداً
-> دست‌نخورده موند، چون خودِ pnpm کاری به آن ندارد؛ ثبت این مسیر به‌عنوان
-> submodule واقعی یک تصمیم جدا و بزرگ‌تره که هنوز گرفته نشده). از همون لحظه
-> `pnpm turbo run lint typecheck test build` روی هر دو پکیج (و کل workspace)
-> سبز شد — به همین خاطر ردیف‌های زیر از 🔧 به ⚠️ ارتقا پیدا کردن: build/lint/typecheck
-> واقعاً تأیید شده، ولی رفتار runtime (curl واقعی به یک Postgres واقعی، یا باز کردن
-> صفحات در مرورگر) هنوز چک نشده.
+> **2026-07-10 (وصل به workspace):** با اجازه کاربر، `apps/openon4net-control-plane/{gateway,web}`
+> در `pnpm-workspace.yaml` ریشه ثبت شد؛ `pnpm turbo run lint typecheck test build`
+> روی هر دو پکیج و کل workspace سبز شد.
+> **2026-07-10 (CP-001 — اولین دور end-to-end واقعی):** یک دیتابیس واقعی
+> (`o2n_control_plane` روی همون Postgres بیرونی) ساخته و migrate شد، gateway
+> واقعاً بالا اومد، و کل مسیر issue-key → check-in → credit → wallet/transactions
+> با curl واقعی تأیید شد (جزئیات کامل پایین). به همین خاطر بیشتر ردیف‌های زیر
+> از ⚠️ به ✅ ارتقا پیدا کردن.
 
 ### CP-SP-01 — Foundation + Activation MVP
 
 | #        | تسک                                                                           | وضعیت         | تست                                                                                                                  |
 | -------- | ----------------------------------------------------------------------------- | ------------- | -------------------------------------------------------------------------------------------------------------------- |
-| T-CP-001 | اسکلت `gateway/` + `migrations/` + `docker-compose.yml`                       | ✅            | ⚠️ build سبز، اجرای واقعی نشده                                                                                       |
+| T-CP-001 | اسکلت `gateway/` + `migrations/` + `docker-compose.yml`                       | ✅            | ✅ gateway واقعاً روی Postgres واقعی بالا اومد و جواب داد (پایین‌تر جزئیات)                                          |
 | T-CP-002 | ثبت در `pnpm-workspace.yaml` ریشه                                             | ✅            | ✅ `pnpm install` + `pnpm turbo run lint typecheck test build` سبز، هم برای این دو پکیج هم کل workspace (۱۰/۱۰ task) |
-| T-CP-003 | Migrations: `organizations`/`activation_keys`/`wallets`/`credit_transactions` | ✅            | ⚠️ روی DB واقعی اجرا نشده                                                                                            |
-| T-CP-004 | App skeleton (Fastify) + health check                                         | ✅            | ⚠️ build سبز، اجرای واقعی نشده                                                                                       |
-| T-CP-005 | `POST /admin/activation-keys` (issue، admin-auth)                             | ✅            | ⚠️ build سبز، اجرای واقعی نشده                                                                                       |
-| T-CP-006 | `POST /activation/check-in`                                                   | ✅            | ⚠️ build سبز، اجرای واقعی نشده                                                                                       |
+| T-CP-003 | Migrations: `organizations`/`activation_keys`/`wallets`/`credit_transactions` | ✅            | ✅ روی یک Postgres واقعی (همون سرور بیرونی runtime، دیتابیس جدا `o2n_control_plane`) اجرا شد؛ هر ۴ جدول ساخته شدن    |
+| T-CP-004 | App skeleton (Fastify) + health check                                         | ✅            | ✅ `curl /health` → `{"status":"ok"}` (200)                                                                          |
+| T-CP-005 | `POST /admin/activation-keys` (issue، admin-auth)                             | ✅            | ✅ curl واقعی: org+wallet+key ساخته شد، کلید خام یک‌بار برگشت                                                        |
+| T-CP-006 | `POST /activation/check-in`                                                   | ✅            | ✅ curl واقعی: policy/thresholds درست مطابق پلن `team` برگشت                                                         |
 | T-CP-007 | کلاینت activation سمت Runtime                                                 | ❌ عمداً معلق | نیاز به اجازه صریح کاربر (تغییر در Runtime)                                                                          |
 | T-CP-008 | CI پایه (`.github/workflows/ci.yml`)                                          | ✅            | ❌ push واقعی برای تست انجام نشده                                                                                    |
 
 ### CP-SP-02 — Wallet Read-only + Policy Distribution + Web Panel
 
-| #        | تسک                                                                                                                                                             | وضعیت | تست                                                             |
-| -------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----- | --------------------------------------------------------------- |
-| T-CP-009 | `GET /billing/wallet`, `/billing/transactions` + admin manual-credit با idempotency                                                                             | ✅    | ⚠️ build/typecheck سبز، هیچ curl واقعی زده نشده                 |
-| T-CP-010 | Policy distribution (allowed models/providers + thresholds در پاسخ check-in)                                                                                    | ✅    | ⚠️ build/typecheck سبز، هیچ curl واقعی زده نشده                 |
-| T-CP-011 | Feature flags استاتیک per-plan (در همان پاسخ check-in)                                                                                                          | ✅    | ⚠️ build/typecheck سبز، هیچ curl واقعی زده نشده                 |
-| T-CP-012 | `web/` — صفحه فرود (`/`) + پنل ادمین (`/admin`, `/admin/new`, `/admin/organizations/[id]`)                                                                      | ✅    | ⚠️ `next build` سبز (۶ صفحه)، هیچ صفحه در مرورگر واقعی باز نشده |
-| T-CP-013 | Trace id (`X-Trace-Id` + child logger)                                                                                                                          | ✅    | ⚠️ build/typecheck سبز، هیچ curl واقعی زده نشده                 |
-| T-CP-014 | Rate limiting پایه (in-memory) روی activation/admin endpoints                                                                                                   | ✅    | ⚠️ build/typecheck سبز، رفتار واقعی rate-limit چک نشده          |
-| —        | _اضافه‌ی خارج از طرح اولیه:_ `GET /admin/organizations`, `GET /admin/organizations/:id` (لازم برای پنل ادمین — `/billing/*` فقط با کلید خودِ سازمان کار می‌کند) | ✅    | ⚠️ build/typecheck سبز، هیچ curl واقعی زده نشده                 |
+| #        | تسک                                                                                                                                                             | وضعیت | تست                                                                                                         |
+| -------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----- | ----------------------------------------------------------------------------------------------------------- |
+| T-CP-009 | `GET /billing/wallet`, `/billing/transactions` + admin manual-credit با idempotency                                                                             | ✅    | ✅ credit واقعی (0→10000)، replay همون idempotency key دوبار شارژ نکرد، transactions دقیقاً ۱ ردیف برگردوند |
+| T-CP-010 | Policy distribution (allowed models/providers + thresholds در پاسخ check-in)                                                                                    | ✅    | ✅ مقادیر پلن `team` (`approvalThresholdCents: 5000`, مدل‌های درست) دقیقاً مطابق کد در پاسخ واقعی برگشت     |
+| T-CP-011 | Feature flags استاتیک per-plan (در همان پاسخ check-in)                                                                                                          | ✅    | ✅ `{managedAiGateway:false, workflowEngine:false}` در پاسخ واقعی check-in تأیید شد                         |
+| T-CP-012 | `web/` — صفحه فرود (`/`) + پنل ادمین (`/admin`, `/admin/new`, `/admin/organizations/[id]`)                                                                      | ✅    | ⚠️ `next build` سبز (۶ صفحه)، هنوز هیچ صفحه در مرورگر واقعی باز نشده (CP-002 در TODO)                       |
+| T-CP-013 | Trace id (`X-Trace-Id` + child logger)                                                                                                                          | ✅    | ✅ `curl -D -` هدر `x-trace-id` با یک UUID واقعی روی هر پاسخ تأیید شد                                       |
+| T-CP-014 | Rate limiting پایه (in-memory) روی activation/admin endpoints                                                                                                   | ✅    | ⚠️ کد سر جاشه ولی به سقف نرسوندیم که واقعاً 429 بگیریم — رفتار مرزی هنوز تست نشده                           |
+| —        | _اضافه‌ی خارج از طرح اولیه:_ `GET /admin/organizations`, `GET /admin/organizations/:id` (لازم برای پنل ادمین — `/billing/*` فقط با کلید خودِ سازمان کار می‌کند) | ✅    | ✅ لیست + جزئیات (wallet + activation keys با `lastSeenAt` واقعی) هر دو با curl تأیید شدن                   |
+
+**نکته‌ی جانبی (2026-07-10):** برای ساخت دیتابیس `o2n_control_plane` یک مشکل زیرساختی از قبل موجود کشف شد: Postgres container بیرونی (`openon4net-runtime-postgres-1`) collation-version mismatch داره («template database was created using collation version 2.41, but the OS provides 2.36» — به‌احتمال زیاد به‌خاطر آپدیت سیستم بعد از init شدن `template1`). این مربوط به کد Control Plane نیست؛ فقط با `CREATE DATABASE ... TEMPLATE template0` دورش زده شد تا `template1` خراب دست‌نخورده بمونه. اگه بعداً `openon4net-runtime` هم بخواد دیتابیس جدید بسازه به همین مشکل می‌خوره.
+
+منفی‌های auth هم چک شدن: کلید ادمین غلط → 401 `UNAUTHORIZED`، کلید activation غلط → 401 `ACTIVATION_KEY_INVALID`، بدون هدر → 401 — هر سه با envelope خطای درست.
 
 ### باقی‌مانده
 
 - CP-SP-03 (Managed AI Gateway routing/failover) و CP-SP-04 (پرداخت واقعی) — عمداً شروع نشده، طبق backlog جزو Should/Later هستند نه MVP-lite.
 - `web/` هنوز docker-compose/Dockerfile ندارد (فقط `gateway/` دیپلوی می‌شود).
+- `web/` هنوز در مرورگر واقعی باز نشده (CP-002 در `docs/spect/TODO-openon4net-control-plane.md`).
+- Rate limiter هنوز به سقف نرسیده تا 429 واقعی دیده بشه.
 
 ---
 

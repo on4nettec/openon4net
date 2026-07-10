@@ -12,3 +12,4 @@ export * from './schemas/tool.js';
 export * from './schemas/config.js';
 export * from './schemas/role.js';
 export * from './schemas/user.js';
+export * from './schemas/workspace.js';

@@ -25,6 +25,8 @@ export const DEFAULT_ROLE_PERMISSIONS: Record<UserRole, string[]> = {
     'roles:write',
     'users:read',
     'users:write',
+    'workspaces:read',
+    'workspaces:write',
   ],
   manager: [
     'agents:create',
@@ -38,6 +40,9 @@ export const DEFAULT_ROLE_PERMISSIONS: Record<UserRole, string[]> = {
     'tools:read',
     'tools:telegram-send',
     'roles:read',
+    // manager can create agents, so it needs to see workspaces to pick one -
+    // not workspaces:write, creating a workspace stays admin-only.
+    'workspaces:read',
   ],
   editor: [
     'agents:read',
