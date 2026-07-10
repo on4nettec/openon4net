@@ -9,8 +9,9 @@ import type { UserRole } from '@o2n/shared';
  * (see gateway/src/routes/roles.ts), so a live org's permissions can now
  * diverge from these defaults — don't assume this map reflects current
  * behavior for an existing org. The richer org_admin/workspace_admin/…
- * role set from 02_ARCHITECTURE/10-rbac-and-policy.md, and its separate
- * ABAC "Policy Layer" (§6), are still not implemented.
+ * role set from 02_ARCHITECTURE/10-rbac-and-policy.md is still not
+ * implemented; its ABAC "Policy Layer" (§6) has a minimal cost/time-window
+ * subset as of RT-008 (see gateway/src/services/policy-service.ts).
  */
 export const DEFAULT_ROLE_PERMISSIONS: Record<UserRole, string[]> = {
   admin: [
@@ -27,6 +28,8 @@ export const DEFAULT_ROLE_PERMISSIONS: Record<UserRole, string[]> = {
     'users:write',
     'workspaces:read',
     'workspaces:write',
+    'policies:read',
+    'policies:write',
   ],
   manager: [
     'agents:create',
@@ -39,6 +42,7 @@ export const DEFAULT_ROLE_PERMISSIONS: Record<UserRole, string[]> = {
     'approvals:approve',
     'tools:read',
     'tools:telegram-send',
+    'tools:webhook-send',
     'roles:read',
     // manager can create agents, so it needs to see workspaces to pick one -
     // not workspaces:write, creating a workspace stays admin-only.
@@ -52,6 +56,7 @@ export const DEFAULT_ROLE_PERMISSIONS: Record<UserRole, string[]> = {
     'memory:write',
     'tools:read',
     'tools:telegram-send',
+    'tools:webhook-send',
   ],
   // viewer is deliberately read-only: it can inspect agents/memory/audit but
   // cannot chat (spends budget), approve/reject, or execute tools.
