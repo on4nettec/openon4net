@@ -63,14 +63,21 @@
 | صفحه Roles & Permissions در داشبورد (UI برای RBAC بالا، قبلاً فقط curl)                                          | ✅         | ✅ با Playwright واقعی: چک‌باکس `agents:chat` روی نقش `editor` برداشته و ذخیره شد، بعد از reload صفحه هنوز غیرفعال بود (persist شدن تأیید شد)، بعد به حالت اول برگردونده شد و با query مستقیم DB مطابقت کامل با baseline تأیید شد                                                     |
 | مدیریت کاربران (`POST`/`GET /v1/users` + صفحه Users) — تکمیل RBAC با امکان ساخت کاربر دوم و sign-in به‌عنوان اون | ✅         | ✅ با Playwright واقعی: کاربر `viewer` جدید ساخته شد، با email همون کاربر (همون API key مشترک) لاگین شد، nav لینک‌های admin-only مخفی بودن، تلاش برای چت با پیام «Missing permission: agents:chat» درست رد شد — یعنی binding واقعی برای یک کاربر غیر از admin bootstrap هم کار می‌کنه |
 
-> **یادداشت CI (2026-07-10):** اولین push این فیچر (`c388374`) روی GitHub Actions با خطای
-> «`@o2n/llm-providers` has no exported member `EmbeddingProvider`» fail شد. بررسی شد: در یک
-> clone کاملاً تازه (دقیقاً همون کامیت، همون `pnpm install --frozen-lockfile`، همون
-> `pnpm turbo run lint typecheck test build`) روی همین ماشین ۲۰/۲۰ task سبز شد — یعنی باگ
-> واقعی نبود، یک flake گذرا در ordering/cache روی runner گیت‌هاب بود (احتمالاً race توی
-> parallelism، نه مشکل `turbo.json`'s `dependsOn`). با یک commit خالی دوباره push شد و بار
-> دوم هر دو workflow سبز شدن (`5b4055d`). اگر دوباره تکرار شد، این یادداشت رو به‌روزرسانی کن —
-> اگر یک‌بار دیگه هم افتاد، دیگه "فلیک" نیست.
+> **یادداشت CI — الگوی تکرارشونده (2026-07-10):** این دومین باره این اتفاق افتاده:
+>
+> - بار اول (`c388374`، فیچر vector search): «`@o2n/llm-providers` has no exported member `EmbeddingProvider`»
+> - بار دوم (`9dd8aea`، فیچر user management): «`@o2n/shared` has no exported member `UserCreateSchema`/`UserCreateInput`»
+>
+> هر دو بار الگوی مشترک: یک export جدید به یک پکیج dependency (`packages/*`) اضافه شده و
+> همون commit توی `@o2n/gateway` مصرف شده؛ CI روی مرحله typecheck با «no exported member»
+> fail کرده. هر دو بار: یک clone کاملاً تازه از همون commit دقیق (همون
+> `pnpm install --frozen-lockfile`، همون `pnpm turbo run lint typecheck test build`) روی این
+> ماشین ۲۰/۲۰ سبز شد، و یک push خالی (بدون تغییر کد) روی GitHub Actions بار دوم سبز شد
+> (`5b4055d`، `73fed0f`). `turbo.json`'s `dependsOn: ["^build"]` درسته و این رابطه رو داره؛
+> فرضیه فعلی: race نامعین در scheduling/parallelism روی runner گیت‌هاب (شاید مختص Linux —
+> تست‌های محلی همه روی Windows بودن). **ریشه‌کن نشده** — اگر یک بار سوم هم با همین امضا
+> افتاد، لازمه به‌جای retrigger صرف، یک راه‌حل ساختاری بررسی بشه (مثلاً `TURBO_CONCURRENCY=1`
+> در `ci.yml`، یا یک retry step صریح).
 
 ---
 
