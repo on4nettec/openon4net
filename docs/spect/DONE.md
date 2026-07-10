@@ -27,7 +27,7 @@
 | Runtime — Sprint 0 (T-001..T-008) | ۸ از ۸ تکمیل، همه تست‌شده                                                                                                   |
 | Runtime — کارهای بعد از Sprint 0  | ۷ فیچر تکمیل، همه تست‌شده به‌جز ارسال واقعی تلگرام                                                                          |
 | Control Plane (Plane 2)           | CP-SP-01 + CP-SP-02 کامل و end-to-end با curl واقعی تأیید شده (CP-001)؛ فقط web در مرورگر و T-CP-007 (Runtime client) مونده |
-| Memory (Plane 3)                  | اسکلت اولیه `service/` (Fastify+Zod، روت‌ها 501) + CI پایه (🔧 نوشته شده، push نشده)                                        |
+| Memory (Plane 3)                  | اسکلت اولیه `service/` (Fastify+Zod، روت‌ها 501) + CI پایه + `Dockerfile.service` (همه 🔧 نوشته شده، نه build/push شده)     |
 | Marketplace (Plane 4)             | شروع نشده — فقط README                                                                                                      |
 
 ---
@@ -65,21 +65,21 @@
 | Audit log viewer (RT-001: `GET /v1/audit` + صفحه Audit Log)                                                      | ✅         | ✅ با Playwright واقعی: یک چت واقعی فرستاده شد، همون لحظه ردیف `agent-chat` با نام agent (نه uuid خام)، status/model/cost درست، بالای لاگ ظاهر شد؛ pagination با شمارش واقعی (۱–۲۵ از ۳۱) روی تاریخچه‌ی واقعی این نشست کار کرد                                                        |
 | Workspace CRUD (RT-002: `GET`/`POST /v1/workspaces` + صفحه Workspaces + انتخاب‌گر workspace در فرم ساخت agent)   | ✅         | ✅ با Playwright واقعی: workspace دوم ساخته شد، توی picker فرم ساخت agent ظاهر شد، یک agent باهاش ساخته شد، و با join مستقیم DB تأیید شد `workspace_id` واقعاً به workspace جدید اشاره می‌کنه نه پیش‌فرض                                                                              |
 
-> **یادداشت CI — الگوی تکرارشونده (2026-07-10):** این دومین باره این اتفاق افتاده:
+> **یادداشت CI — حل شد (2026-07-10):** سه بار همین الگوی دقیق افتاد:
 >
-> - بار اول (`c388374`، فیچر vector search): «`@o2n/llm-providers` has no exported member `EmbeddingProvider`»
-> - بار دوم (`9dd8aea`، فیچر user management): «`@o2n/shared` has no exported member `UserCreateSchema`/`UserCreateInput`»
+> - بار اول (`c388374`، vector search): «`@o2n/llm-providers` has no exported member `EmbeddingProvider`»
+> - بار دوم (`9dd8aea`، user management): «`@o2n/shared` has no exported member `UserCreateSchema`»
+> - بار سوم (`631bdcb`، workspace CRUD): «`@o2n/shared` has no exported member `WorkspaceCreateSchema`»
 >
-> هر دو بار الگوی مشترک: یک export جدید به یک پکیج dependency (`packages/*`) اضافه شده و
-> همون commit توی `@o2n/gateway` مصرف شده؛ CI روی مرحله typecheck با «no exported member»
-> fail کرده. هر دو بار: یک clone کاملاً تازه از همون commit دقیق (همون
-> `pnpm install --frozen-lockfile`، همون `pnpm turbo run lint typecheck test build`) روی این
-> ماشین ۲۰/۲۰ سبز شد، و یک push خالی (بدون تغییر کد) روی GitHub Actions بار دوم سبز شد
-> (`5b4055d`، `73fed0f`). `turbo.json`'s `dependsOn: ["^build"]` درسته و این رابطه رو داره؛
-> فرضیه فعلی: race نامعین در scheduling/parallelism روی runner گیت‌هاب (شاید مختص Linux —
-> تست‌های محلی همه روی Windows بودن). **ریشه‌کن نشده** — اگر یک بار سوم هم با همین امضا
-> افتاد، لازمه به‌جای retrigger صرف، یک راه‌حل ساختاری بررسی بشه (مثلاً `TURBO_CONCURRENCY=1`
-> در `ci.yml`، یا یک retry step صریح).
+> هر سه بار: یک export جدید به یک پکیج `packages/*` اضافه شده و همون commit توی
+> `@o2n/gateway` مصرف شده؛ یک clone کاملاً تازه از همون commit همیشه محلی ۲۰/۲۰ سبز بود.
+> طبق قولی که بار دوم دادیم، بار سوم به‌جای retrigger صرف یک راه‌حل ساختاری اعمال شد:
+> `ci.yml` تغییر کرد از یک `pnpm turbo run lint typecheck test build` واحد به دو دستور
+> جدا — اول `pnpm turbo run build` تا آخر اجرا کامل بشه، بعد `pnpm turbo run lint typecheck
+test` جدا (`511a4e3`). این هرگونه ابهام رو حذف می‌کنه: وقتی دستور دوم شروع می‌شه، همه‌ی
+> `dist/`ها قطعاً روی دیسک هستن، فارغ از اینکه دلیل دقیق race توی scheduler خودِ turbo روی
+> این runner چی بوده. بعد از این تغییر: سبز شد. اگر دوباره تکرار شد، یعنی این فرض هم غلط
+> بوده و باید عمیق‌تر بررسی بشه.
 
 ---
 
