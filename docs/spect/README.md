@@ -3,7 +3,7 @@
 > **شرکت:** on4net
 > **محصول:** AI Operating System شرکتی
 > **آخرین بروزرسانی:** July 2026
-> **فایل‌ها:** ۴۸ | **حجم:** ~۶۰۰KB
+> **فایل‌ها:** ۴۹ | **حجم:** ~۶۰۰KB
 
 ---
 
@@ -25,7 +25,7 @@ docs/spect/
 ├── 01_ROADMAP/ (۱ فایل)
 │   └── 01-roadmap-12-months.md   ✅ | ۶ فاز · ۴۸ هفته · تحویل هر فاز
 │
-├── 02_ARCHITECTURE/ (۱۵ فایل)
+├── 02_ARCHITECTURE/ (۱۶ فایل)
 │   ├── 01-system-overview.md     ✅ | معماری کلی، Tech Stack، Data Flow
 │   ├── 02-ai-gateway.md          ✅ | Model Router · Cost · Failover
 │   ├── 03-skill-engine.md        ✅ | Skill Engine + Plugin SDK + Marketplace
@@ -41,6 +41,7 @@ docs/spect/
 │   └── 13-four-plane-architecture.md ✅ | معماری ۴ بخش (Runtime/AI Control/Memory/Marketplace)
 │   └── 14-monorepo-layout.md      ✅ | ساختار monorepo و نام سرویس‌ها بر اساس ۴ Plane
 │   └── 15-rbac-default-matrix.md  ✅ | ماتریس نقش/دسترسی پیش‌فرض (MVP)
+│   └── 16-authentication-modes.md ✅ | روش‌های ورود (چندحالته، قابل تنظیم با env)
 │
 ├── 03_DATABASE/ (۲ فایل)
 │   ├── 01-schema-master.md       ✅ | PostgreSQL + Redis + Neo4j کامل
@@ -86,12 +87,12 @@ docs/spect/
 
 ## آمار نهایی
 
-| شاخص | مقدار |
-|------|-------|
-| **فایل‌ها** | ۴۸ |
-| **حجم کل** | ~۶۰۰KB |
-| **بخش‌ها** | ۱۰ از ۱۰ تکمیل ✅ |
-| **عمق متوسط** | ~۱۲KB per file |
-| **وضعیت** | ✅ کامل |
+| شاخص          | مقدار             |
+| ------------- | ----------------- |
+| **فایل‌ها**   | ۴۹                |
+| **حجم کل**    | ~۶۰۰KB            |
+| **بخش‌ها**    | ۱۰ از ۱۰ تکمیل ✅ |
+| **عمق متوسط** | ~۱۲KB per file    |
+| **وضعیت**     | ✅ کامل           |
 
 ---

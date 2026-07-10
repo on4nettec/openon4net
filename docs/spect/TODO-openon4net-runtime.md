@@ -38,9 +38,38 @@
 
 | #      | تسک                                                                         | یادداشت                                                                                                                                                                                                                                             |
 | ------ | --------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| RT-011 | یکپارچگی واقعی Vault/secret manager (T-009)                                 | جایگزین نسخه‌ی فعلی MVP (env-first + envelope encryption در خودِ DB)؛ برای production/enterprise واقعی                                                                                                                                              |
-| RT-012 | per-user credential واقعی (پسورد/توکن جدا به‌جای یک API key مشترک org-wide) | تغییر در مدل auth؛ الان فقط email تعیین می‌کنه کدوم کاربر، همه یک کلید مشترک دارن                                                                                                                                                                   |
+| RT-011 | یکپارچگی واقعی Vault/secret manager (T-009)                                 | ✅ تصمیم گرفته شد و طراحی مشخص در `02_ARCHITECTURE/11-secrets-and-key-management.md` §4.1 — تفصیلی شده به **RT-019/RT-020** پایین                                                                                                                   |
+| RT-012 | per-user credential واقعی (پسورد/توکن جدا به‌جای یک API key مشترک org-wide) | ✅ انجام شد — RT-014..RT-018 پایین همه ✅. `DEV_API_KEY` مشترک هنوز وجود داره اما حالا یکی از چند provider هست و پیش‌فرض production بی‌خطره (RT-018)                                                                                                |
 | RT-013 | حافظه معنایی لایه‌های ۳-۶ + Memory Graph (Neo4j)                            | **این عملاً به‌جای اینجا، توی `TODO-openon4net-memory.md` بخش C (MEM-008/009/010) پیگیری می‌شه** — طبق `03-memory-engine.md` §8، لایه‌های بلندمدت می‌تونن به سرویس مدیریت‌شده (Plane 3) منتقل بشن. اینجا فقط برای یادآوری لینک شده، کار تکراری نیست |
+
+---
+
+## بخش D — Authentication Modes (از `02_ARCHITECTURE/16-authentication-modes.md`، 2026-07-10 اضافه شد)
+
+> طراحی: یک Auth Method Registry provider-based — چند روش ورود می‌تونن هم‌زمان فعال باشن
+> (`AUTH_METHODS_ENABLED` در env)، خروجی همه یکی‌ست (session/JWT واحد + همون RBAC فعلی).
+> RT-014 زیرساخت پایه‌ست و بقیه بهش وابسته‌ن — ترتیب منطقی همون ترتیب شماره‌هاست.
+
+| #      | تسک                                                                                                                                                                              | یادداشت                                                                                                                                                     | وضعیت |
+| ------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------- | :---: |
+| RT-014 | Auth Method Registry (`AUTH_METHODS_ENABLED`/`AUTH_METHODS_DEFAULT`/`AUTH_ALLOW_DEV_METHODS` + provider interface + fail-fast اگه لیست خالیه + audit `auth_method` روی هر login) | ✅ انجام شد — `gateway/src/auth/registry.ts` + `env.ts`'s `superRefine`؛ `/v1/auth/methods` هم اضافه شد. جزئیات در `DONE.md`                                |  ✅   |
+| RT-015 | Password provider (`argon2id`, `PASSWORD_MIN_LENGTH`, rate-limit/lockout روی login، مسیر `set-password` برای کاربرهای قدیمی بدون پسورد)                                          | ✅ انجام شد — `@node-rs/argon2`، Redis-backed lockout (۵ تلاش/۱۵ دقیقه)، جزئیات در `DONE.md`                                                                |  ✅   |
+| RT-016 | Magic Link provider (`SMTP_*`, `EMAIL_FROM`, توکن یک‌بارمصرف کوتاه‌عمر قابل revoke)                                                                                              | ✅ انجام شد و end-to-end با یک MailHog واقعی تست شد (نه فقط کد) — جزئیات در `DONE.md`. پیش‌فرض غیرفعال چون SMTP واقعی نداریم                                |  ✅   |
+| RT-017 | OAuth/OIDC provider (`OAUTH_PROVIDERS=google,github` + callback + map به user داخلی با email+subject)                                                                            | ✅ کد کامل، تست شده تا حدی که بدون یک Google/GitHub app واقعی ممکنه (مسیر start/state/callback واقعاً به Google زده شد) — همون بلاک RT-005، پیش‌فرض غیرفعال |  ✅   |
+| RT-018 | سخت‌گیری Dev API Key (فقط با `AUTH_ALLOW_DEV_METHODS=true` و `NODE_ENV=development`؛ برای prod یا حذف کامل یا bootstrap-admin یک‌بارمصرف بعد disable)                            | ✅ انجام شد — یک باگ واقعی همینجا پیدا و فیکس شد (`z.coerce.boolean()` رو "false" رو `true` می‌خوند)، جزئیات در `DONE.md`                                   |  ✅   |
+
+---
+
+## بخش E — KMS Multi-Provider (از `02_ARCHITECTURE/11-secrets-and-key-management.md` §4.1، 2026-07-10 اضافه شد)
+
+> طراحی: چند KMS provider می‌تونن هم‌زمان فعال باشن (`SECRETS_KMS_ENABLED_PROVIDERS`)، ولی نوشتن‌های
+> جدید همیشه با provider «اصلی» (`SECRETS_KMS_PRIMARY_PROVIDER`) رمزنگاری می‌شن؛ خوندن بر اساس
+> `provider_id` ذخیره‌شده در متادیتای خودِ هر secret انجام می‌شه (+ مسیر مهاجرت re-encrypt-on-read).
+
+| #      | تسک                                                                                                                                     | یادداشت                                                                                                                                                                                             | وضعیت |
+| ------ | --------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | :---: |
+| RT-019 | KMS Provider Registry (env config + متادیتای `provider_id`/`key_id`/`version` روی هر secret رمزنگاری‌شده + fallback/re-encrypt-on-read) | زیرساخت پایه — provider «env» فعلی (`CONFIG_ENCRYPTION_KEY`, AES-256-GCM) باید به این الگو منتقل بشه تا provider بعدی (RT-020) قابل‌اضافه‌شدن بشه، بدون دست‌زدن به secrets قدیمی                    |  ❌   |
+| RT-020 | ⚠️ Vault provider واقعی (HashiCorp Vault Transit — `VAULT_ADDR`/`VAULT_TOKEN`/`VAULT_TRANSIT_KEY`)                                      | نیاز به یک **container جدید در `docker-compose.yml`** (وابستگی زیرساختی جدید برای یک محصول self-hosted) — این یکی هنوز نیاز به تأیید صریح داره قبل از شروع، چون نصب کاربر نهایی رو پیچیده‌تر می‌کنه |  ❌   |
 
 ---
 

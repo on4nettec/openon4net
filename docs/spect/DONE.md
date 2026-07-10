@@ -26,7 +26,7 @@
 | بخش                               | وضعیت                                                                                                                                                                                                                                                                                        |
 | --------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | Runtime — Sprint 0 (T-001..T-008) | ۸ از ۸ تکمیل، همه تست‌شده                                                                                                                                                                                                                                                                    |
-| Runtime — کارهای بعد از Sprint 0  | ۱۲ فیچر تکمیل (RT-001..RT-004 + RT-006..RT-010)، همه تست‌شده به‌جز ارسال واقعی تلگرام                                                                                                                                                                                                        |
+| Runtime — کارهای بعد از Sprint 0  | ۱۷ فیچر تکمیل (RT-001..RT-004 + RT-006..RT-010 + RT-014..RT-018)، همه تست‌شده به‌جز ارسال واقعی تلگرام و OAuth با یک app واقعی Google/GitHub                                                                                                                                                 |
 | Control Plane (Plane 2)           | CP-SP-01+02 کامل، curl واقعی (CP-001) + ۲۳ تست vitest (CP-003/005) + Docker واقعی (CP-004، ۲ باگ preexisting فیکس شد) + صفحه‌بندی/جستجو (CP-005)؛ مونده: تعامل مرورگر با `web/` (CP-002) و T-CP-007                                                                                          |
 | Memory (Plane 3)                  | اسکلت اولیه `service/` (Fastify+Zod، روت‌ها 501) + CI پایه + `Dockerfile.service` + تست همه‌ی routeها + auth با `MEMORY_API_KEY` + trace_id propagate (🔧 نوشته شده، نه build/run شده) + `API.md` مستندسازی کامل (✅)                                                                        |
 | Marketplace (Plane 4)             | اسکلت واقعی `service/` (Fastify+pg، نه فقط 501) — migration (publishers/plugins/plugin_versions/plugin_reviews/plugin_installs)، submit/list/discover/install routes، ۱۴ تست vitest روی DB واقعی، CI + Docker واقعی build/run شد (✅ end-to-end تأیید شده با curl؛ جزئیات: MKT-002..MKT-006) |
@@ -89,6 +89,53 @@
 > **قاعده‌ی درست از این به بعد:** وقتی یک تسک export جدیدی به `packages/*` اضافه می‌کنه
 > که همون submodule commit مصرفش می‌کنه، commit روت باید **قبل از** push کردن submodule
 > push بشه، نه بعدش.
+
+---
+
+## Auth Method Registry — RT-014..RT-018 (2026-07-10، از `docs/spect/TODO-openon4net-runtime.md` بخش D)
+
+> طراحی از `02_ARCHITECTURE/16-authentication-modes.md` (اضافه شده توسط کاربر همین روز):
+> یک provider registry که چند روش ورود می‌تونن هم‌زمان فعال باشن (`AUTH_METHODS_ENABLED`)،
+> همه به یک session/JWT یکسان ختم می‌شن. `routes/auth.ts` قدیمی حذف و به
+> `gateway/src/auth/{registry,session,types,providers/*}.ts` منتقل شد.
+
+| #      | تسک                                                                                              | وضعیت | تست                                                                                                                                                                                                                                                                                                                                                      |
+| ------ | ------------------------------------------------------------------------------------------------ | ----- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| RT-014 | Auth Method Registry + `/v1/auth/methods` + fail-fast در `env.ts`                                | ✅    | ✅ `/v1/auth/methods` واقعی برگردوند `{enabled:["dev_api_key","password"],default:"password"}`؛ فایل login audit (`user-login`) با `authMethod`/`ip`/`userAgent` واقعی تأیید شد                                                                                                                                                                          |
+| RT-015 | Password provider (`@node-rs/argon2`، `/v1/auth/password/{login,set}`، lockout با Redis)         | ✅    | ✅ set-password → login موفق؛ رمز غلط → پیام عمومی «Invalid email or password» (هم برای org ناموجود هم user ناموجود، ضد enumeration)؛ ۵ تلاش ناموفق → قفل ۱۵ دقیقه‌ای، حتی رمز درست هم رد شد (429)؛ audit هم موفق هم ناموفق (با `reason`) ثبت شد                                                                                                         |
+| RT-016 | Magic Link provider (`nodemailer`، توکن ۳۲بایتی هش‌شده، انقضای ۱۵ دقیقه)                         | ✅    | ✅ end-to-end واقعی با یک container موقت MailHog: request → ایمیل واقعی با توکن رسید (استخراج از quoted-printable body) → verify → session صادر شد؛ استفاده مجدد از همون توکن رد شد؛ درخواست برای ایمیل ناموجود پیام یکسان داد و **هیچ ایمیلی نفرستاد** (ضد enumeration)                                                                                 |
+| RT-017 | OAuth/OIDC provider (google/github، state در Redis، `/v1/auth/oauth/:provider/{start,callback}`) | ✅    | ✅ `/start` واقعاً redirect کرد به `accounts.google.com` با `redirect_uri` درستِ per-provider؛ state در Redis ذخیره شد؛ `/callback` با state نامعتبر/تکراری/mismatch رد شد؛ با client id/secret فیک واقعاً به Google زده شد و HTTP 401 واقعی برگشت (نه mock) — تست کامل با app واقعی Google/GitHub بلاک هست (نیاز به client id/secret واقعی، مثل RT-005) |
+| RT-018 | سخت‌گیری Dev API Key (`AUTH_ALLOW_DEV_METHODS` + `NODE_ENV`)                                     | ✅    | ✅ ۶ سناریو تست شد (جدول پایین) — شامل یک **باگ واقعی که همینجا پیدا و فیکس شد**                                                                                                                                                                                                                                                                         |
+
+**باگ واقعی پیدا و فیکس شد (RT-018 تست):** `AUTH_ALLOW_DEV_METHODS: z.coerce.boolean().default(false)` —
+`z.coerce.boolean()` فقط `Boolean(value)` صدا می‌زنه، و در جاوااسکریپت `Boolean("false")` هم `true`
+است (چون رشته‌ی غیرخالیه)! یعنی نوشتن `AUTH_ALLOW_DEV_METHODS=false` توی `.env` واقعاً این فلگ امنیتی
+حیاتی رو **فعال** می‌کرد، نه غیرفعال. با یک `boolEnv()` helper که `"true"`/`"false"` رو literal پارس
+می‌کنه فیکس شد (همون فیکس برای `SMTP_SECURE` هم اعمال شد چون همون الگو رو داشت). تست ماتریس بعد از فیکس:
+
+| #   | سناریو                                                                    | نتیجه                                               |
+| --- | ------------------------------------------------------------------------- | --------------------------------------------------- |
+| 1   | `AUTH_ALLOW_DEV_METHODS="false"` + `NODE_ENV=development`                 | ✅ startup fail (قبل از فیکس: اشتباهاً start می‌شد) |
+| 2   | `AUTH_ALLOW_DEV_METHODS` unset (پیش‌فرض false) + `NODE_ENV=development`   | ✅ startup fail                                     |
+| 3   | `AUTH_ALLOW_DEV_METHODS="true"` + `NODE_ENV=production`                   | ✅ startup fail                                     |
+| 4   | `AUTH_ALLOW_DEV_METHODS="true"` + `NODE_ENV` unset (پیش‌فرض production)   | ✅ startup fail                                     |
+| 5   | `AUTH_ALLOW_DEV_METHODS="true"` + `NODE_ENV=development` (تنها ترکیب امن) | ✅ start موفق                                       |
+| 6   | `AUTH_METHODS_ENABLED=""`                                                 | ✅ startup fail                                     |
+
+**side note دیگه (نه باگ، طراحی):** یک fetch به `oauth2.googleapis.com` یک بار با DNS failure واقعی
+مواجه شد (شبکه/DNS این محیط، نه کد ما) و بدون try/catch به یک 500 خام تبدیل می‌شد. اضافه‌شدن `safeFetch()`
+همون خطا رو به یک `ValidationError` (400) واضح تبدیل می‌کنه — همون الگوی موجود در
+`connectors/webhook-connector.ts` برای خطاهای شبکه‌ی بیرونی.
+
+پس‌زمینه دیگه تست‌شده: backward-compat کامل — `dev_api_key` (مسیر قدیمی `/v1/auth/token`) با
+Playwright واقعی از صفحه login تا صفحه Agents تأیید شد که هیچ رگرسیونی نداشت.
+
+### باقی‌مانده
+
+- RT-016/RT-017 پیش‌فرض غیرفعال‌ان (نیاز به SMTP/OAuth-app واقعی برای production دارن) — کد کامل و تست‌شده تا جایی که بدون credential واقعی ممکنه.
+- OAuth real end-to-end (با یک app واقعی ثبت‌شده در Google/GitHub console و مرورگر واقعی از مسیر consent) هنوز تست نشده — دقیقاً همون بلاک RT-005 (نیاز به credential از کاربر).
+- Login UI (`web/app/(auth)/login/page.tsx`) هنوز فقط `dev_api_key` رو پشتیبانی می‌کنه — یک صفحه‌ی چندروشی (که از `/v1/auth/methods` بخونه) جزو scope این batch نبود، فالو-آپ طبیعیه.
+- `set-password` فقط self-service است؛ مسیر `admin-invite` سند (بخش ۶) ساخته نشده.
 
 ---
 

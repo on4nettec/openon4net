@@ -7,13 +7,13 @@
 
 ## ۱. اصول امنیتی
 
-| اصل | توضیح |
-|-----|--------|
-| **Least Privilege** | هر Agent و Plugin حداقل دسترسی لازم |
-| **Defense in Depth** | چند لایه امنیتی |
-| **Zero Trust** | هیچ درخواستی پیش‌فرض قابل اعتماد نیست |
+| اصل                    | توضیح                                     |
+| ---------------------- | ----------------------------------------- |
+| **Least Privilege**    | هر Agent و Plugin حداقل دسترسی لازم       |
+| **Defense in Depth**   | چند لایه امنیتی                           |
+| **Zero Trust**         | هیچ درخواستی پیش‌فرض قابل اعتماد نیست     |
 | **Encrypt Everything** | داده در حال انتقال و در حال ذخیره رمز شود |
-| **Audit Everything** | همه چیز لاگ شود |
+| **Audit Everything**   | همه چیز لاگ شود                           |
 
 ## ۲. Authentication & Authorization
 
@@ -37,6 +37,7 @@ Workspace Service:
 ```
 
 ### API Key Format:
+
 ```
 o2n_xxxxx_xxxxxxxxxxxxxxxxxxxxxxx
 ├── prefix: o2n_
@@ -46,21 +47,23 @@ o2n_xxxxx_xxxxxxxxxxxxxxxxxxxxxxx
 
 ## ۳. Plugin Security
 
-| لایه | تدبیر امنیتی |
-|------|-------------|
-| **Sandbox** | WASM Sandbox برای اجرای Pluginها |
+| لایه            | تدبیر امنیتی                                    |
+| --------------- | ----------------------------------------------- |
+| **Sandbox**     | WASM Sandbox برای اجرای Pluginها                |
 | **Permissions** | Manifest-based: Plugin فقط دسترسی‌های اعلام شده |
-| **Validation** | Static analysis قبل از انتشار |
-| **Rate Limit** | محدودیت درخواست برای هر Plugin |
-| **Kill Switch** | غیرفعالسازی لحظه‌ای توسط Admin |
-| **Audit** | همه فعالیت‌های Plugin لاگ می‌شود |
+| **Validation**  | Static analysis قبل از انتشار                   |
+| **Rate Limit**  | محدودیت درخواست برای هر Plugin                  |
+| **Kill Switch** | غیرفعالسازی لحظه‌ای توسط Admin                  |
+| **Audit**       | همه فعالیت‌های Plugin لاگ می‌شود                |
 
 > Spec اجرایی Sandbox (levels, host functions, metering, network policy) در: `02_ARCHITECTURE/09-plugin-sandbox.md`
 > Threat Model (STRIDE) در: `08_CODING_STANDARD/04-threat-model.md`
 > RBAC/Policy model در: `02_ARCHITECTURE/10-rbac-and-policy.md`
 > Secrets/KMS strategy در: `02_ARCHITECTURE/11-secrets-and-key-management.md`
+> Authentication modes (multi-method, env-driven) در: `02_ARCHITECTURE/16-authentication-modes.md`
 
 ### Permission Levels:
+
 ```yaml
 permissions:
   http:read:       # GET requests
@@ -74,14 +77,14 @@ permissions:
 
 ## ۴. Data Security
 
-| داده | روش رمزنگاری |
-|------|-------------|
-| API Keys | Encrypted at rest (AES-256-GCM) |
-| Passwords | Argon2id hash |
-| Tokens | JWT with RS256 |
-| Messages in transit | TLS 1.3 |
-| Database | Encryption at rest |
-| Files in MinIO | Server-side encryption |
+| داده                | روش رمزنگاری                    |
+| ------------------- | ------------------------------- |
+| API Keys            | Encrypted at rest (AES-256-GCM) |
+| Passwords           | Argon2id hash                   |
+| Tokens              | JWT with RS256                  |
+| Messages in transit | TLS 1.3                         |
+| Database            | Encryption at rest              |
+| Files in MinIO      | Server-side encryption          |
 
 ## ۵. Network Security
 
@@ -112,12 +115,12 @@ Internal Network (VPC)
 
 ## ۷. Compliance
 
-| استاندارد | وضعیت هدف |
-|-----------|----------|
-| SOC 2 | تا v1.0 |
-| GDPR | از روز اول |
-| HIPAA | Enterprise |
-| ISO 27001 | v2.0 |
+| استاندارد | وضعیت هدف  |
+| --------- | ---------- |
+| SOC 2     | تا v1.0    |
+| GDPR      | از روز اول |
+| HIPAA     | Enterprise |
+| ISO 27001 | v2.0       |
 
 ---
 
