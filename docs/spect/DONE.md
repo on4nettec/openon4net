@@ -61,6 +61,15 @@
 | DB-backed RBAC («minimum» مدل `10-rbac-and-policy.md` §4/§8: `roles`/`role_permissions`/`user_role_bindings`) | ✅         | ✅ backfill برای orgهای موجود تأیید شد؛ سناریوی کامل زنده: نقش `editor` ویرایش شد (حذف `agents:chat`) و همون JWT بدون logout مجدد فوراً 403 گرفت                                                                                                                               |
 | جستجوی معنایی حافظه (pgvector، Layer 2 — `03-memory-engine.md` ADR-002)                                       | ✅         | ✅ دو کوئری بدون هیچ overlap کلمه‌ای با پیام هدف («which software dev tool…» → پیام Python، «hot climate in Iranian cities» → پیام آب‌وهوای تهران) درست پیدا شدن؛ همون کوئری‌ها روی ILIKE صفر نتیجه دادن (اثبات semantic بودن)؛ حالت غیرفعال (fallback به ILIKE) هم جدا تست شد |
 
+> **یادداشت CI (2026-07-10):** اولین push این فیچر (`c388374`) روی GitHub Actions با خطای
+> «`@o2n/llm-providers` has no exported member `EmbeddingProvider`» fail شد. بررسی شد: در یک
+> clone کاملاً تازه (دقیقاً همون کامیت، همون `pnpm install --frozen-lockfile`، همون
+> `pnpm turbo run lint typecheck test build`) روی همین ماشین ۲۰/۲۰ task سبز شد — یعنی باگ
+> واقعی نبود، یک flake گذرا در ordering/cache روی runner گیت‌هاب بود (احتمالاً race توی
+> parallelism، نه مشکل `turbo.json`'s `dependsOn`). با یک commit خالی دوباره push شد و بار
+> دوم هر دو workflow سبز شدن (`5b4055d`). اگر دوباره تکرار شد، این یادداشت رو به‌روزرسانی کن —
+> اگر یک‌بار دیگه هم افتاد، دیگه "فلیک" نیست.
+
 ---
 
 ## Control Plane (Plane 2) — `docs/sprint-plan/04_control-plane-backlog.md`
