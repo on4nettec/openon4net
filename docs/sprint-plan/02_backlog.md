@@ -3,10 +3,13 @@
 > این بک‌لاگ باید مستقیم از Specهای `docs/spect/` تغذیه شود.
 > هدف: یک مسیر روشن از **Epic → Story → Task → Sprint**.
 >
+> **این سند فقط `apps/openon4net-runtime` (Plane 1) را پوشش می‌دهد.** برای `apps/openon4net-control-plane` (Plane 2) به `docs/sprint-plan/04_control-plane-backlog.md` مراجعه کنید (namespace شناسه جدا: `E-06#`/`T-CP-###`).
+>
 > لینک‌ها:
 >
 > - Storyboard: `docs/sprint-plan/01_storyboard.md`
 > - Sprint plan + tasks: `docs/sprint-plan/03_sprint-plan.md`
+> - Control Plane backlog: `docs/sprint-plan/04_control-plane-backlog.md`
 > - Traceability: `docs/sprint-plan/traceability.md`
 
 ---

@@ -23,21 +23,21 @@
 | `docs/spect/02_ARCHITECTURE/03-skill-engine.md`               | E-020, E-021                      | SP-08..SP-10                           |
 | `docs/spect/02_ARCHITECTURE/04-agent-communication.md`        | E-003, E-034                      | SP-02, SP-15                           |
 | `docs/spect/02_ARCHITECTURE/05-workflow-engine.md`            | E-034                             | SP-15                                  |
-| `docs/spect/02_ARCHITECTURE/06-economy-and-marketplace.md`    | E-024, E-040                      | SP-11, SP-16                           |
+| `docs/spect/02_ARCHITECTURE/06-economy-and-marketplace.md`    | E-024, E-040, E-062, E-064 (CP)   | SP-11, SP-16, CP-SP-02, CP-SP-04       |
 | `docs/spect/02_ARCHITECTURE/07-connectors-and-tools.md`       | E-043                             | SP-19                                  |
 | `docs/spect/02_ARCHITECTURE/08-observability-otel.md`         | E-005, E-052                      | SP-02, SP-22                           |
 | `docs/spect/02_ARCHITECTURE/09-plugin-sandbox.md`             | E-023, E-022                      | SP-11                                  |
 | `docs/spect/02_ARCHITECTURE/10-rbac-and-policy.md`            | E-006, E-032                      | SP-03, SP-13                           |
 | `docs/spect/02_ARCHITECTURE/11-secrets-and-key-management.md` | E-006, E-050                      | SP-01, SP-20                           |
 | `docs/spect/02_ARCHITECTURE/12-marketplace-service.md`        | E-024, E-040                      | SP-11, SP-16                           |
-| `docs/spect/02_ARCHITECTURE/13-four-plane-architecture.md`    | E-001                             | SP-00                                  |
-| `docs/spect/02_ARCHITECTURE/14-monorepo-layout.md`            | E-001                             | SP-00                                  |
+| `docs/spect/02_ARCHITECTURE/13-four-plane-architecture.md`    | E-001, E-060..E-065 (CP)          | SP-00, CP-SP-01..CP-SP-04              |
+| `docs/spect/02_ARCHITECTURE/14-monorepo-layout.md`            | E-001, E-060 (CP)                 | SP-00, CP-SP-01                        |
 | `docs/spect/02_ARCHITECTURE/15-rbac-default-matrix.md`        | E-006, E-031                      | SP-03, SP-12                           |
 | `docs/spect/03_DATABASE/01-schema-master.md`                  | E-010..E-014                      | SP-04..SP-07                           |
 | `docs/spect/03_DATABASE/02-billing-schema.md`                 | E-040                             | SP-16                                  |
 | `docs/spect/04_API/00-openapi-v0.1.yaml`                      | E-003, E-010, E-024               | SP-00..SP-11                           |
 | `docs/spect/04_API/01-rest-api-spec.md`                       | E-003                             | SP-00..SP-02                           |
-| `docs/spect/04_API/02-billing-and-marketplace-api.md`         | E-040                             | SP-16                                  |
+| `docs/spect/04_API/02-billing-and-marketplace-api.md`         | E-040, E-062, E-064 (CP)          | SP-16, CP-SP-02, CP-SP-04              |
 | `docs/spect/04_API/03-connectors-memory-ingestion-api.md`     | E-043                             | SP-19                                  |
 | `docs/spect/05_DECISIONS/01-adr-index.md`                     | E-001..E-053                      | SP-00..SP-23 (به‌روزرسانی در طول مسیر) |
 | `docs/spect/06_MEETINGS/01-template.md`                       | E-001                             | SP-00                                  |

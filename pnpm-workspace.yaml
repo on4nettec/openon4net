@@ -1,4 +1,6 @@
 packages:
   - 'apps/openon4net-runtime/gateway'
   - 'apps/openon4net-runtime/web'
+  - 'apps/openon4net-control-plane/gateway'
+  - 'apps/openon4net-control-plane/web'
   - 'packages/*'
