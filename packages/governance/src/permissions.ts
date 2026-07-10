@@ -1,15 +1,18 @@
 import type { UserRole } from '@o2n/shared';
 
 /**
- * Hardcoded role -> permission map for Sprint 0. No `roles`/`policies` DB
- * tables exist yet (see docs/spect/09_TASKS/00-claude-build-pack.md §5 —
- * "Auth: در MVP می‌تواند ساده باشد"). Keyed on `users.role` as actually
- * defined in docs/spect/03_DATABASE/01-schema-master.md §2.1
- * (admin/manager/editor/viewer), not the richer org_admin/workspace_admin/…
- * set from 02_ARCHITECTURE/10-rbac-and-policy.md — that full model has no
- * backing table in Sprint 0's migrations and is a later-sprint upgrade.
+ * Seed data only: what each of the 4 system roles is granted when a new
+ * organization is bootstrapped (see gateway/src/services/org-service.ts) —
+ * copied into the DB's `role_permissions` table (migrations/0007_rbac.sql),
+ * which is the actual runtime source of truth as of that migration. Roles
+ * are per-organization and editable from `PUT /v1/roles/:id/permissions`
+ * (see gateway/src/routes/roles.ts), so a live org's permissions can now
+ * diverge from these defaults — don't assume this map reflects current
+ * behavior for an existing org. The richer org_admin/workspace_admin/…
+ * role set from 02_ARCHITECTURE/10-rbac-and-policy.md, and its separate
+ * ABAC "Policy Layer" (§6), are still not implemented.
  */
-export const ROLE_PERMISSIONS: Record<UserRole, string[]> = {
+export const DEFAULT_ROLE_PERMISSIONS: Record<UserRole, string[]> = {
   admin: [
     'agents:*',
     'memory:*',
@@ -18,6 +21,8 @@ export const ROLE_PERMISSIONS: Record<UserRole, string[]> = {
     'billing:wallet:read',
     'tools:*',
     'config:write',
+    'roles:read',
+    'roles:write',
   ],
   manager: [
     'agents:create',
@@ -30,6 +35,7 @@ export const ROLE_PERMISSIONS: Record<UserRole, string[]> = {
     'approvals:approve',
     'tools:read',
     'tools:telegram-send',
+    'roles:read',
   ],
   editor: [
     'agents:read',
@@ -45,8 +51,8 @@ export const ROLE_PERMISSIONS: Record<UserRole, string[]> = {
   viewer: ['agents:read', 'memory:read', 'audit:read', 'tools:read'],
 };
 
-export function hasPermission(role: UserRole, permission: string): boolean {
-  const granted = ROLE_PERMISSIONS[role] ?? [];
+/** Pure wildcard-aware check against an already-resolved permission list (from DB — see gateway/src/services/permission-service.ts). */
+export function hasPermission(granted: string[], permission: string): boolean {
   const [resource] = permission.split(':');
   return granted.includes(permission) || granted.includes(`${resource}:*`);
 }
