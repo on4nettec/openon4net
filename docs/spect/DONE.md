@@ -66,21 +66,22 @@
 | Workspace CRUD (RT-002: `GET`/`POST /v1/workspaces` + صفحه Workspaces + انتخاب‌گر workspace در فرم ساخت agent)   | ✅         | ✅ با Playwright واقعی: workspace دوم ساخته شد، توی picker فرم ساخت agent ظاهر شد، یک agent باهاش ساخته شد، و با join مستقیم DB تأیید شد `workspace_id` واقعاً به workspace جدید اشاره می‌کنه نه پیش‌فرض                                                                              |
 | ساخت/حذف نقش سفارشی (RT-003: `POST`/`DELETE /v1/roles`)                                                          | ✅         | ✅ با Playwright + curl مستقیم: نقش سفارشی ساخته و حذف شد از UI؛ هر دو guard سمت سرور مستقیماً تست شد (نه فقط مخفی‌شدن دکمه) — حذف نقش سیستمی → 400، حذف نقش با binding فعال → 400، بعد از حذف binding → 204                                                                          |
 
-> **یادداشت CI — حل شد (2026-07-10):** سه بار همین الگوی دقیق افتاد:
+> **یادداشت CI — ریشه‌ی واقعی پیدا شد (2026-07-10):** چهار بار همین خطای ظاهری افتاد
+> («`@o2n/gateway` has no exported member ...») و هر بار پیش‌فرض غلطی گرفتیم که «flake
+> گذرا»ست. ریشه‌ی واقعی خیلی ساده‌تر بود: توی این نشست، الگوی همیشگی این بود که اول
+> commit داخل submodule (`openon4net-runtime`) push بشه، بعد جداگانه commit روت
+> (`openon4net`, که export جدید `packages/shared`/`packages/llm-providers` توش هست) push
+> بشه. چون CI با push به submodule تریگر می‌شه و اون لحظه هنوز parent repo روی GitHub
+> export جدید رو نداره، CI واقعاً و به‌درستی fail می‌کرد — نه یک race توی scheduler.
+> retrigger «های موفق» قبلی صرفاً به این خاطر سبز می‌شدن که تا اون لحظه commit روت هم
+> push شده بود، نه به خاطر اینکه چیزی «حل» شده بود. تغییر `ci.yml` (`511a4e3`، جدا کردن
+> build از lint/typecheck/test) یک بهبود بی‌ضرر بود ولی مشکل واقعی رو حل نکرده بود —
+> بار چهارم (`fd5949b`، RT-003) با همون علت دقیق دوباره fail کرد، و با یک retrigger _بعد_
+> از push شدن commit روت (`7b98906`) سبز شد که همین فرضیه رو تأیید کرد.
 >
-> - بار اول (`c388374`، vector search): «`@o2n/llm-providers` has no exported member `EmbeddingProvider`»
-> - بار دوم (`9dd8aea`، user management): «`@o2n/shared` has no exported member `UserCreateSchema`»
-> - بار سوم (`631bdcb`، workspace CRUD): «`@o2n/shared` has no exported member `WorkspaceCreateSchema`»
->
-> هر سه بار: یک export جدید به یک پکیج `packages/*` اضافه شده و همون commit توی
-> `@o2n/gateway` مصرف شده؛ یک clone کاملاً تازه از همون commit همیشه محلی ۲۰/۲۰ سبز بود.
-> طبق قولی که بار دوم دادیم، بار سوم به‌جای retrigger صرف یک راه‌حل ساختاری اعمال شد:
-> `ci.yml` تغییر کرد از یک `pnpm turbo run lint typecheck test build` واحد به دو دستور
-> جدا — اول `pnpm turbo run build` تا آخر اجرا کامل بشه، بعد `pnpm turbo run lint typecheck
-test` جدا (`511a4e3`). این هرگونه ابهام رو حذف می‌کنه: وقتی دستور دوم شروع می‌شه، همه‌ی
-> `dist/`ها قطعاً روی دیسک هستن، فارغ از اینکه دلیل دقیق race توی scheduler خودِ turbo روی
-> این runner چی بوده. بعد از این تغییر: سبز شد. اگر دوباره تکرار شد، یعنی این فرض هم غلط
-> بوده و باید عمیق‌تر بررسی بشه.
+> **قاعده‌ی درست از این به بعد:** وقتی یک تسک export جدیدی به `packages/*` اضافه می‌کنه
+> که همون submodule commit مصرفش می‌کنه، commit روت باید **قبل از** push کردن submodule
+> push بشه، نه بعدش.
 
 ---
 
