@@ -23,6 +23,8 @@ export const DEFAULT_ROLE_PERMISSIONS: Record<UserRole, string[]> = {
     'config:write',
     'roles:read',
     'roles:write',
+    'users:read',
+    'users:write',
   ],
   manager: [
     'agents:create',
