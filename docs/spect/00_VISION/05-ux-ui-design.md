@@ -8,11 +8,13 @@
 ## ۱. فلسفه طراحی
 
 ### O₂N باید حس شود مثل:
+
 - **یک فضای کار زنده** — نه یک ابزار
 - **یک تیم از همکاران** — نه یک ربات
 - **آرامش و کنترل** — نه هرج و مرج
 
 ### اصول طراحی:
+
 ```
 ┌─────────────────────────────────────────┐
 │           اصول طراحی O₂N                 │
@@ -41,6 +43,7 @@
 ## ۱.۱ چندزبانه (RTL/LTR)
 
 O₂N از روز اول باید چندزبانه باشد:
+
 - UI باید هم **RTL** (فارسی/عربی) و هم **LTR** (انگلیسی/ترکی) را درست پشتیبانی کند.
 - تاریخ/عدد/واحد پول باید بر اساس locale کاربر format شود.
 - متن‌های UI نباید hardcode شوند و باید از سیستم i18n استفاده کنند.
@@ -50,6 +53,7 @@ O₂N از روز اول باید چندزبانه باشد:
 ## ۲. Color Palette
 
 ### Primary Colors:
+
 ```
 Primary Blue:   #2563EB (آرامش، اعتماد)
 Primary Dark:   #1D4ED8
@@ -62,6 +66,7 @@ Info Sky:      #0EA5E9
 ```
 
 ### Neutrals:
+
 ```
 Background:     #F8FAFC
 Surface:        #FFFFFF
@@ -72,6 +77,7 @@ Text Muted:     #94A3B8
 ```
 
 ### Agent Role Colors:
+
 ```
 CEO:            #8B5CF6 (بنفش)
 Marketing:      #EC4899 (صورتی)
@@ -89,11 +95,13 @@ SEO:            #D946EF (ارغوانی)
 ## ۳. Typography
 
 ### Font Stack:
+
 ```css
 font-family: 'Vazirmatn', 'Inter', system-ui, sans-serif;
 ```
 
 ### Sizes:
+
 ```
 Display:    48px / 60px  (h1, Hero)
 Heading 1:  36px / 44px  (h2, Page Title)
@@ -141,6 +149,7 @@ Caption:    12px / 16px  (labels, timestamps)
 ```
 
 ### Sidebar Navigation:
+
 ```
 🏠  Home / Dashboard
 📊  Analytics
@@ -203,7 +212,27 @@ Caption:    12px / 16px  (labels, timestamps)
 └──────────────────────────────────────────────────┘
 ```
 
+### ۵.۱ ساختار صفحه Chat (Runtime) — Agent / Session / Workspace
+
+صفحه‌ی Chat باید از نظر UX شبیه تصویر مرجع باشد:
+
+- **پنل چپ (Control):**
+  - دکمه `+ New session`
+  - انتخاب Agent (dropdown)
+  - کنار dropdown یک دکمه‌ی جدید `+` (فقط برای admin) که **مدال ساخت Agent** را باز می‌کند
+  - لیست sessionها (هر Agent چند session) + Recent
+- **پنل وسط:** مکالمه (streaming + rich messages + approvals + skill suggestions)
+- **پنل راست (Workspace):**
+  - فایل‌های workspace مربوط به همان Agent/session
+  - مسیر/درخت فایل + عملیات پایه (refresh, open)
+
+قواعد i18n:
+
+- بر اساس زبان انتخابی (`locale`) صفحه باید **RTL/LTR** شود (ترجیحاً با `dir` روی ریشه صفحه).
+- در حالت RTL: پنل چپ/راست باید mirror شوند (Control سمت راست، Workspace سمت چپ) یا حداقل ترتیب و alignment اجزا RTL صحیح باشد.
+
 ### ویژگی‌های Chat:
+
 - **Typing Indicator:** "Marketing Agent در حال فکر کردن..."
 - **Response Streaming:** پاسخ کلمه به کلمه نمایش داده شود
 - **Rich Responses:** Agent می‌تواند عکس، جدول، دکمه، لینک بفرستد
@@ -259,6 +288,7 @@ Caption:    12px / 16px  (labels, timestamps)
 ## ۷. Mobile Responsive
 
 ### Mobile View:
+
 ```
 ┌──────────────────────────┐
 │  🔍 O₂N          🤖 سروش│
@@ -286,6 +316,7 @@ Caption:    12px / 16px  (labels, timestamps)
 ```
 
 ### Breakpoints:
+
 ```
 Mobile:     < 768px
 Tablet:     768 - 1024px
@@ -298,6 +329,7 @@ Wide:       > 1440px
 ## ۸. Loading & Empty States
 
 ### Loading State:
+
 ```
 ┌──────────────────────────────────┐
 │  Marketing Agent در حال فکر کردن │
@@ -308,6 +340,7 @@ Wide:       > 1440px
 ```
 
 ### Empty State:
+
 ```
 ┌──────────────────────────────────┐
 │                                  │
@@ -322,6 +355,7 @@ Wide:       > 1440px
 ```
 
 ### Error State:
+
 ```
 ┌──────────────────────────────────┐
 │  ⚠️  ارتباط با Agent قطع شد      │
@@ -334,14 +368,36 @@ Wide:       > 1440px
 
 ## ۹. Animation Principles
 
-| مورد | روش | زمان |
-|------|------|------|
-| **Agent Response** | Fade in + slide up | ۳۰۰ms |
-| **Status Change** | Smooth color transition | ۲۰۰ms |
-| **Page Transition** | Fade | ۲۰۰ms |
-| **Notification** | Slide in from right | ۴۰۰ms |
-| **Loading** | Pulsing dots | ۱.۵s loop |
-| **Hover** | Subtle scale + shadow | ۱۵۰ms |
+---
+
+## ۱۰. Settings & Branding
+
+### ۱۰.۱) شخصی‌سازی لوگو (Brand Logo)
+
+در Settings کاربر/ادمین بتواند لوگوی سازمان را برای شخصی‌سازی UI اضافه کند:
+
+- محل نمایش:
+  - هدر/سایدبار (کنار نام محصول)
+  - صفحه login (در صورت فعال بودن)
+  - صفحات اصلی داشبورد/چت (کم‌اهمیت‌تر)
+- قوانین:
+  - آپلود تصویر (`png`, `svg`, `jpg`) با محدودیت سایز (مثلاً ≤ 1MB) و ابعاد پیشنهادی (مثلاً 256×256)
+  - پشتیبانی از دو نسخه‌ی **Light/Dark** (اختیاری)
+  - fallback به لوگوی پیش‌فرض اگر لوگو حذف شود یا خطا داشته باشد
+- دسترسی:
+  - تغییر لوگو باید permission‌محور باشد (پیشنهاد: `branding:update`) و در MVP حداقل فقط برای admin مجاز باشد
+  - همه‌ی تغییرات باید audit شوند (چه کسی، چه زمانی، چه فایلی)
+
+> نکته: اگر چند tenant داریم، این لوگو باید در scope سازمان/Workspace ذخیره شود (نه global).
+
+| مورد                | روش                     | زمان      |
+| ------------------- | ----------------------- | --------- |
+| **Agent Response**  | Fade in + slide up      | ۳۰۰ms     |
+| **Status Change**   | Smooth color transition | ۲۰۰ms     |
+| **Page Transition** | Fade                    | ۲۰۰ms     |
+| **Notification**    | Slide in from right     | ۴۰۰ms     |
+| **Loading**         | Pulsing dots            | ۱.۵s loop |
+| **Hover**           | Subtle scale + shadow   | ۱۵۰ms     |
 
 ---
 

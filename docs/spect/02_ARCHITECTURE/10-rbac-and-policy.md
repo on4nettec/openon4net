@@ -8,6 +8,7 @@
 ## ۱) هدف
 
 O₂N سازمان‌محور است؛ پس authorization باید:
+
 - multi-tenant و قابل enforce باشد
 - برای انسان و agent و plugin یکپارچه باشد
 - budget/approval را هم به عنوان policy در نظر بگیرد
@@ -16,19 +17,25 @@ O₂N سازمان‌محور است؛ پس authorization باید:
 
 ## ۲) Scopes (حوزه‌ها)
 
-| Scope | توضیح |
-|------|-------|
-| Organization | tenant اصلی |
-| Workspace | زیرمجموعه‌ی org |
-| Agent | Digital Employee |
-| Plugin Install | instance از plugin داخل workspace |
+| Scope             | توضیح                              |
+| ----------------- | ---------------------------------- |
+| Organization      | tenant اصلی                        |
+| Workspace         | زیرمجموعه‌ی org                    |
+| Agent             | Digital Employee                   |
+| Plugin Install    | instance از plugin داخل workspace  |
 | Connector Install | اتصال خارجی در scope workspace/org |
+
+> نکته: در UI/محصول «workspace» دو معنا دارد:
+>
+> 1. **Workspace سازمانی** (tenant scope) که در این سند و مدل RBAC ملاک است.
+> 2. **Agent Workspace (فایل/پروژه)** که محیط کاری فایل‌محور هر Agent است و می‌تواند ۱:۱ با یک workspace سازمانی نگاشت شود (در MVP).
 
 ---
 
 ## ۳) Principals (فاعل‌ها)
 
 فاعل‌ها:
+
 - `user` (انسان)
 - `agent` (Digital Employee)
 - `plugin` (کد ثالث، همیشه در context یک install)
@@ -41,6 +48,7 @@ O₂N سازمان‌محور است؛ پس authorization باید:
 ## ۴) RBAC پایه (Minimum)
 
 ### ۴.۱) نقش‌های انسانی پیشنهادی
+
 - `org_admin`
 - `workspace_admin`
 - `manager`
@@ -50,6 +58,7 @@ O₂N سازمان‌محور است؛ پس authorization باید:
 - `security_admin`
 
 ### ۴.۲) نقش‌های agent
+
 - `ceo`
 - `marketing`
 - `sales`
@@ -67,24 +76,34 @@ O₂N سازمان‌محور است؛ پس authorization باید:
 permissionها به شکل string تعریف می‌شوند و هم برای user و هم agent/plugin استفاده می‌شوند:
 
 نمونه‌ها:
+
 - `agents:create`, `agents:read`, `agents:update`, `agents:pause`
+- `agents:access:grant`, `agents:access:revoke` (مدیریت دسترسی کاربران به Agentها)
 - `memory:read`, `memory:write`, `memory:delete`, `memory:export`
 - `audit:read`
 - `approvals:read`, `approvals:approve`, `approvals:reject`
 - `billing:wallet:read`, `billing:topup:create`, `billing:transactions:read`
 - `plugins:install`, `plugins:enable`, `plugins:publish`
 - `connectors:install`, `connectors:sync`, `connectors:revoke`
+- `branding:update` (شخصی‌سازی UI مثل لوگوی سازمان)
 - `social:post`, `marketing:ads:write`
 
+قانون محصول (MVP):
+
+- **ساخت/حذف/ویرایش Agent فقط توسط admin** انجام می‌شود (حداقل: `org_admin` و `workspace_admin`).
+- کاربران غیرادمین می‌توانند با policy مجاز، **Skill بسازند/ارتقا دهند**؛ اما «اتصال Skill/Tool به Agent» باید قابل کنترل و audit باشد.
+
 قانون: **plugin** فقط permissionهایی را دارد که:
-1) در manifest درخواست کرده
-2) در install approve شده
+
+1. در manifest درخواست کرده
+2. در install approve شده
 
 ---
 
 ## ۶) Policy Layer (ABAC سبک)
 
 RBAC کافی نیست. Policyها باید بتوانند شرایط اضافه کنند:
+
 - `cost` (credits)
 - `layer` (memory layer)
 - `resource tags` (confidential)
@@ -92,28 +111,29 @@ RBAC کافی نیست. Policyها باید بتوانند شرایط اضافه
 - `environment` (on-prem only)
 
 نمونه policy:
+
 ```yaml
 policy:
-  id: "social-post-approval"
+  id: 'social-post-approval'
   when:
-    permission: "social:post"
+    permission: 'social:post'
   then:
     requires_approval: true
-    audit_level: "full"
+    audit_level: 'full'
 
 policy:
-  id: "high-cost-approval"
+  id: 'high-cost-approval'
   when:
     estimated_credits_gt: 500
   then:
     requires_approval: true
 
 policy:
-  id: "personal-memory-protect"
+  id: 'personal-memory-protect'
   when:
     memory_layer: 5
   then:
-    allow_only_user_id: "$resource.owner_user_id"
+    allow_only_user_id: '$resource.owner_user_id'
 ```
 
 ---
@@ -121,6 +141,7 @@ policy:
 ## ۷) Enforcement Points (کجا enforce می‌شود؟)
 
 Enforcement باید server-side باشد:
+
 - API Gateway: authn + rate limit
 - Service handlers: org/workspace ownership + permission check
 - Governance service/module: budget + approval policy
@@ -159,6 +180,7 @@ CREATE TABLE user_role_bindings (
 ```
 
 Policyها می‌توانند در JSONB نگهداری شوند:
+
 ```sql
 CREATE TABLE policies (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -173,4 +195,3 @@ CREATE TABLE policies (
 ---
 
 > **خلاصه:** O₂N از RBAC برای پایه و از policy layer برای شرایط (cost/layer/tags/env) استفاده می‌کند. enforce باید در gateway+services+governance+plugin host functions انجام شود.
-

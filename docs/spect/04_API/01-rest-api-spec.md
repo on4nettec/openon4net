@@ -7,12 +7,12 @@
 
 ## ۱. اصول API
 
-| ویژگی | مقدار |
-|--------|--------|
-| **Protocol** | REST + WebSocket (real-time) |
-| **Base URL** | `https://api.on4net.com/v1` |
-| **Auth** | Bearer Token (JWT) |
-| **Format** | JSON |
+| ویژگی          | مقدار                                   |
+| -------------- | --------------------------------------- |
+| **Protocol**   | REST + WebSocket (real-time)            |
+| **Base URL**   | `https://api.on4net.com/v1`             |
+| **Auth**       | Bearer Token (JWT)                      |
+| **Format**     | JSON                                    |
 | **Rate Limit** | ۱۰۰ req/min (free), ۱۰۰۰ req/min (paid) |
 
 > APIهای Billing/Credits و Marketplace/Publisher در فایل جدا آمده‌اند: `04_API/02-billing-and-marketplace-api.md`
@@ -20,6 +20,7 @@
 > قرارداد اجرایی (OpenAPI) در فایل جدا آمده است: `04_API/00-openapi-v0.1.yaml`
 
 ### Tenant Headers (برای multi-tenant)
+
 - `X-Organization-Id` (اجباری در اکثر endpointها)
 - `X-Workspace-Id` (اختیاری؛ برای scope دقیق‌تر)
 
@@ -28,6 +29,7 @@
 ## ۲. Authentication
 
 ### دریافت Token
+
 ```
 POST /auth/token
 {
@@ -38,6 +40,7 @@ POST /auth/token
 ```
 
 ### استفاده
+
 ```
 Authorization: Bearer eyJ...
 X-Organization-Id: org-xxx
@@ -48,6 +51,7 @@ X-Organization-Id: org-xxx
 ## ۳. Agents API
 
 ### ۳.۱ لیست Agentها
+
 ```
 GET /agents
 → {
@@ -69,6 +73,9 @@ GET /agents
 ```
 
 ### ۳.۲ ایجاد Agent
+
+> نیازمند permission: `agents:create` (در MVP فقط admin).
+
 ```
 POST /agents
 {
@@ -86,10 +93,13 @@ POST /agents
 ```
 
 ### ۳.۳ ارسال پیام به Agent
+
 ```
 POST /agents/{agent_id}/chat
 {
     "message": "یک کمپین تخفیف تابستونه طراحی کن",
+    "conversation_id": "conv-456", // اختیاری؛ اگر نباشد یک session جدید ساخته می‌شود
+    "locale": "fa-IR", // اختیاری؛ اگر نباشد از تنظیمات user/workspace می‌آید
     "context": {
         "project_id": "proj-123",
         "urgency": "high"
@@ -105,6 +115,7 @@ POST /agents/{agent_id}/chat
 ```
 
 ### ۳.۴ استریم پاسخ (Server-Sent Events)
+
 ```
 POST /agents/{agent_id}/chat/stream
 {
@@ -129,11 +140,66 @@ POST /agents/{agent_id}/chat/stream
    }
 ```
 
+### ۳.۵ Sessions (Conversations) API
+
+> UI به این‌ها «session» می‌گوید. هر Agent می‌تواند چند session داشته باشد.
+
+#### ۳.۵.۱ لیست sessionهای یک Agent
+
+```
+GET /agents/{agent_id}/sessions
+→ {
+  "sessions": [
+    { "id": "conv-456", "title": "main", "updated_at": "2026-07-10T18:51:00Z" }
+  ]
+}
+```
+
+#### ۳.۵.۲ ساخت session جدید برای یک Agent
+
+```
+POST /agents/{agent_id}/sessions
+{
+  "title": "telegram",
+  "locale": "fa-IR"
+}
+→ { "session": { "id": "conv-789", "title": "telegram" } }
+```
+
+#### ۳.۵.۳ تغییر عنوان session
+
+```
+PATCH /sessions/{session_id}
+{ "title": "project alpha" }
+→ { "status": "ok" }
+```
+
+#### ۳.۵.۴ آرشیو/حذف session
+
+```
+DELETE /sessions/{session_id}
+→ { "status": "deleted" }
+```
+
+### ۳.۶ Agent Access (Grant/Revoke)
+
+> هر کاربر می‌تواند به یک یا چند Agent دسترسی داشته باشد. مدیریت دسترسی نیازمند admin است.
+
+```
+POST /agents/{agent_id}/access/grant
+{ "user_id": "user-123", "access_role": "member" }
+→ { "status": "granted" }
+
+DELETE /agents/{agent_id}/access/{user_id}
+→ { "status": "revoked" }
+```
+
 ---
 
 ## ۴. Memory API
 
 ### ۴.۱ نوشتن در حافظه
+
 ```
 POST /memory/write
 {
@@ -154,6 +220,7 @@ POST /memory/write
 ```
 
 ### ۴.۲ جستجوی حافظه
+
 ```
 POST /memory/search
 {
@@ -185,6 +252,7 @@ POST /memory/search
 ```
 
 ### ۴.۳ Memory Graph Query
+
 ```
 POST /memory/graph
 {
@@ -206,6 +274,7 @@ POST /memory/graph
 ## ۵. Skills API
 
 ### ۵.۱ لیست Skillها
+
 ```
 GET /skills?agent_id=agent-xxx
 → {
@@ -223,6 +292,7 @@ GET /skills?agent_id=agent-xxx
 ```
 
 ### ۵.۲ اجرای Skill
+
 ```
 POST /skills/{skill_id}/execute
 {
@@ -244,6 +314,7 @@ POST /skills/{skill_id}/execute
 ```
 
 ### ۵.۳ تأیید Skill پیشنهادی
+
 ```
 POST /skills/proposals/{proposal_id}/approve
 → { "status": "approved", "skill_id": "skill-new-456" }
@@ -254,6 +325,7 @@ POST /skills/proposals/{proposal_id}/approve
 ## ۶. Governance API
 
 ### ۶.۱ لاگ‌ها
+
 ```
 GET /audit?agent_id=agent-xxx&from=2026-07-01&to=2026-07-07
 → {
@@ -273,6 +345,7 @@ GET /audit?agent_id=agent-xxx&from=2026-07-01&to=2026-07-07
 ```
 
 ### ۶.۲ تأیید انسانی
+
 ```
 GET /approvals/pending
 → {
@@ -302,28 +375,29 @@ POST /approvals/{id}/reject
 ## ۷. WebSocket API (Real-time)
 
 ### Connection
+
 ```
 ws://api.on4net.com/v1/ws?token=eyJ...
 ```
 
 ### Events (Server → Client)
 
-| Event | توضیح |
-|-------|-------|
-| `agent:message` | پاسخ جدید از Agent |
-| `agent:status` | تغییر وضعیت Agent |
-| `agent:error` | خطا |
-| `skill:suggestion` | Skill جدید پیشنهاد شد |
-| `approval:request` | درخواست تأیید جدید |
-| `bi:alert` | هشدار BI |
+| Event                | توضیح                 |
+| -------------------- | --------------------- |
+| `agent:message`      | پاسخ جدید از Agent    |
+| `agent:status`       | تغییر وضعیت Agent     |
+| `agent:error`        | خطا                   |
+| `skill:suggestion`   | Skill جدید پیشنهاد شد |
+| `approval:request`   | درخواست تأیید جدید    |
+| `bi:alert`           | هشدار BI              |
 | `marketplace:update` | بروزرسانی Marketplace |
 
 ### Events (Client → Server)
 
-| Event | توضیح |
-|-------|-------|
-| `agent:chat` | ارسال پیام به Agent |
-| `agent:cancel` | لغو درخواست |
+| Event              | توضیح                    |
+| ------------------ | ------------------------ |
+| `agent:chat`       | ارسال پیام به Agent      |
+| `agent:cancel`     | لغو درخواست              |
 | `memory:subscribe` | دنبال کردن تغییرات حافظه |
 
 ---
@@ -331,6 +405,7 @@ ws://api.on4net.com/v1/ws?token=eyJ...
 ## ۸. Webhook API
 
 ### ثبت Webhook
+
 ```
 POST /webhooks
 {
@@ -342,17 +417,18 @@ POST /webhooks
 ```
 
 ### Payload نمونه
+
 ```json
 {
-    "event": "approval:request",
-    "timestamp": "2026-07-07T14:31:00Z",
-    "organization_id": "org-xxx",
-    "data": {
-        "approval_id": "aprv-001",
-        "agent": "Sales Agent",
-        "action": "ثبت قرارداد",
-        "amount": 50000
-    }
+  "event": "approval:request",
+  "timestamp": "2026-07-07T14:31:00Z",
+  "organization_id": "org-xxx",
+  "data": {
+    "approval_id": "aprv-001",
+    "agent": "Sales Agent",
+    "action": "ثبت قرارداد",
+    "amount": 50000
+  }
 }
 ```
 
@@ -360,15 +436,16 @@ POST /webhooks
 
 ## ۹. Error Codes
 
-| کد | HTTP | توضیح |
-|----|------|-------|
-| `rate_limited` | ۴۲۹ | محدودیت درخواست |
-| `insufficient_budget` | ۴۰۲ | بودجه Agent تمام شده |
-| `model_unavailable` | ۵۰۳ | مدل در دسترس نیست |
-| `requires_approval` | ۲۰۲ | نیاز به تأیید انسانی |
-| `skill_not_found` | ۴۰۴ | Skill یافت نشد |
-| `permission_denied` | ۴۰۳ | دسترسی غیرمجاز |
-| `invalid_memory_layer` | ۴۰۰ | لایه حافظه معتبر نیست |
+| کد                      | HTTP | توضیح                                                                |
+| ----------------------- | ---- | -------------------------------------------------------------------- |
+| `rate_limited`          | ۴۲۹  | محدودیت درخواست                                                      |
+| `insufficient_budget`   | ۴۰۲  | بودجه Agent تمام شده                                                 |
+| `model_unavailable`     | ۵۰۳  | مدل در دسترس نیست                                                    |
+| `requires_approval`     | ۲۰۲  | نیاز به تأیید انسانی                                                 |
+| `skill_not_found`       | ۴۰۴  | Skill یافت نشد                                                       |
+| `permission_denied`     | ۴۰۳  | دسترسی غیرمجاز                                                       |
+| `invalid_memory_layer`  | ۴۰۰  | لایه حافظه معتبر نیست                                                |
+| `feature_not_available` | ۴۰۳  | قابلیت/پلن فعال نیست (مثلاً Programmer Agent بدون لایسنس AI Gateway) |
 
 ---
 
