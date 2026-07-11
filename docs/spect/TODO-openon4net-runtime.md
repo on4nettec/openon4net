@@ -41,7 +41,7 @@
 | RT-026 | Skill grants per-agent (admin اجازه Skill/Tool به Agent بدهد)                                    | مدل `agent_skill_grants` + UI برای assign/revoke + audit؛ کاربر می‌تواند Skill بسازد/ارتقا دهد ولی اتصال به Agent کنترل‌شده باشد        |  ❌   |
 | RT-027 | نصب ابزارها/پلاگین‌ها از Marketplace + ZIP + حالت دستی (self-hosted)                             | UI/API برای upload ZIP (با validate/flag امنیتی) + install از marketplace + ثبت audit                                                   |  ❌   |
 | RT-028 | Feature gating برای Programmer Agent/Development skills بر اساس لایسنس AI Gateway                | مخفی/غیرفعال‌سازی role `programmer` و skill/pluginهای Development بدون لایسنس + خطای `feature_not_available` + audit                    |  ❌   |
-| RT-029 | Auto-migrate روی startup (اولین بالا آمدن سیستم + upgradeها)                                     | اجرای migrationها از `migrations/` با advisory lock + fail-fast؛ قابل disable با env و دارای مسیر اجرای دستی                            |  ❌   |
+| RT-029 | Auto-migrate روی startup (اولین بالا آمدن سیستم + upgradeها)                                     | ✅ انجام شد — `schema_migrations` + advisory lock + fail-fast + `DB_AUTO_MIGRATE=false` + `pnpm run migrate` دستی، جزئیات در `DONE.md`  |  ✅   |
 | RT-030 | Settings: شخصی‌سازی لوگو (Branding)                                                              | آپلود لوگو (Light/Dark اختیاری) + ذخیره در S3/MinIO + enforce `branding:update` + audit + نمایش در UI (login/sidebar)                   |  ❌   |
 
 ## بخش C — ⚠️ تصمیمات بزرگ‌تر معماری (نیاز به تأیید آگاهانه قبل از شروع)
