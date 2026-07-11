@@ -36,13 +36,14 @@
 | RT-021 | صفحه Chat مطابق UI مرجع (۳ پنل: Control/Chat/Workspace) + پشتیبانی RTL/LTR بر اساس زبان انتخابی  | شامل mirror صحیح layout در RTL، انتخاب زبان، و هم‌تراز شدن اجزا (پنل‌ها/پیام‌ها/تاریخ‌ها)                                               |  ❌   |
 | RT-022 | Session management در UI (هر Agent چند session + `+ New session` + Recent)                       | API بر اساس `conversations`؛ ساخت/rename/archive، و اتصال `conversation_id` در chat                                                     |  ❌   |
 | RT-023 | Agent picker + دکمه `+` کنار لیست Agentها برای ساخت Agent (modal)                                | دکمه فقط برای admin نمایش داده شود؛ ساخت Agent + ساخت workspace اختصاصی Agent (۱:۱)                                                     |  ❌   |
-| RT-024 | Agent Access (grant/revoke) — کاربر به یک یا چند Agent دسترسی داشته باشد                         | صفحه/مدال مدیریت دسترسی + enforce در API؛ کاربران فقط Agentهایی که دسترسی دارند را ببینند                                               |  ❌   |
+| RT-024 | Agent Access (grant/revoke) — کاربر به یک یا چند Agent دسترسی داشته باشد                         | ✅ انجام شد — `agent_access_bindings` + enforce روی list/get/chat/tools/memory (نه فقط visibility)، جزئیات در `DONE.md`                 |  ✅   |
 | RT-025 | Workspace فایل‌محور per-agent (نمایش پنل Files و جداسازی workspaceها)                            | هر Agent workspace خودش را داشته باشد و در پنل Workspace فقط همان نمایش داده شود (هم‌راستا با `agents.workspace_id`)                    |  ❌   |
 | RT-026 | Skill grants per-agent (admin اجازه Skill/Tool به Agent بدهد)                                    | مدل `agent_skill_grants` + UI برای assign/revoke + audit؛ کاربر می‌تواند Skill بسازد/ارتقا دهد ولی اتصال به Agent کنترل‌شده باشد        |  ❌   |
 | RT-027 | نصب ابزارها/پلاگین‌ها از Marketplace + ZIP + حالت دستی (self-hosted)                             | UI/API برای upload ZIP (با validate/flag امنیتی) + install از marketplace + ثبت audit                                                   |  ❌   |
 | RT-028 | Feature gating برای Programmer Agent/Development skills بر اساس لایسنس AI Gateway                | مخفی/غیرفعال‌سازی role `programmer` و skill/pluginهای Development بدون لایسنس + خطای `feature_not_available` + audit                    |  ❌   |
 | RT-029 | Auto-migrate روی startup (اولین بالا آمدن سیستم + upgradeها)                                     | ✅ انجام شد — `schema_migrations` + advisory lock + fail-fast + `DB_AUTO_MIGRATE=false` + `pnpm run migrate` دستی، جزئیات در `DONE.md`  |  ✅   |
 | RT-030 | Settings: شخصی‌سازی لوگو (Branding)                                                              | آپلود لوگو (Light/Dark اختیاری) + ذخیره در S3/MinIO + enforce `branding:update` + audit + نمایش در UI (login/sidebar)                   |  ❌   |
+| RT-031 | Context Contract + Prompt Builder (identity/task/workspace/memory/tools/permissions/language)    | context باید artifact رسمی شود؛ Prompt Builder فقط context فشرده و مرتبط با task فعلی را به LLM بدهد، نه همه فایل‌ها/همه memory         |  ❌   |
 
 ## بخش C — ⚠️ تصمیمات بزرگ‌تر معماری (نیاز به تأیید آگاهانه قبل از شروع)
 
