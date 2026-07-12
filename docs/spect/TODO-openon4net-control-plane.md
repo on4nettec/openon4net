@@ -94,3 +94,44 @@
 
 بهم بگو کدوم شماره‌(ها) رو انجام بدم (مثلاً «CP-001 و CP-003 رو برو انجام بده»).
 اگه چیزی این‌جا نیست ولی لازمشه، بگو تا اضافه‌اش کنم.
+
+---
+
+## فازبندی سریع
+
+### MVP / MVP-lite
+
+- `CP-001..CP-005`
+- `CP-008`
+- `CP-009..CP-011`
+
+### Post-MVP / Phase 2+
+
+- `CP-006..CP-007`
+- `CP-012..CP-014`
+- `CP-015..CP-018`
+
+### Later / Phase 3+
+
+- `CP-019..CP-024`
+
+> فازها و انتظار سیستم: `docs/spect/09_TASKS/13-phase-expectations.md`
+
+---
+
+## فاز 3 تا 5 در Control Plane
+
+### Phase 3 — Organization
+
+- `CP-006..CP-018`
+- پشتیبانی governance/budget/approval برای `T-077..T-104`
+
+### Phase 4 — Ecosystem
+
+- `CP-019..CP-024`
+- پشتیبانی billing/settlement/integration برای `T-105..T-132`
+
+### Phase 5 — Enterprise
+
+- hardening و launch readiness برای کنترل‌پلین
+- وابستگی‌های roadmap: `T-133..T-160`

@@ -96,3 +96,9 @@ docs/spect/
 | **وضعیت**     | ✅ کامل           |
 
 ---
+
+> شاخص post-MVP taskها: `docs/spect/09_TASKS/11-post-mvp-task-index.md`
+
+> شاخص master taskها: `docs/spect/09_TASKS/12-master-project-task-index.md`
+
+> فازها و انتظار هر فاز: `docs/spect/09_TASKS/13-phase-expectations.md`

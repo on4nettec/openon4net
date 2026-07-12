@@ -27,23 +27,25 @@
 
 ## بخش B — دامنه‌ی متوسط، قابلیت جدید واقعی (هنوز کاملاً داخل Runtime)
 
-| #      | تسک                                                                                              | یادداشت                                                                                                                                 | وضعیت |
-| ------ | ------------------------------------------------------------------------------------------------ | --------------------------------------------------------------------------------------------------------------------------------------- | :---: |
-| RT-007 | اجرای زمان‌بندی‌شده‌ی Agent (`agents.schedule`)                                                  | ✅ انجام شد — scheduler درون‌فرآیندی 30 ثانیه‌ای، جزئیات در `DONE.md`                                                                   |  ✅   |
-| RT-008 | ABAC Policy Layer (§6 سند `10-rbac-and-policy.md`) — جدول `policies` + شرایط cost/layer/tag/time | ✅ انجام شد (subset: `cost_gt_cents`, `outside_hours`) — condition typeهای بیشتر (layer/tag/environment) هنوز نیست، جزئیات در `DONE.md` |  ✅   |
-| RT-009 | نمایش بودجه/هزینه در داشبورد                                                                     | ✅ انجام شد — `BudgetBar` در صفحه Agents، جزئیات در `DONE.md`                                                                           |  ✅   |
-| RT-010 | نمایش وضعیت rate limit                                                                           | ✅ انجام شد — badge در صفحه چت، جزئیات در `DONE.md`                                                                                     |  ✅   |
-| RT-021 | صفحه Chat مطابق UI مرجع (۳ پنل: Control/Chat/Workspace) + پشتیبانی RTL/LTR بر اساس زبان انتخابی  | شامل mirror صحیح layout در RTL، انتخاب زبان، و هم‌تراز شدن اجزا (پنل‌ها/پیام‌ها/تاریخ‌ها)                                               |  ❌   |
-| RT-022 | Session management در UI (هر Agent چند session + `+ New session` + Recent)                       | API بر اساس `conversations`؛ ساخت/rename/archive، و اتصال `conversation_id` در chat                                                     |  ❌   |
-| RT-023 | Agent picker + دکمه `+` کنار لیست Agentها برای ساخت Agent (modal)                                | دکمه فقط برای admin نمایش داده شود؛ ساخت Agent + ساخت workspace اختصاصی Agent (۱:۱)                                                     |  ❌   |
-| RT-024 | Agent Access (grant/revoke) — کاربر به یک یا چند Agent دسترسی داشته باشد                         | ✅ انجام شد — `agent_access_bindings` + enforce روی list/get/chat/tools/memory (نه فقط visibility)، جزئیات در `DONE.md`                 |  ✅   |
-| RT-025 | Workspace فایل‌محور per-agent (نمایش پنل Files و جداسازی workspaceها)                            | هر Agent workspace خودش را داشته باشد و در پنل Workspace فقط همان نمایش داده شود (هم‌راستا با `agents.workspace_id`)                    |  ❌   |
-| RT-026 | Skill grants per-agent (admin اجازه Skill/Tool به Agent بدهد)                                    | مدل `agent_skill_grants` + UI برای assign/revoke + audit؛ کاربر می‌تواند Skill بسازد/ارتقا دهد ولی اتصال به Agent کنترل‌شده باشد        |  ❌   |
-| RT-027 | نصب ابزارها/پلاگین‌ها از Marketplace + ZIP + حالت دستی (self-hosted)                             | UI/API برای upload ZIP (با validate/flag امنیتی) + install از marketplace + ثبت audit                                                   |  ❌   |
-| RT-028 | Feature gating برای Programmer Agent/Development skills بر اساس لایسنس AI Gateway                | مخفی/غیرفعال‌سازی role `programmer` و skill/pluginهای Development بدون لایسنس + خطای `feature_not_available` + audit                    |  ❌   |
-| RT-029 | Auto-migrate روی startup (اولین بالا آمدن سیستم + upgradeها)                                     | ✅ انجام شد — `schema_migrations` + advisory lock + fail-fast + `DB_AUTO_MIGRATE=false` + `pnpm run migrate` دستی، جزئیات در `DONE.md`  |  ✅   |
-| RT-030 | Settings: شخصی‌سازی لوگو (Branding)                                                              | آپلود لوگو (Light/Dark اختیاری) + ذخیره در S3/MinIO + enforce `branding:update` + audit + نمایش در UI (login/sidebar)                   |  ❌   |
-| RT-031 | Context Contract + Prompt Builder (identity/task/workspace/memory/tools/permissions/language)    | context باید artifact رسمی شود؛ Prompt Builder فقط context فشرده و مرتبط با task فعلی را به LLM بدهد، نه همه فایل‌ها/همه memory         |  ❌   |
+| #      | تسک                                                                                              | یادداشت                                                                                                                                                                                                                                                                                            | وضعیت |
+| ------ | ------------------------------------------------------------------------------------------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | :---: |
+| RT-007 | اجرای زمان‌بندی‌شده‌ی Agent (`agents.schedule`)                                                  | ✅ انجام شد — scheduler درون‌فرآیندی 30 ثانیه‌ای، جزئیات در `DONE.md`                                                                                                                                                                                                                              |  ✅   |
+| RT-008 | ABAC Policy Layer (§6 سند `10-rbac-and-policy.md`) — جدول `policies` + شرایط cost/layer/tag/time | ✅ انجام شد (subset: `cost_gt_cents`, `outside_hours`) — condition typeهای بیشتر (layer/tag/environment) هنوز نیست، جزئیات در `DONE.md`                                                                                                                                                            |  ✅   |
+| RT-009 | نمایش بودجه/هزینه در داشبورد                                                                     | ✅ انجام شد — `BudgetBar` در صفحه Agents، جزئیات در `DONE.md`                                                                                                                                                                                                                                      |  ✅   |
+| RT-010 | نمایش وضعیت rate limit                                                                           | ✅ انجام شد — badge در صفحه چت، جزئیات در `DONE.md`                                                                                                                                                                                                                                                |  ✅   |
+| RT-021 | صفحه Chat مطابق UI مرجع (۳ پنل: Control/Chat/Workspace) + پشتیبانی RTL/LTR بر اساس زبان انتخابی  | شامل mirror صحیح layout در RTL، انتخاب زبان، و هم‌تراز شدن اجزا (پنل‌ها/پیام‌ها/تاریخ‌ها)                                                                                                                                                                                                          |  ❌   |
+| RT-022 | Session management در UI (هر Agent چند session + `+ New session` + Recent)                       | API بر اساس `conversations`؛ ساخت/rename/archive، و اتصال `conversation_id` در chat                                                                                                                                                                                                                |  ❌   |
+| RT-023 | Agent picker + دکمه `+` کنار لیست Agentها برای ساخت Agent (modal)                                | دکمه فقط برای admin نمایش داده شود؛ ساخت Agent + ساخت workspace اختصاصی Agent (۱:۱)                                                                                                                                                                                                                |  ❌   |
+| RT-024 | Agent Access (grant/revoke) — کاربر به یک یا چند Agent دسترسی داشته باشد                         | ✅ انجام شد — `agent_access_bindings` + enforce روی list/get/chat/tools/memory (نه فقط visibility)، جزئیات در `DONE.md`                                                                                                                                                                            |  ✅   |
+| RT-025 | Workspace فایل‌محور per-agent (نمایش پنل Files و جداسازی workspaceها)                            | هر Agent workspace خودش را داشته باشد و در پنل Workspace فقط همان نمایش داده شود (هم‌راستا با `agents.workspace_id`)                                                                                                                                                                               |  ❌   |
+| RT-026 | Skill grants per-agent (admin اجازه Skill/Tool به Agent بدهد)                                    | ✅ انجام شد — `agent_skill_grants` + `SkillGrantService` + UI (`/skills` صفحه) + audit (`skill-grant`/`skill-revoke`)، جزئیات در `DONE.md`                                                                                                                                                         |  ✅   |
+| RT-027 | نصب ابزارها/پلاگین‌ها از Marketplace + ZIP + حالت دستی (self-hosted)                             | UI/API برای upload ZIP (با validate/flag امنیتی) + install از marketplace + ثبت audit                                                                                                                                                                                                              |  ❌   |
+| RT-028 | Feature gating برای Programmer Agent/Development skills بر اساس لایسنس AI Gateway                | مخفی/غیرفعال‌سازی role `programmer` و skill/pluginهای Development بدون لایسنس + خطای `feature_not_available` + audit                                                                                                                                                                               |  ❌   |
+| RT-029 | Auto-migrate روی startup (اولین بالا آمدن سیستم + upgradeها)                                     | ✅ انجام شد — `schema_migrations` + advisory lock + fail-fast + `DB_AUTO_MIGRATE=false` + `pnpm run migrate` دستی، جزئیات در `DONE.md`                                                                                                                                                             |  ✅   |
+| RT-030 | Settings: شخصی‌سازی لوگو (Branding)                                                              | آپلود لوگو (Light/Dark اختیاری) + ذخیره در S3/MinIO + enforce `branding:update` + audit + نمایش در UI (login/sidebar)                                                                                                                                                                              |  ❌   |
+| RT-031 | Context Contract + Prompt Builder (identity/task/workspace/memory/tools/permissions/language)    | context باید artifact رسمی شود؛ Prompt Builder فقط context فشرده و مرتبط با task فعلی را به LLM بدهد، نه همه فایل‌ها/همه memory                                                                                                                                                                    |  ❌   |
+| RT-032 | Skill Engine Core (`skills` CRUD + Skill Executor) — فاز ۲ roadmap                               | ✅ انجام شد — `SkillService`+`routes/skills.ts` (CRUD)، `tool-dispatcher.ts`+`skill-executor.ts` (اجرای واقعی روی webhook-send/telegram-send). v1: فقط `steps[].type: 'tool'` و `trigger.type: 'manual'` — `query`/`prompt` step types و scheduled/event trigger موکول به بعد. جزئیات در `DONE.md` |  ✅   |
+| RT-033 | Auto-Skill Detection + Proposal Review — فاز ۲ roadmap                                           | ✅ انجام شد — `skill-pattern-detector.ts` (Frequency+Similarity روی `audit_logs`، ۲ از ۴ شرط سند — Duration/Complexity سیگنال ندارن) + `skill_proposals` + `routes/skill-proposals.ts` (approve/reject) + صفحه `/skill-proposals`. جزئیات در `DONE.md`                                             |  ✅   |
 
 ## بخش C — ⚠️ تصمیمات بزرگ‌تر معماری (نیاز به تأیید آگاهانه قبل از شروع)
 
@@ -88,3 +90,48 @@
 
 بهم بگو کدوم شماره‌(ها) رو انجام بدم (مثلاً «RT-001 و RT-002 رو برو انجام بده»).
 اگه چیزی این‌جا نیست ولی لازمشه، بگو تا اضافه‌اش کنم.
+
+---
+
+## فازبندی سریع
+
+### MVP / MVP-lite
+
+- `RT-001..RT-010`
+- `RT-011..RT-018`
+- `RT-024`
+- `RT-029`
+
+### Post-MVP / Phase 2+
+
+- `RT-019..RT-020`
+- `RT-021..RT-023`
+- `RT-025..RT-028`
+- `RT-030..RT-031`
+- `RT-032..RT-033` — roadmap Phase 2 (Skills): Skill Engine Core + Auto-Skill Detection, ✅ انجام شد ۲۰۲۶-۰۷-۱۲
+
+### وضعیت خاص
+
+- `RT-005` هنوز منتظر bot token واقعی از طرف شماست.
+- `RT-013` عملاً به Plane 3 منتقل شده و باید در memory دنبال شود.
+
+> فازها و انتظار سیستم: `docs/spect/09_TASKS/13-phase-expectations.md`
+
+---
+
+## فاز 3 تا 5 در Runtime
+
+### Phase 3 — Organization
+
+- `RT-021..RT-031`
+- وابستگی‌های roadmap: `T-077..T-104`
+
+### Phase 4 — Ecosystem
+
+- runtime touchpoints: `RT-027`, `RT-030`, `RT-031`
+- وابستگی‌های roadmap: `T-105..T-132`
+
+### Phase 5 — Enterprise
+
+- runtime touchpoints: آماده‌سازی UI/Branding/Context برای enterprise
+- وابستگی‌های roadmap: `T-133..T-160`

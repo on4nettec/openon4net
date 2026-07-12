@@ -79,36 +79,43 @@
 
 ## ۳. فاز ۱: Memory (ماه ۳-۴ | September - October)
 
+> **وضعیت (2026-07-12): ۱۰۰٪ کامل.** لایه‌های ۱-۲ در Runtime (Sprint 0،
+> T-007)؛ لایه‌های ۳-۶ + Memory Graph + Extractor/Ranking/Pruning/Compression/
+> Benchmark در `apps/openon4net-memory` (MEM-008..018) — با تأیید صریح کاربر
+> زودتر از زمان‌بندی رسمی (guardrail عبور داده شد، جزئیات:
+> `docs/spect/TODO-openon4net-memory.md`). جزئیات تست‌شده/نشده هر آیتم:
+> `docs/spect/DONE.md` بخش‌های Memory.
+
 ### هدف: ۶ لایه حافظه + Memory Graph
 
 ### هفته ۹-۱۰: Short + Conversation Memory
 
-- [ ] لایه ۱: Short Memory (Redis)
-- [ ] لایه ۲: Conversation Memory (PostgreSQL)
-- [ ] Conversation summarization
-- [ ] Memory query API
+- [x] لایه ۱: Short Memory (Redis)
+- [x] لایه ۲: Conversation Memory (PostgreSQL)
+- [x] Conversation summarization
+- [x] Memory query API
 
 ### هفته ۱۱-۱۲: Project + Company Knowledge
 
-- [ ] لایه ۳: Project Memory
-- [ ] لایه ۴: Company Knowledge (pgvector)
-- [ ] Semantic search
-- [ ] Auto-classification: این دانش کدوم لایه؟
+- [x] لایه ۳: Project Memory
+- [x] لایه ۴: Company Knowledge (pgvector)
+- [x] Semantic search
+- [x] Auto-classification: این دانش کدوم لایه؟
 
 ### هفته ۱۳-۱۴: Personal + Global + Graph
 
-- [ ] لایه ۵: Personal Knowledge
-- [ ] لایه ۶: Global Knowledge
-- [ ] Neo4j راه‌اندازی
-- [ ] Memory Graph: Node/Edge CRUD
-- [ ] Graph query API
+- [x] لایه ۵: Personal Knowledge
+- [x] لایه ۶: Global Knowledge
+- [x] Neo4j راه‌اندازی
+- [x] Memory Graph: Node/Edge CRUD
+- [x] Graph query API
 
 ### هفته ۱۵-۱۶: Memory Optimization
 
-- [ ] Memory Pruning خودکار
-- [ ] Context compression (برای prompt budget)
-- [ ] Ranking: relevance, time decay
-- [ ] Benchmark: latency < 200ms
+- [x] Memory Pruning خودکار
+- [x] Context compression (برای prompt budget)
+- [x] Ranking: relevance, time decay
+- [x] Benchmark: latency < 200ms
 
 ### تحویل فاز ۱:
 
@@ -121,21 +128,28 @@
 
 ## ۴. فاز ۲: Skills (ماه ۵-۶ | November - December)
 
+> **وضعیت (2026-07-12): هفته‌های ۱۷-۲۰ (Skill Engine Core + Auto-Skill
+> Detection) کامل شد در `apps/openon4net-runtime` (RT-032, RT-033) — با
+> تأیید صریح کاربر زودتر از زمان‌بندی رسمی. هفته‌های ۲۱-۲۴ (Plugin SDK،
+> Marketplace MVP برای Skills/Plugins، activation-gated free tier، CLI)
+> عمداً به یک session بعدی موکول شد — جزئیات:
+> `docs/spect/06_MEETINGS/02-skills-plugins-marketplace-model.md`.
+
 ### هدف: Skill Engine + Auto-Skill Detection
 
 ### هفته ۱۷-۱۸: Skill Engine Core
 
-- [ ] Skill Registry
-- [ ] Skill format (YAML definition)
-- [ ] Skill execution engine
-- [ ] Skill versioning
+- [x] Skill Registry (`skills` CRUD)
+- [x] Skill format (JSON/Zod، نه لفظاً YAML — ساختار مشابه سند §۴، محدود به `trigger.type: 'manual'` و `steps[].type: 'tool'` در v1؛ `query`/`prompt` step types موکول به بعد)
+- [x] Skill execution engine (`skill-executor.ts` — واقعاً روی `webhook-send`/`telegram-send` اجرا می‌شود)
+- [ ] Skill versioning (فیلد `version` هست، ولی منطق bump/fork هنوز نیست)
 
 ### هفته ۱۹-۲۰: Auto-Skill Detection
 
-- [ ] Pattern Detector (frequency analysis)
-- [ ] Proposal system
-- [ ] User approval flow
-- [ ] Skill validation
+- [x] Pattern Detector (Frequency + Similarity — ۲ از ۴ شرط سند، Duration/Complexity سیگنال قابل‌اتکا ندارن)
+- [x] Proposal system (`skill_proposals`)
+- [x] User approval flow (`routes/skill-proposals.ts` + صفحه `/skill-proposals`)
+- [ ] Skill validation (فقط اعتبارسنجی Zod روی شکل داده — یک ماژول جدای safety-check/تست اجرایی ساخته نشده)
 
 ### هفته ۲۱-۲۲: Plugin SDK
 

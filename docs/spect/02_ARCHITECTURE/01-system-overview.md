@@ -50,22 +50,23 @@
 
 ## ۲. Tech Stack
 
-| لایه | تکنولوژی |
-|------|-----------|
-| Backend | Node.js + TypeScript + Fastify |
-| Frontend | Next.js 15 + React + Tailwind |
-| Primary DB | PostgreSQL 16 + pgvector |
-| Cache | Redis 7 |
-| Graph DB | Neo4j |
-| Storage | MinIO (S3-compatible) |
-| Queue | RabbitMQ / Redis Streams |
-| Auth | Keycloak / Casdoor |
-| Container | Docker + Compose |
-| Orchestration | Kubernetes (Enterprise) |
+| لایه          | تکنولوژی                       |
+| ------------- | ------------------------------ |
+| Backend       | Node.js + TypeScript + Fastify |
+| Frontend      | Next.js 15 + React + Tailwind  |
+| Primary DB    | PostgreSQL 16 + pgvector       |
+| Cache         | Redis 7                        |
+| Graph DB      | Neo4j                          |
+| Storage       | MinIO (S3-compatible)          |
+| Queue         | RabbitMQ / Redis Streams       |
+| Auth          | Keycloak / Casdoor             |
+| Container     | Docker + Compose               |
+| Orchestration | Kubernetes (Enterprise)        |
 
 ## ۳. Data Flow
 
 ### Chat Request:
+
 ```
 User → API Gateway → Auth → Workspace → Agent Framework
 → Memory Engine (context) → AI Gateway (model router)
@@ -73,18 +74,40 @@ User → API Gateway → Auth → Workspace → Agent Framework
 ```
 
 ### Agent-to-Agent:
+
 ```
 Agent A → Communication Bus → Governance Check
 → Workflow Engine → Agent B → Response → Memory Graph Update
 ```
 
+### Context Contract
+
+`context` در O₂N یک artifact رسمی است، نه یک متن آزاد.
+
+هر درخواست Agent باید از این لایه‌ها context بسازد:
+
+- `identity`: این Agent کیست و چه نقشی دارد
+- `task`: الان چه کاری باید انجام شود
+- `workspace`: کدام سازمان/فضا/سیاست‌ها فعال‌اند
+- `memory`: چه چیزهایی از قبل باید یادآوری شوند
+- `tools`: چه ابزارهایی مجازند
+- `permissions`: چه کارهایی اجازه دارند
+- `language`: زبان و locale کاربر/سازمان
+- `trace`: شناسه‌های ردیابی و audit
+
+قانون:
+
+- همه چیز به LLM فرستاده نمی‌شود.
+- فقط context فشرده و مرتبط با task فعلی از Prompt Builder وارد مدل می‌شود.
+- Memory Engine منبع context است، نه خودِ prompt نهایی.
+
 ## ۴. Deployment
 
-| نوع | روش |
-|-----|------|
-| Development | Docker Compose |
-| Production | Kubernetes + Helm |
-| Enterprise | On-Premise K8s |
+| نوع         | روش               |
+| ----------- | ----------------- |
+| Development | Docker Compose    |
+| Production  | Kubernetes + Helm |
+| Enterprise  | On-Premise K8s    |
 
 ---
 
@@ -97,3 +120,5 @@ Agent A → Communication Bus → Governance Check
 برای هم‌زمان پشتیبانی از self-host، کنترل هزینه AI (credits/activation)، حافظه بلندمدت managed/self-host و marketplace، معماری O₂N به صورت ۴ Plane تعریف می‌شود.
 
 جزئیات: `02_ARCHITECTURE/13-four-plane-architecture.md`
+
+Context در همه planeها جاری است، اما Prompt Builder فقط context لازم را به مدل می‌فرستد.

@@ -70,3 +70,37 @@
 
 بهم بگو کدوم شماره‌(ها) رو انجام بدم (مثلاً «MKT-001 و MKT-002 رو برو انجام بده»).
 اگه چیزی این‌جا نیست ولی لازمشه، بگو تا اضافه‌اش کنم.
+
+---
+
+## فازبندی سریع
+
+### MVP-lite / Private marketplace
+
+- `MKT-001..MKT-011`
+
+### Post-MVP / Public marketplace
+
+- `MKT-012..MKT-016`
+
+> فازها و انتظار سیستم: `docs/spect/09_TASKS/13-phase-expectations.md`
+
+---
+
+## فاز 3 تا 5 در Marketplace
+
+### Phase 3 — Organization
+
+- `MKT-001..MKT-011`
+- private/local install و registry ساده برای orgها
+
+### Phase 4 — Ecosystem
+
+- `MKT-012..MKT-016`
+- public marketplace و publisher economy
+- وابستگی‌های roadmap: `T-105..T-132`
+
+### Phase 5 — Enterprise
+
+- hardening، signing، kill switch، SLA-ready distribution
+- وابستگی‌های roadmap: `T-133..T-160`

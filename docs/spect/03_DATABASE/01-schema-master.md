@@ -173,8 +173,11 @@ CREATE TABLE plugin_installs (
 
 ### ۲.۴ Memory System
 
+> **لایه ۱ (Short-term/Redis) و لایه ۲ (Conversation Memory, جداول زیر) در دیتابیس Runtime (`o2n`) زندگی می‌کنند.**
+> **لایه‌های ۳-۶ (Project/Company/Personal/Global Knowledge) و Memory Graph backup در دیتابیس اختصاصی سرویس Memory (`o2n_memory`, یک repo/سرویس جدا — `apps/openon4net-memory`) زندگی می‌کنند، نه اینجا.** جدول‌های زیر منعکس‌کننده migration واقعی آن سرویس هستند (`apps/openon4net-memory/migrations/0001..0006`). `embedding` همه‌جا `VECTOR(768)` است (نه ۱۵۳۶) چون embedding model پیش‌فرض این پروژه `nomic-embed-text` (از طریق Ollama) است، نه یک مدل OpenAI با ۱۵۳۶ بعد؛ ایندکس هم `hnsw` است نه `ivfflat` (نیازی به pre-populate کردن داده برای cluster خوب ندارد — مهم برای جدولی که خالی شروع می‌شود).
+
 ```sql
--- Conversation Memory (لایه ۲)
+-- Conversation Memory (لایه ۲) — در دیتابیس Runtime
 CREATE TABLE conversations (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     agent_id UUID REFERENCES agents(id) ON DELETE CASCADE,
@@ -191,7 +194,7 @@ CREATE TABLE conversations (
     updated_at TIMESTAMPTZ DEFAULT NOW()
 );
 
--- پیام‌های مکالمه
+-- پیام‌های مکالمه — در دیتابیس Runtime
 CREATE TABLE messages (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     conversation_id UUID REFERENCES conversations(id) ON DELETE CASCADE,
@@ -201,24 +204,103 @@ CREATE TABLE messages (
     cost_cents INTEGER DEFAULT 0,
     tokens INTEGER DEFAULT 0,
     metadata JSONB DEFAULT '{}',
+    embedding VECTOR(768), -- pgvector, nomic-embed-text — nullable (best-effort)
     created_at TIMESTAMPTZ DEFAULT NOW()
 );
+```
 
--- Memory Graph (Neo4j از این برای sync استفاده می‌کند)
--- این جدول برای بکاپ و query سریع
+جداول زیر در دیتابیس اختصاصی سرویس Memory (`o2n_memory`) هستند — بدون FK cross-database به جداول Runtime بالا (یکپارچگی ارجاعی فقط در سطح اپلیکیشن):
+
+```sql
+-- Project Memory (لایه ۳) — apps/openon4net-memory/migrations/0001_project_memory.sql
+CREATE TABLE project_memory (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    organization_id UUID NOT NULL,
+    project_key TEXT NOT NULL DEFAULT 'default', -- در MVP: هر Agent با workspace خودش ۱:۱ است
+    agent_id TEXT,
+    category VARCHAR(100),
+    title VARCHAR(255),
+    content JSONB NOT NULL,
+    embedding VECTOR(768),
+    tags TEXT[],
+    source VARCHAR(50),
+    context JSONB DEFAULT '{}', -- شامل graph_nodes/graph_edges اختیاری در زمان write
+    created_at TIMESTAMPTZ DEFAULT NOW(),
+    updated_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+-- Company Knowledge (لایه ۴) — apps/openon4net-memory/migrations/0002_company_knowledge.sql
+-- content به صورت JSONB (نه TEXT) تا با project_memory/global_knowledge یک
+-- KnowledgeStore عمومی مشترک را به اشتراک بگذارد.
+CREATE TABLE company_knowledge (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    organization_id UUID NOT NULL,
+    category VARCHAR(100), -- product, customer, policy, procedure
+    title VARCHAR(255),
+    content JSONB NOT NULL,
+    embedding VECTOR(768),
+    tags TEXT[],
+    source VARCHAR(50), -- manual, auto-generated, from-conversation
+    is_confidential BOOLEAN DEFAULT false,
+    context JSONB DEFAULT '{}',
+    created_at TIMESTAMPTZ DEFAULT NOW(),
+    updated_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+-- Personal Knowledge (لایه ۵) — apps/openon4net-memory/migrations/0003_personal_knowledge.sql
+-- "فقط خود کاربر می‌بیند، حتی شرکت هم نه" → content رمزنگاری‌شده (AES-256-GCM)
+-- ذخیره می‌شود، نه plaintext. embedding از روی plaintext قبل از رمزنگاری
+-- محاسبه می‌شود (یک vector عملاً به plaintext دقیق برگشت‌پذیر نیست — trade-off
+-- پذیرفته‌شده تا search هم کار کند). همیشه با (organization_id, user_id) اسکوپ
+-- می‌شود، نه فقط organization_id. عمداً خارج از bulk reindex/export/graph است
+-- (به README سرویس Memory مراجعه شود).
+CREATE TABLE personal_knowledge (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    organization_id UUID NOT NULL,
+    user_id TEXT NOT NULL,
+    agent_id TEXT,
+    category VARCHAR(100),
+    title VARCHAR(255),
+    content_encrypted BYTEA NOT NULL, -- iv(12) || authTag(16) || ciphertext
+    embedding VECTOR(768),
+    tags TEXT[],
+    source VARCHAR(50),
+    created_at TIMESTAMPTZ DEFAULT NOW(),
+    updated_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+-- Global Knowledge (لایه ۶) — apps/openon4net-memory/migrations/0004_global_knowledge.sql
+-- عمداً organization_id ندارد (cross-org به design)؛ در MVP هر caller احراز
+-- هویت‌شده می‌تواند بنویسد (بدون pipeline curation/anonymization — یک آیتم
+-- revisit-later مستندشده، نه blocking).
+CREATE TABLE global_knowledge (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    category VARCHAR(100),
+    title VARCHAR(255),
+    content JSONB NOT NULL,
+    embedding VECTOR(768),
+    tags TEXT[],
+    source VARCHAR(50),
+    created_at TIMESTAMPTZ DEFAULT NOW(),
+    updated_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+-- Memory Graph (Neo4j منبع اصلی است؛ این جداول فقط بکاپ/lookup سریع در
+-- Postgres هستند) — apps/openon4net-memory/migrations/0005_memory_graph_backup.sql
 CREATE TABLE memory_graph_nodes (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    organization_id UUID REFERENCES organizations(id),
+    organization_id UUID NOT NULL,
     node_type VARCHAR(50) NOT NULL, -- person, project, file, decision, task
-    external_id VARCHAR(255), -- ID در سیستم خارجی
+    external_id VARCHAR(255) NOT NULL,
     label VARCHAR(255),
     properties JSONB DEFAULT '{}',
-    embedding VECTOR(1536), -- pgvector
-    created_at TIMESTAMPTZ DEFAULT NOW()
+    created_at TIMESTAMPTZ DEFAULT NOW(),
+    UNIQUE(organization_id, node_type, external_id)
 );
 
 CREATE TABLE memory_graph_edges (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    organization_id UUID NOT NULL,
     source_node_id UUID REFERENCES memory_graph_nodes(id) ON DELETE CASCADE,
     target_node_id UUID REFERENCES memory_graph_nodes(id) ON DELETE CASCADE,
     relationship VARCHAR(100) NOT NULL, -- decided, uses, created, affects
@@ -227,19 +309,55 @@ CREATE TABLE memory_graph_edges (
     created_at TIMESTAMPTZ DEFAULT NOW()
 );
 
--- Company Knowledge (لایه ۴)
-CREATE TABLE company_knowledge (
+-- Reindex/Export jobs + Delete approvals + این‌پلین audit trail —
+-- apps/openon4net-memory/migrations/0006_memory_jobs_and_approvals.sql.
+-- /memory/delete هرگز synchronous نیست: همیشه یک ردیف memory_approvals با
+-- status='pending' می‌سازد؛ حذف واقعی فقط بعد از approve اتفاق می‌افتد.
+CREATE TABLE reindex_jobs (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    organization_id UUID REFERENCES organizations(id) ON DELETE CASCADE,
-    category VARCHAR(100), -- product, customer, policy, procedure
-    title VARCHAR(255),
-    content TEXT,
-    embedding VECTOR(1536),
-    tags TEXT[],
-    source VARCHAR(50), -- manual, auto-generated, from-conversation
-    is_confidential BOOLEAN DEFAULT false,
+    organization_id UUID NOT NULL,
+    scope VARCHAR(20) NOT NULL, -- organization | workspace | agent
+    layers INTEGER[] NOT NULL,
+    filters JSONB DEFAULT '{}',
+    status VARCHAR(20) NOT NULL DEFAULT 'queued', -- queued, running, completed, failed
+    stats JSONB DEFAULT '{}',
+    error TEXT,
     created_at TIMESTAMPTZ DEFAULT NOW(),
-    updated_at TIMESTAMPTZ DEFAULT NOW()
+    started_at TIMESTAMPTZ,
+    completed_at TIMESTAMPTZ
+);
+
+CREATE TABLE export_jobs (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    organization_id UUID NOT NULL,
+    layers INTEGER[] NOT NULL,
+    filters JSONB DEFAULT '{}',
+    format VARCHAR(10) NOT NULL, -- jsonl | json | csv
+    status VARCHAR(20) NOT NULL DEFAULT 'queued',
+    file_path TEXT,
+    error TEXT,
+    created_at TIMESTAMPTZ DEFAULT NOW(),
+    completed_at TIMESTAMPTZ
+);
+
+CREATE TABLE memory_approvals (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    organization_id UUID NOT NULL,
+    layers INTEGER[] NOT NULL,
+    filters JSONB DEFAULT '{}',
+    status VARCHAR(20) NOT NULL DEFAULT 'pending', -- pending, approved, rejected
+    resolved_by TEXT,
+    resolved_at TIMESTAMPTZ,
+    created_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+CREATE TABLE memory_audit_logs (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    organization_id UUID NOT NULL,
+    action_type VARCHAR(100) NOT NULL,
+    action_data JSONB NOT NULL,
+    trace_id TEXT,
+    created_at TIMESTAMPTZ DEFAULT NOW()
 );
 ```
 
@@ -412,14 +530,14 @@ CREATE INDEX idx_audit_logs_org ON audit_logs(organization_id, created_at);
 CREATE INDEX idx_audit_logs_agent ON audit_logs(agent_id);
 CREATE INDEX idx_company_knowledge_org ON company_knowledge(organization_id);
 
--- Vector Index (pgvector)
-CREATE INDEX idx_company_knowledge_embedding
-    ON company_knowledge
-    USING ivfflat (embedding vector_cosine_ops);
-
-CREATE INDEX idx_memory_nodes_embedding
-    ON memory_graph_nodes
-    USING ivfflat (embedding vector_cosine_ops);
+-- Vector Index (pgvector) — hnsw نه ivfflat: نیازی به pre-populate کردن داده
+-- برای cluster خوب ندارد، که برای جدولی که خالی شروع می‌شود مهم است. این
+-- جداول همه در دیتابیس اختصاصی سرویس Memory (`o2n_memory`) هستند، نه اینجا —
+-- به apps/openon4net-memory/migrations مراجعه شود.
+CREATE INDEX idx_project_memory_embedding ON project_memory USING hnsw (embedding vector_cosine_ops);
+CREATE INDEX idx_company_knowledge_embedding ON company_knowledge USING hnsw (embedding vector_cosine_ops);
+CREATE INDEX idx_personal_knowledge_embedding ON personal_knowledge USING hnsw (embedding vector_cosine_ops);
+CREATE INDEX idx_global_knowledge_embedding ON global_knowledge USING hnsw (embedding vector_cosine_ops);
 ```
 
 ---

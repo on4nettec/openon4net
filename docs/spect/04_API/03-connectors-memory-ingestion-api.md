@@ -8,11 +8,13 @@
 ## ۱) هدف
 
 این APIها سه نیاز اصلی را پوشش می‌دهند:
-1) اتصال سرویس‌های خارجی (Google Drive / CRM / Social / ...)
-2) اجرای sync/job و ingest داده به Memory Engine
-3) مدیریت دستی حافظه (import/export, reindex, delete) به‌صورت قابل حسابرسی
+
+1. اتصال سرویس‌های خارجی (Google Drive / CRM / Social / ...)
+2. اجرای sync/job و ingest داده به Memory Engine
+3. مدیریت دستی حافظه (import/export, reindex, delete) به‌صورت قابل حسابرسی
 
 پیش‌نیازهای معماری:
+
 - permissions + governance enforcement
 - audit_logs برای همه عملیات
 - trace_id برای correlation با logs/tracing
@@ -22,12 +24,14 @@
 ## ۲) Connector Install & Auth
 
 ### ۲.۱) لیست connectorهای نصب‌شده
+
 ```
 GET /connectors/installs
 → { "installs": [ ... ] }
 ```
 
 ### ۲.۲) نصب یک connector (از یک plugin install)
+
 ```
 POST /connectors/installs
 {
@@ -43,12 +47,14 @@ POST /connectors/installs
 ```
 
 ### ۲.۳) شروع OAuth (redirect)
+
 ```
 POST /connectors/installs/{install_id}/oauth/start
 → { "auth_url": "https://accounts.google.com/o/oauth2/..." }
 ```
 
 ### ۲.۴) OAuth callback (server-side)
+
 ```
 POST /connectors/oauth/callback
 {
@@ -60,6 +66,7 @@ POST /connectors/oauth/callback
 ```
 
 ### ۲.۵) revoke/disable
+
 ```
 POST /connectors/installs/{install_id}/disable
 POST /connectors/installs/{install_id}/revoke
@@ -70,6 +77,7 @@ POST /connectors/installs/{install_id}/revoke
 ## ۳) Sync Jobs (Full/Delta)
 
 ### ۳.۱) اجرای sync
+
 ```
 POST /connectors/installs/{install_id}/sync
 { "mode": "delta" }   // delta | full
@@ -77,6 +85,7 @@ POST /connectors/installs/{install_id}/sync
 ```
 
 ### ۳.۲) وضعیت job
+
 ```
 GET /connectors/sync-jobs/{job_id}
 → {
@@ -88,6 +97,7 @@ GET /connectors/sync-jobs/{job_id}
 ```
 
 ### ۳.۳) لیست jobها
+
 ```
 GET /connectors/installs/{install_id}/sync-jobs?limit=50
 ```
@@ -97,6 +107,7 @@ GET /connectors/installs/{install_id}/sync-jobs?limit=50
 ## ۴) Memory Ingestion Controls
 
 ### ۴.۱) تنظیم مقصد حافظه (layer mapping)
+
 ```
 PUT /connectors/installs/{install_id}/ingestion-policy
 {
@@ -109,6 +120,7 @@ PUT /connectors/installs/{install_id}/ingestion-policy
 ```
 
 ### ۴.۲) re-index / re-embed
+
 ```
 POST /memory/reindex
 {
@@ -119,6 +131,15 @@ POST /memory/reindex
 → { "job_id": "memjob-xxx", "status": "queued" }
 ```
 
+### ۴.۳) وضعیت reindex job (پیاده‌سازی‌شده در `apps/openon4net-memory`، ۲۰۲۶-۰۷-۱۲)
+
+```
+GET /memory/reindex/{job_id}
+→ { "id": "memjob-xxx", "organizationId": "...", "scope": "organization", "layers": [3,4], "status": "queued|running|completed|failed", "stats": {...}, "error": null, "createdAt": "...", "completedAt": null }
+```
+
+404 اگر job پیدا نشود یا متعلق به سازمان دیگری باشد.
+
 ---
 
 ## ۵) Manual Memory Management (API)
@@ -126,6 +147,7 @@ POST /memory/reindex
 > این‌ها مکمل endpointهای موجود در `04_API/01-rest-api-spec.md` هستند.
 
 ### ۵.۱) import فایل/متن (بدون connector)
+
 ```
 POST /memory/import
 {
@@ -139,6 +161,7 @@ POST /memory/import
 ```
 
 ### ۵.۲) export
+
 ```
 POST /memory/export
 {
@@ -149,7 +172,18 @@ POST /memory/export
 → { "export_id": "exp-xxx", "status": "queued" }
 ```
 
-### ۵.۳) delete (با audit + approval optional)
+### ۵.۲.۱) وضعیت export job + دانلود (پیاده‌سازی‌شده، ۲۰۲۶-۰۷-۱۲)
+
+```
+GET /memory/export/{export_id}
+→ { "id": "exp-xxx", "organizationId": "...", "layers": [3,4], "format": "jsonl", "status": "queued|running|completed|failed", "filePath": null, "error": null, "createdAt": "...", "completedAt": null }
+
+GET /memory/export/{export_id}/download
+→ 409 اگر status هنوز completed نشده؛ در غیر این صورت فایل serialize‌شده (jsonl/json/csv) با header `Content-Disposition: attachment`.
+```
+
+### ۵.۳) delete (با audit + approval — همیشه async، هرگز synchronous)
+
 ```
 POST /memory/delete
 {
@@ -159,19 +193,61 @@ POST /memory/delete
 → { "status": "pending_approval", "approval_id": "aprv-xxx" }
 ```
 
+### ۵.۳.۱) مدیریت approval (پیاده‌سازی‌شده در `apps/openon4net-memory`، ۲۰۲۶-۰۷-۱۲)
+
+```
+GET /memory/approvals
+→ { "approvals": [{ "id": "aprv-xxx", "organizationId": "...", "layers": [4], "filters": {...}, "status": "pending", "resolvedBy": null, "resolvedAt": null, "createdAt": "..." }] }
+
+POST /memory/approvals/{id}/approve
+→ حذف واقعی روی store مطابق layer اجرا می‌شود، approval به‌روزرسانی و برگردانده می‌شود (status: "approved").
+   نکته: این عملیات گراف Neo4j را پاک نمی‌کند — چون node/edgeهای گراف با FK سخت به ردیف حافظه وصل نیستند،
+   پاک‌سازی گراف عملیات جدا و صریح است، نه چیزی که این‌جا استنتاج شود.
+
+POST /memory/approvals/{id}/reject
+→ approval به‌روزرسانی می‌شود (status: "rejected")، ردیف‌ها دست‌نخورده می‌مانند.
+```
+
+### ۵.۴) prune (پیاده‌سازی‌شده در `apps/openon4net-memory`، ۲۰۲۶-۰۷-۱۲ — دقیقاً مطابق شکل مستندشده در `docs/spect/00_VISION/03-memory-engine.md` §۵/§۶)
+
+```
+POST /memory/prune
+{
+  "layers": [3, 4],
+  "older_than": "2026-01-01T00:00:00.000Z"
+}
+→ { "approvals_created": [{ "organizationId": "...", "layer": 4, "approvalId": "aprv-xxx" }], "deleted_count": 0 }
+```
+
+لایه‌های ۳/۴/۵ (مالک‌دار — سازمان یا کاربر) هرگز خودکار حذف نمی‌شوند؛ به‌جایش
+یک `memory_approvals` معلق ساخته می‌شود (همون human-in-the-loop مسیر
+`/memory/delete`) — چون "review" و "summarize" در جدول retention سند
+memory-engine هر دو یعنی تصمیم انسانی. لایه ۶ (Global Knowledge) هیچ
+مالک/بازبین‌کننده‌ای ندارد، پس تنها لایه‌ای است که بلافاصله حذف می‌شود
+(`deleted_count`).
+یک sweep زمان‌بندی‌شده (`startPruneWorker`, `PRUNE_CHECK_INTERVAL_MS` پیش‌فرض
+۲۴ ساعت) همین منطق را با آستانه‌های پیش‌فرض هر لایه
+(`PRUNE_PROJECT_MEMORY_DAYS`=۱۸۰, `PRUNE_COMPANY_KNOWLEDGE_DAYS`=۳۶۵,
+`PRUNE_PERSONAL_KNOWLEDGE_DAYS`=۱۸۰, `PRUNE_GLOBAL_KNOWLEDGE_DAYS`=۳۶۵)
+برای همه‌ی سازمان‌ها اجرا می‌کند.
+
+```
+
 ---
 
 ## ۶) Social/Marketing Execution (از طریق connectors)
 
 ### ۶.۱) نمونه: publish social post
 ```
+
 POST /tools/execute
 {
-  "tool_id": "instagram.post",
-  "connector_install_id": "ci-instagram-xxx",
-  "params": { "caption": "...", "media_url": "s3://..." }
+"tool_id": "instagram.post",
+"connector_install_id": "ci-instagram-xxx",
+"params": { "caption": "...", "media_url": "s3://..." }
 }
 → { "status": "completed", "platform_post_id": "..." }
+
 ```
 
 قواعد:
@@ -184,14 +260,16 @@ POST /tools/execute
 
 برای اینکه کاربر بتواند Skill را دستی تعریف کند (نه فقط approve پیشنهاد):
 ```
+
 POST /skills
 {
-  "agent_id": "agent-xxx",
-  "name": "weekly-report",
-  "description": "ارسال گزارش هفتگی",
-  "definition": { "...": "YAML/JSON skill definition" }
+"agent_id": "agent-xxx",
+"name": "weekly-report",
+"description": "ارسال گزارش هفتگی",
+"definition": { "...": "YAML/JSON skill definition" }
 }
 → { "skill_id": "skill-xxx", "status": "created" }
+
 ```
 
 ---
@@ -209,3 +287,4 @@ POST /skills
 
 > **خلاصه:** این APIها امکان اتصال سرویس‌های خارجی، sync و ingest داده به حافظه سازمانی، و اجرای عملیات social/marketing تحت governance را فراهم می‌کند؛ و مسیر رسمی برای ساخت دستی Skill را هم اضافه می‌کند.
 
+```

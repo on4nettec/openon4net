@@ -3,6 +3,24 @@
 > **فایل:** 02_ARCHITECTURE/03-skill-engine.md
 > **نسخه:** 1.0
 
+> **وضعیت پیاده‌سازی (2026-07-12):** §۲/§۳/§۴/§۷ (چرخه عمر Skill، معماری،
+> فرمت، Auto-Skill Detection) در `apps/openon4net-runtime` پیاده‌سازی شد
+> (RT-032, RT-033) با چند محدودسازی عمدی v1:
+>
+> - فقط `steps[].type: 'tool'` پشتیبانی می‌شود (`query`/`prompt` step types
+>   — دسترسی مستقیم DB / فراخوانی LLM — نیاز به بررسی امنیتی جدا دارند،
+>   موکول به بعد).
+> - فقط `trigger.type: 'manual'` (اجرای صریح از طریق API) — `scheduled`/`event`
+>   موکول به بعد.
+> - Auto-detection فقط ۲ شرط (Frequency + Similarity) را چک می‌کند، نه ۴
+>   شرط سند — `audit_logs` (تنها سیگنال موجود) فیلد duration ندارد، و
+>   "complexity/generality" هیچ سیگنال قابل‌اتکایی ندارد.
+> - §۵/§۶/§۸ (Plugin SDK، مدل اقتصادی، WASM Sandbox) هنوز پیاده‌سازی نشده —
+>   عمداً به یک session بعدی موکول شد، جزئیات:
+>   `docs/spect/06_MEETINGS/02-skills-plugins-marketplace-model.md`.
+>
+> جزئیات کامل تست‌شده/نشده: `docs/spect/DONE.md`.
+
 ---
 
 ## ۱. Skill Engine چیست؟
