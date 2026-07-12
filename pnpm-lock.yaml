@@ -232,6 +232,12 @@ importers:
         specifier: ^5.6.3
         version: 5.9.3
 
+  packages/create-o2n-plugin:
+    devDependencies:
+      vitest:
+        specifier: ^2.1.4
+        version: 2.1.9(@types/node@20.19.43)(jsdom@25.0.1)
+
   packages/governance:
     dependencies:
       '@o2n/shared':
@@ -253,6 +259,15 @@ importers:
       openai:
         specifier: ^4.68.4
         version: 4.104.0(ws@8.21.0)(zod@3.25.76)
+    devDependencies:
+      typescript:
+        specifier: ^5.6.3
+        version: 5.9.3
+      vitest:
+        specifier: ^2.1.4
+        version: 2.1.9(@types/node@20.19.43)(jsdom@25.0.1)
+
+  packages/plugin-sdk:
     devDependencies:
       typescript:
         specifier: ^5.6.3

@@ -22,7 +22,11 @@ export const SkillDefinitionSchema = z.object({
 export type SkillDefinition = z.infer<typeof SkillDefinitionSchema>;
 
 export const SkillCreateSchema = z.object({
-  agentId: z.string().uuid(),
+  // Optional — a manually-created skill is usually authored against one
+  // agent, but an org-level artifact with no owning agent yet is also valid
+  // (e.g. a Marketplace install, granted to specific agents afterward via
+  // the separate SkillGrant step — see SkillGrantService).
+  agentId: z.string().uuid().optional(),
   name: z.string().min(1).max(255),
   description: z.string().max(2000).optional(),
   definition: SkillDefinitionSchema,

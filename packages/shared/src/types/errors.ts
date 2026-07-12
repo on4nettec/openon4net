@@ -13,6 +13,7 @@ export type ErrorCode =
   | 'REQUIRES_APPROVAL'
   | 'AGENT_NOT_ACTIVE'
   | 'TOOL_EXECUTION_FAILED'
+  | 'ACTIVATION_REQUIRED'
   | 'INTERNAL_ERROR';
 
 export interface ErrorEnvelope {

@@ -78,14 +78,19 @@
 > پکیج جدید تخمین زده شد. کاربر صریحاً scope رو به **فقط هسته‌ی Runtime:
 > Skill Engine + Auto-Skill Detection** محدود کرد (RT-032, RT-033 در
 > `docs/spect/DONE.md`). آیتم‌های ۱-۵ زیر همه به یک session بعدی موکول شدن.
+>
+> **بروزرسانی دوم ۲۰۲۶-۰۷-۱۲ (تکمیل شد):** کاربر خواست فاز ۲ کامل تکمیل
+> بشه؛ هر ۵ آیتم زیر انجام شد. جزئیات کامل در `docs/spect/DONE.md`'s بخش
+> «Phase 2 تکمیلی — Activation Client + Marketplace + Plugin SDK/CLI —
+> T-CP-007, RT-034..037, MKT-017..019».
 
-| #   | Task                                                                                                             | مسئول  | Deadline     | Status      |
-| --- | ---------------------------------------------------------------------------------------------------------------- | ------ | ------------ | ----------- |
-| ۱   | فرمول‌بندی دقیق «Marketplace access model» (activation-gated free + purchase-gated paid) و ثبت به‌عنوان ADR      | Claude | session بعدی | ⏳ موکول شد |
-| ۲   | افزودن Skills به‌عنوان یک entity قابل‌فروش/رایگان در `12-marketplace-service.md` (الان فقط Plugin پوشش داده شده) | Claude | session بعدی | ⏳ موکول شد |
-| ۳   | مستندسازی UI صفحه تنظیمات Plugin (schema-driven، از manifest) در جای مناسب (`04_API` یا سند UI جدید)             | Claude | session بعدی | ⏳ موکول شد |
-| ۴   | طراحی و ساخت CLI/استاندارد Plugin (`create-o2n-plugin` یا معادل)                                                 | Claude | session بعدی | ⏳ موکول شد |
-| ۵   | T-CP-007 (Runtime-side activation client) — پیش‌نیاز مدل رایگان — با اجازه‌ی این جلسه شروع می‌شود                | Claude | session بعدی | ⏳ موکول شد |
+| #   | Task                                                                                                             | مسئول  | Deadline     | Status                                                                                        |
+| --- | ---------------------------------------------------------------------------------------------------------------- | ------ | ------------ | --------------------------------------------------------------------------------------------- |
+| ۱   | فرمول‌بندی دقیق «Marketplace access model» (activation-gated free + purchase-gated paid) و ثبت به‌عنوان ADR      | Claude | session بعدی | ✅ انجام شد — ADR-012 در `05_DECISIONS/01-adr-index.md`                                       |
+| ۲   | افزودن Skills به‌عنوان یک entity قابل‌فروش/رایگان در `12-marketplace-service.md` (الان فقط Plugin پوشش داده شده) | Claude | session بعدی | ✅ انجام شد — بخش ۱۰ همون سند                                                                 |
+| ۳   | مستندسازی UI صفحه تنظیمات Plugin (schema-driven، از manifest) در جای مناسب (`04_API` یا سند UI جدید)             | Claude | session بعدی | ✅ انجام شد — `web/app/marketplace/page.tsx` + یادداشت `configSchema` در `03-skill-engine.md` |
+| ۴   | طراحی و ساخت CLI/استاندارد Plugin (`create-o2n-plugin` یا معادل)                                                 | Claude | session بعدی | ✅ انجام شد — `packages/create-o2n-plugin` + `packages/plugin-sdk` (`@o2n/plugin-sdk`)        |
+| ۵   | T-CP-007 (Runtime-side activation client) — پیش‌نیاز مدل رایگان — با اجازه‌ی این جلسه شروع می‌شود                | Claude | session بعدی | ✅ انجام شد — `activation-client.ts`/`activation-state.ts`/`activation-scheduler.ts`          |
 
 ## ۴. نکات آزاد
 

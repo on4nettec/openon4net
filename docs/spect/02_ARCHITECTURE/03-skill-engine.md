@@ -197,14 +197,34 @@ my-plugin/
   "license": "MIT",
   "permissions": ["http:send", "memory:read"],
   "models": ["gpt-4o-mini"],
-  "hooks": ["after:agent-response"]
+  "hooks": ["after:agent-response"],
+  "configSchema": [{ "key": "apiKey", "label": "Kavenegar API Key", "type": "string" }]
 }
 ```
+
+> **`configSchema` (اضافه‌شده ۲۰۲۶-۰۷-۱۲):** اختیاری — آرایه‌ای از
+> `{key, label, type}` که فیلدهای تنظیماتِ per-install یک Plugin رو declare
+> می‌کنه (مثل API key یک connector کانال). صفحه‌ی تنظیمات داشبورد
+> (`web/app/marketplace/page.tsx`) این آرایه رو می‌خونه و یک فرم عمومی
+> schema-driven رندر می‌کنه — نه هاردکد به‌ازای هر پلاگین. مقدارها در
+> `plugin_installs.config JSONB` ذخیره می‌شن (`PATCH /marketplace/installs/:id/config`
+> در Marketplace، از طریق `PATCH /v1/marketplace/installs/:installId/config`
+> در Runtime پروکسی می‌شه).
+
+> **نام واقعی پکیج‌ها (اضافه‌شده ۲۰۲۶-۰۷-۱۲):** پیاده‌سازی SDK زیر
+> `@on4net/sdk` را با نام واقعی مونوریپو `@o2n/plugin-sdk` (در
+> `packages/plugin-sdk`) منتشر می‌کند — چون تمام packageهای دیگر این
+> مونوریپو با scope `@o2n/*` هستند، نه `@on4net/*`. یک CLI هم به‌عنوان
+> `create-o2n-plugin` (در `packages/create-o2n-plugin`) اضافه شده که ساختار
+> پوشه‌ی بالا (`manifest.json`, `main.ts`, `actions/`, `prompts/`,
+> `assets/`, `README.md`) را با `pnpm create o2n-plugin <name>` می‌سازد.
+> این CLI فقط scaffold تولید می‌کند — type/manifest-building است، نه
+> sandboxed execution (که همچنان طبق `09-plugin-sandbox.md` به‌تعویق افتاده).
 
 ### Plugin SDK API:
 
 ```typescript
-import { createPlugin, Action, Tool } from '@on4net/sdk';
+import { createPlugin, Action, Tool } from '@o2n/plugin-sdk';
 
 const plugin = createPlugin({
   id: 'sms-sender',

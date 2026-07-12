@@ -75,3 +75,15 @@ export class ToolExecutionError extends O2NError {
     this.name = 'ToolExecutionError';
   }
 }
+
+/** T-CP-007 — thrown when a Marketplace install is attempted but this org's Runtime isn't activated (see gateway/src/services/activation-state.ts). Never thrown for unconfigured (pure self-host) deployments — see ActivationState's default-true rule. */
+export class ActivationRequiredError extends O2NError {
+  constructor() {
+    super(
+      'ACTIVATION_REQUIRED',
+      'This organization is not activated — activate Runtime before installing from the Marketplace',
+      402,
+    );
+    this.name = 'ActivationRequiredError';
+  }
+}

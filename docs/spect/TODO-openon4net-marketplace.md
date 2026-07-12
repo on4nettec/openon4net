@@ -12,6 +12,13 @@
 > چون نیاز به اجازه‌ی فایل ریشه داره — تا اون موقع `pnpm install
 --ignore-workspace` جایگزین دائمیشه برای dev/test محلی.
 >
+> **2026-07-12 — MKT-017..019 انجام شد (بخش D):** Skills حالا یک entity
+> موازی با Plugins در Marketplace است (بدون versions/checksum/signature/
+> review pipeline — چیزی برای verify کردن باینری نیست). یک gap مستندشده‌ی
+> قدیمی هم بسته شد: `plugin_installs.config` که در API doc بود ولی در جدول
+> واقعی نبود، حالا با یک migration + `PATCH /marketplace/installs/:id/config`
+> واقعی شده. ۹ تست vitest جدید روی Postgres واقعی. جزئیات در `DONE.md`.
+>
 > **یادآوری مهم از `docs/spect/09_TASKS/08-scope-guardrails-mvp.md` §3.3/§5:**
 > Plane 4 در MVP فقط باید «**private/local install + registry ساده**» باشه؛
 > «Marketplace public + review pipeline + signing سخت‌گیرانه + payouts» رسماً
@@ -50,6 +57,17 @@
 | MKT-010 | Permission diff on update (طبق §6.2 سند معماری): اگه نسخه جدید permission بیشتر بخواد، install باید re-approve بشه وگرنه رد |          ❌ خیر          |  ❌   |
 | MKT-011 | مستندسازی `API.md` (curl + نمونه response برای هر route) — مثل الگوی memory                                                 |          ❌ خیر          |  ❌   |
 
+## بخش D — Skills به‌عنوان یک Marketplace entity (2026-07-12، فاز ۲ تکمیلی Runtime)
+
+> جزئیات تصمیم در `06_MEETINGS/02-skills-plugins-marketplace-model.md` و
+> `02_ARCHITECTURE/12-marketplace-service.md` §۱۰.
+
+| #       | تسک                                                                                                                                                                       | نیاز به اجازه فایل ریشه؟ | وضعیت |
+| ------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | :----------------------: | :---: |
+| MKT-017 | migration `marketplace_skills` + `skill_installs` (موازی با plugins، بدون versions/checksum/signature/review pipeline)                                                    |          ❌ خیر          |  ✅   |
+| MKT-018 | `publisher-skill-service.ts` (`submitSkill`, upsert بر اساس slug) + `marketplace-skill-service.ts` (`listMarketplaceSkills`, `installMarketplaceSkill`) + routeهای مربوطه |          ❌ خیر          |  ✅   |
+| MKT-019 | `PATCH /marketplace/installs/:id/config` — تکمیل یک gap مستندشده‌ی قبلی (`plugin_installs.config` در API doc بود ولی نه در جدول/کد)                                       |          ❌ خیر          |  ✅   |
+
 ## بخش C — ⚠️ صراحتاً خارج از MVP guardrail (نیاز به تأیید آگاهانه)
 
 > طبق `docs/spect/09_TASKS/08-scope-guardrails-mvp.md` §3.3: «Marketplace public
@@ -78,6 +96,7 @@
 ### MVP-lite / Private marketplace
 
 - `MKT-001..MKT-011`
+- `MKT-017..MKT-019` — Skills entity + Plugin config PATCH، ✅ انجام شد ۲۰۲۶-۰۷-۱۲
 
 ### Post-MVP / Public marketplace
 

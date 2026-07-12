@@ -130,10 +130,14 @@
 
 > **وضعیت (2026-07-12): هفته‌های ۱۷-۲۰ (Skill Engine Core + Auto-Skill
 > Detection) کامل شد در `apps/openon4net-runtime` (RT-032, RT-033) — با
-> تأیید صریح کاربر زودتر از زمان‌بندی رسمی. هفته‌های ۲۱-۲۴ (Plugin SDK،
-> Marketplace MVP برای Skills/Plugins، activation-gated free tier، CLI)
-> عمداً به یک session بعدی موکول شد — جزئیات:
-> `docs/spect/06_MEETINGS/02-skills-plugins-marketplace-model.md`.
+> تأیید صریح کاربر زودتر از زمان‌بندی رسمی.
+>
+> **بروزرسانی (همون روز):** هفته‌های ۲۱-۲۴ هم با تأیید صریح کاربر همون روز
+> تکمیل شدن (RT-034..037, MKT-017..019, T-CP-007) — جزئیات:
+> `docs/spect/DONE.md`'s «Phase 2 تکمیلی» و
+> `docs/spect/06_MEETINGS/02-skills-plugins-marketplace-model.md`. WASM
+> Sandbox و permission-system واقعی برای اجرای Plugin عمداً بیرون این batch
+> موندن (طبق `09-plugin-sandbox.md` — یک آیتم جدا و بزرگ‌تر).
 
 ### هدف: Skill Engine + Auto-Skill Detection
 
@@ -153,24 +157,24 @@
 
 ### هفته ۲۱-۲۲: Plugin SDK
 
-- [ ] SDK package (npm)
-- [ ] Plugin manifest format
-- [ ] WASM Sandbox
-- [ ] Permission system
-- [ ] Plugin lifecycle (install, enable, disable)
+- [x] SDK package (npm) — `@o2n/plugin-sdk` (`packages/plugin-sdk`) + CLI اسکلت‌ساز `create-o2n-plugin`
+- [x] Plugin manifest format — `manifest.json` (`03-skill-engine.md` §۵) از قبل مستند بود، حالا `configSchema` هم اضافه شد
+- [ ] WASM Sandbox — عمداً بیرون این batch (طبق `09-plugin-sandbox.md`)
+- [ ] Permission system — manifest آرایه‌ی `permissions` را declare می‌کند، ولی enforcement واقعی روی اجرا هنوز نیست (اجرای Plugin خودش هنوز پیاده‌سازی نشده)
+- [x] Plugin lifecycle (install, enable, disable) — نصب از Marketplace با activation-gating (subset: enable/disable دستی جدا از upgrade هنوز نیست، فقط `is_active` داخلی روی upgrade تغییر می‌کند)
 
 ### هفته ۲۳-۲۴: Marketplace MVP
 
-- [ ] Plugin listing page
-- [ ] Install from marketplace
-- [ ] Publisher dashboard
-- [ ] Basic analytics (downloads, ratings)
+- [x] Plugin listing page — `web/app/marketplace/page.tsx` (Plugin + Skill با هم)
+- [x] Install from marketplace — `POST /v1/marketplace/{plugins,skills}/:id/install` (activation-gated)
+- [ ] Publisher dashboard — فقط API (`/publisher/plugins`, `/publisher/skills`)، صفحه‌ی UI برای publisher هنوز نیست
+- [ ] Basic analytics (downloads, ratings) — هنوز نیست
 
 ### تحویل فاز ۲:
 
 ✅ Skill Engine با auto-detection
-✅ Plugin SDK عمومی
-✅ Marketplace پایه
+✅ Plugin SDK عمومی (بدون WASM sandbox واقعی)
+✅ Marketplace پایه (بدون publisher dashboard/analytics)
 
 ---
 
