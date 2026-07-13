@@ -182,31 +182,37 @@
 
 ### هدف: Workspace + Governance + Digital Employee
 
+> **وضعیت (2026-07-13): هفته‌های ۲۵-۲۸ کامل شد** (RT-038..043 در
+> `docs/spect/DONE.md`) — با تأیید صریح کاربر زودتر از زمان‌بندی رسمی.
+> هفته‌های ۲۹-۳۲ (Digital Employee + Agent Teams) عمداً به یک batch بعدی
+> موکول شدن — بزرگ‌ترین/پرریسک‌ترین بخش‌های فاز ۳ و طبق
+> `09_TASKS/08-scope-guardrails-mvp.md` هم «Should»/«Later» بودن، نه Must.
+
 ### هفته ۲۵-۲۶: Organization & Workspace
 
-- [ ] Multi-tenant architecture
-- [ ] Organization CRUD
-- [ ] Workspace CRUD
-- [ ] User management + roles
-- [ ] Invitation system
+- [x] Multi-tenant architecture (app-level `organization_id` scoping در همه جدول‌ها/query‌ها؛ بدون Postgres RLS یا isolation سخت‌تر — کافی برای self-host تک‌مستأجر-به-ازای-دیپلوی)
+- [x] Organization CRUD — `GET`/`PATCH /v1/organization` (RT-038؛ `plan`/`status` عمداً غیرقابل‌ویرایش، کار Control-Plane)
+- [x] Workspace CRUD — create از قبل بود، update/archive این batch اضافه شد (RT-039؛ حذف واقعی نه، چون `ON DELETE CASCADE` روی agents خطرناکه)
+- [x] User management + roles — CRUD از قبل بود، تخصیص نقش سفارشی + workspace انتخابی این batch اضافه شد (RT-040)
+- [x] Invitation system (RT-041 — ایمیل واقعی با همون `nodemailer` مگ‌لینک، صفحه‌ی `/accept-invite`)
 
 ### هفته ۲۷-۲۸: Governance
 
-- [ ] Audit Log کامل
-- [ ] Human-in-the-Loop system
-- [ ] Approval queue
-- [ ] Budget management
-- [ ] Access Control (RBAC)
+- [ ] Audit Log کامل — پوشش گسترده از قبل هست (chat/agents/skills/marketplace/approvals/login) ولی نه export/retention/tamper-evidence؛ این batch دست نزد
+- [ ] Human-in-the-Loop system — از قبل واقعی و کار می‌کنه ولی فقط روی chat cost/policy scope شده، نه یک قلاب عمومی «هر اکشنی می‌تونه approval بخواد»؛ این batch دست نزد
+- [x] Approval queue — `ApprovalService.create()` عمومی + `expireStale()` + صفحه‌ی `/approvals` (RT-042؛ trigger واقعی فعلاً همچنان فقط chat-cost/policy است، این batch فقط زیرساخت رو عمومی کرد)
+- [x] Budget management — `WalletService` روی جدول `wallets` که تا الان schema-only بود (RT-043؛ سطح سازمان، opt-in، علاوه بر سقف موجود per-agent)
+- [x] Access Control (RBAC) — baseline از قبل قوی‌ترین بخش بود؛ این batch محدودیت «فقط ۴ نقش سیستمی قابل‌تخصیص» رو برداشت (RT-040)
 
-### هفته ۲۹-۳۰: Digital Employee
+### هفته ۲۹-۳۰: Digital Employee (موکول شد)
 
 - [ ] Agent → Employee transformation
-- [ ] Role system (CEO, Marketing, Sales, …)
-- [ ] Agent hierarchy (reports_to)
-- [ ] Agent schedule
-- [ ] Agent KPI definition
+- [ ] Role system (CEO, Marketing, Sales, …) — فیلد `agents.role` آزاد از قبل هست، یک catalog ساختاریافته نیست
+- [ ] Agent hierarchy (reports_to) — ستون FK از قبل کار می‌کنه، ابزار traversal/validation/UI نیست
+- [x] Agent schedule (RT-007 — از قبل کامل و واقعاً کار می‌کنه)
+- [ ] Agent KPI definition — فقط یک ستون JSONB ذخیره‌سازی، بدون هیچ محاسبه/گزارش‌گیری
 
-### هفته ۳۱-۳۲: Agent Teams
+### هفته ۳۱-۳۲: Agent Teams (موکول شد، عمداً کاملاً خالی)
 
 - [ ] Agent-to-Agent communication
 - [ ] Workflow engine (simple DAG)
@@ -216,9 +222,9 @@
 ### تحویل فاز ۳:
 
 ✅ Multi-tenant با Organization
-✅ Governance کامل
-✅ Digital Employee با نقش و KPI
-✅ Agent Teams
+✅ Governance — تعمیم‌یافته (Approval queue + Wallet)، نه «کامل» به معنای سند (Audit/HITL گسترش پیدا نکردن)
+❌ Digital Employee با نقش و KPI — موکول شد
+❌ Agent Teams — موکول شد
 
 ---
 

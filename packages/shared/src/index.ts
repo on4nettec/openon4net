@@ -15,3 +15,6 @@ export * from './schemas/user.js';
 export * from './schemas/workspace.js';
 export * from './schemas/policy.js';
 export * from './schemas/skill.js';
+export * from './schemas/organization.js';
+export * from './schemas/invitation.js';
+export * from './schemas/wallet.js';

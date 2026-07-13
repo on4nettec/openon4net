@@ -48,6 +48,18 @@ export class BudgetExceededError extends O2NError {
   }
 }
 
+/** Same code as BudgetExceededError but for an org/workspace wallet balance, not a per-agent budget cap. */
+export class WalletInsufficientBalanceError extends O2NError {
+  constructor(organizationId: string, balanceCredits: number) {
+    super(
+      'INSUFFICIENT_BUDGET',
+      `Organization ${organizationId}'s wallet balance (${balanceCredits} credits) is insufficient for this request`,
+      402,
+    );
+    this.name = 'WalletInsufficientBalanceError';
+  }
+}
+
 export class ModelUnavailableError extends O2NError {
   constructor(provider: string, cause?: unknown) {
     super('MODEL_UNAVAILABLE', `Provider ${provider} unavailable after retry`, 503, cause);

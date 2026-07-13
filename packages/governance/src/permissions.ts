@@ -30,6 +30,12 @@ export const DEFAULT_ROLE_PERMISSIONS: Record<UserRole, string[]> = {
     'workspaces:write',
     'policies:read',
     'policies:write',
+    'organization:read',
+    'organization:write',
+    'invitations:create',
+    'invitations:read',
+    'invitations:revoke',
+    'billing:wallet:credit',
   ],
   manager: [
     'agents:create',

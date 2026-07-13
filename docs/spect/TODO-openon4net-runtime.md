@@ -50,6 +50,12 @@
 | RT-035 | Marketplace install-proxy routes (Skills + Plugins) — فاز ۲ تکمیلی                               | ✅ انجام شد — `services/marketplace-client.ts` + `routes/marketplace.ts`: `GET /v1/marketplace/{plugins,skills}`، `POST .../install` (activation-gated برای هر دو، رایگان و پولی یکسان — ببینید ADR-012)، نصب Skill کپی `definition` را در یک ردیف local `skills` می‌ریزد. ۵ تست vitest. جزئیات در `DONE.md` |  ✅   |
 | RT-036 | Plugin Settings UI (schema-driven config form) — فاز ۲ تکمیلی                                    | ✅ انجام شد — `PATCH /v1/marketplace/installs/:installId/config` (پروکسی به Marketplace)، صفحه `web/app/marketplace/page.tsx` (لیست Skill/Plugin + Install + فرم تنظیمات بر اساس `manifest.configSchema`). فرم فقط write (بدون GET تک‌نصب، مقدار قبلی pre-populate نمی‌شود). جزئیات در `DONE.md`             |  ✅   |
 | RT-037 | Plugin SDK + CLI (`@o2n/plugin-sdk`, `create-o2n-plugin`) — فاز ۲ تکمیلی                         | ✅ انجام شد — `packages/plugin-sdk` (`createPlugin`/`defineTool`/`defineAction`، فقط type/manifest-building، بدون sandboxed execution) + `packages/create-o2n-plugin` (CLI اسکلت‌ساز، `pnpm create o2n-plugin <name>`). ۳ تست vitest برای CLI. جزئیات در `DONE.md`                                           |  ✅   |
+| RT-038 | Organization CRUD واقعی — فاز ۳ (هفته ۲۵-۲۶)                                                     | ✅ انجام شد — `OrgService.getById`/`update` + `GET`/`PATCH /v1/organization` (بدون :id در URL، فقط سازمان همون session)؛ `plan`/`status` عمداً غیرقابل‌ویرایش (کار Control-Plane/activation است). بخش Organization در `web/app/settings/page.tsx`. جزئیات در `DONE.md`                                       |  ✅   |
+| RT-039 | Workspace CRUD تکمیل (update + archive) — فاز ۳ (هفته ۲۵-۲۶)                                     | ✅ انجام شد — ستون `workspaces.status` (migration 0016)؛ `PATCH`/`POST .../archive`. حذف واقعی عمداً جایگزین نشد چون `agents.workspace_id` `ON DELETE CASCADE` داره — آرشیو، نه delete. ساخت agent در workspace آرشیوشده رد می‌شه. UI ادیت/آرشیو در `/workspaces`. جزئیات در `DONE.md`                       |  ✅   |
+| RT-040 | تکمیل RBAC: تخصیص نقش سفارشی + binding به workspace انتخابی — فاز ۳ (هفته ۲۷-۲۸)                 | ✅ انجام شد — `UserCreateSchema`/`UserUpdateSchema`'s `role` از enum ۴تایی به هر نام نقش موجود در سازمان باز شد (DB از قبل همینو اجازه می‌داد، فقط Zod محدود بود)؛ `workspaceId` اختیاری اضافه شد. UI: `/users`'s role select از `GET /v1/roles` می‌خونه. جزئیات در `DONE.md`                                |  ✅   |
+| RT-041 | سیستم دعوت با ایمیل (Invitation) — فاز ۳ (هفته ۲۵-۲۶)                                            | ✅ انجام شد — جدول `invitations` (migration 0017)، `InvitationService` (همون الگوی hashed-token مگ‌لینک، TTL هفت‌روزه)، `POST/GET /v1/invitations`، `POST /v1/auth/invitations/:token/accept` (public)، صفحه `/accept-invite`. ایمیل با همون `nodemailer` مگ‌لینک. جزئیات در `DONE.md`                       |  ✅   |
+| RT-042 | تعمیم صف تأیید (Approval Queue) — فاز ۳ (هفته ۲۷-۲۸)                                             | ✅ انجام شد — `ApprovalService.create()` عمومی (نه فقط از داخل chat)، `expireStale()` + `approval-expiry-scheduler.ts` (sweep هر ۵ دقیقه)، صفحه `/approvals`. تریگر فعلی هنوز فقط chat-cost/policy است — این batch زیرساخت رو عمومی کرد، نه سطح جدید trigger. جزئیات در `DONE.md`                            |  ✅   |
+| RT-043 | بودجه سازمان/workspace با جدول `wallets` — فاز ۳ (هفته ۲۷-۲۸)                                    | ✅ انجام شد — `WalletService` (credit/debit روی `wallets` که تا الان schema-only بود)، `GET /v1/wallet` + `POST /v1/wallet/credit`، budget gate سوم در `chat-service.ts` (اگه wallet ساخته شده باشه). اختیاری/opt-in — سازمان بدون wallet یعنی بدون سقف. جزئیات در `DONE.md`                                 |  ✅   |
 
 ## بخش C — ⚠️ تصمیمات بزرگ‌تر معماری (نیاز به تأیید آگاهانه قبل از شروع)
 
@@ -114,6 +120,7 @@
 - `RT-030..RT-031`
 - `RT-032..RT-033` — roadmap Phase 2 (Skills): Skill Engine Core + Auto-Skill Detection, ✅ انجام شد ۲۰۲۶-۰۷-۱۲
 - `RT-034..RT-037` — تکمیل roadmap Phase 2: Activation Client + Marketplace install-proxy (Skills/Plugins) + Plugin Settings UI + Plugin SDK/CLI، ✅ انجام شد ۲۰۲۶-۰۷-۱۲
+- `RT-038..RT-043` — roadmap Phase 3 (هفته ۲۵-۲۸ فقط): Organization/Workspace CRUD تکمیل + Invitation + تکمیل RBAC + تعمیم Approval Queue + بودجه Wallet، ✅ انجام شد ۲۰۲۶-۰۷-۱۳. هفته ۲۹-۳۲ (Digital Employee KPI engine + Agent Teams) عمداً موکول شد — جزئیات در `DONE.md`
 
 ### وضعیت خاص
 
@@ -128,7 +135,8 @@
 
 ### Phase 3 — Organization
 
-- `RT-021..RT-031`
+- `RT-021..RT-031`, `RT-038..RT-043`
+- هفته ۲۵-۲۸ (Org/Workspace CRUD + Invitation + RBAC + Approval + Wallet) ✅ انجام شد ۲۰۲۶-۰۷-۱۳؛ هفته ۲۹-۳۲ (Digital Employee KPI engine + Agent Teams) موکول شد
 - وابستگی‌های roadmap: `T-077..T-104`
 
 ### Phase 4 — Ecosystem
