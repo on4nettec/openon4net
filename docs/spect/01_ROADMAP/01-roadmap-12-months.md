@@ -135,9 +135,16 @@
 > **بروزرسانی (همون روز):** هفته‌های ۲۱-۲۴ هم با تأیید صریح کاربر همون روز
 > تکمیل شدن (RT-034..037, MKT-017..019, T-CP-007) — جزئیات:
 > `docs/spect/DONE.md`'s «Phase 2 تکمیلی» و
-> `docs/spect/06_MEETINGS/02-skills-plugins-marketplace-model.md`. WASM
-> Sandbox و permission-system واقعی برای اجرای Plugin عمداً بیرون این batch
-> موندن (طبق `09-plugin-sandbox.md` — یک آیتم جدا و بزرگ‌تر).
+> `docs/spect/06_MEETINGS/02-skills-plugins-marketplace-model.md`.
+>
+> **بروزرسانی (2026-07-14):** ۶ آیتم باقی‌مانده‌ی این فاز هم تکمیل شد
+> (RT-049..053, MKT-020..022) — versioning/fork، Skill validation module،
+> permission-diff consent gate، analytics (downloads/ratings)، و publisher
+> dashboard. **WASM Sandbox عمداً همچنان بیرون این batch موند** (طبق
+> `09-plugin-sandbox.md` و تأیید صریح کاربر) — «Permission system» یعنی
+> consent gate روی install/upgrade (MKT-010 از قبل + RT-051 این batch)، نه
+> sandboxing واقعی روی اجرا، چون اصلاً هیچ Plugin execution engine ای هنوز
+> ساخته نشده. جزئیات: `docs/spect/DONE.md`.
 
 ### هدف: Skill Engine + Auto-Skill Detection
 
@@ -146,35 +153,35 @@
 - [x] Skill Registry (`skills` CRUD)
 - [x] Skill format (JSON/Zod، نه لفظاً YAML — ساختار مشابه سند §۴، محدود به `trigger.type: 'manual'` و `steps[].type: 'tool'` در v1؛ `query`/`prompt` step types موکول به بعد)
 - [x] Skill execution engine (`skill-executor.ts` — واقعاً روی `webhook-send`/`telegram-send` اجرا می‌شود)
-- [ ] Skill versioning (فیلد `version` هست، ولی منطق bump/fork هنوز نیست)
+- [x] Skill versioning — `SkillService.update()` روی تغییر `definition` نسخه رو auto-bump می‌کنه (patch)، `SkillService.fork()` + `POST /v1/skills/:id/fork` (RT-049)
 
 ### هفته ۱۹-۲۰: Auto-Skill Detection
 
 - [x] Pattern Detector (Frequency + Similarity — ۲ از ۴ شرط سند، Duration/Complexity سیگنال قابل‌اتکا ندارن)
 - [x] Proposal system (`skill_proposals`)
 - [x] User approval flow (`routes/skill-proposals.ts` + صفحه `/skill-proposals`)
-- [ ] Skill validation (فقط اعتبارسنجی Zod روی شکل داده — یک ماژول جدای safety-check/تست اجرایی ساخته نشده)
+- [x] Skill validation — `services/skill-validator.ts` (شناسه‌ی تکراری، سقف تعداد step، و SSRF guard وب‌هوک در زمان _ذخیره_، نه فقط اجرا) — `query`/`prompt` step types همچنان بیرون (RT-050)
 
 ### هفته ۲۱-۲۲: Plugin SDK
 
 - [x] SDK package (npm) — `@o2n/plugin-sdk` (`packages/plugin-sdk`) + CLI اسکلت‌ساز `create-o2n-plugin`
 - [x] Plugin manifest format — `manifest.json` (`03-skill-engine.md` §۵) از قبل مستند بود، حالا `configSchema` هم اضافه شد
-- [ ] WASM Sandbox — عمداً بیرون این batch (طبق `09-plugin-sandbox.md`)
-- [ ] Permission system — manifest آرایه‌ی `permissions` را declare می‌کند، ولی enforcement واقعی روی اجرا هنوز نیست (اجرای Plugin خودش هنوز پیاده‌سازی نشده)
+- [ ] WASM Sandbox — عمداً بیرون این batch (طبق `09-plugin-sandbox.md` و تأیید صریح کاربر، 2026-07-14)
+- [x] Permission system — چون هنوز هیچ Plugin execution engine ای نیست (نیازمند WASM Sandbox بالا)، «enforcement» یعنی consent gate در Runtime: `permissions` حالا در discovery API نشون داده می‌شه + `acknowledgePermissionDiff` تا انتهای UI وایر شد (MKT-010 قبلاً سمت marketplace بود، RT-051 سمت Runtime این batch)
 - [x] Plugin lifecycle (install, enable, disable) — نصب از Marketplace با activation-gating (subset: enable/disable دستی جدا از upgrade هنوز نیست، فقط `is_active` داخلی روی upgrade تغییر می‌کند)
 
 ### هفته ۲۳-۲۴: Marketplace MVP
 
 - [x] Plugin listing page — `web/app/marketplace/page.tsx` (Plugin + Skill با هم)
 - [x] Install from marketplace — `POST /v1/marketplace/{plugins,skills}/:id/install` (activation-gated)
-- [ ] Publisher dashboard — فقط API (`/publisher/plugins`, `/publisher/skills`)، صفحه‌ی UI برای publisher هنوز نیست
-- [ ] Basic analytics (downloads, ratings) — هنوز نیست
+- [x] Publisher dashboard — صفحه‌ی جدید `web/app/marketplace/publisher/page.tsx` روی API از قبل موجود `/publisher/{plugins,skills}` (MKT-022, RT-053) — بدون publisher identity واقعی (MVP-lite، همون shared-secret)
+- [x] Basic analytics (downloads, ratings) — `plugin_ratings`/`skill_ratings` (migration جدید در پلن Marketplace)، `installCount` (COUNT روی installs موجود، بدون ستون جدید)، `avgRating`/`ratingCount`، rate کردن از UI (MKT-020/021, RT-052)
 
 ### تحویل فاز ۲:
 
-✅ Skill Engine با auto-detection
-✅ Plugin SDK عمومی (بدون WASM sandbox واقعی)
-✅ Marketplace پایه (بدون publisher dashboard/analytics)
+✅ Skill Engine با auto-detection + versioning/fork + validation module
+✅ Plugin SDK عمومی (بدون WASM sandbox واقعی — عمداً موکول شد)
+✅ Marketplace کامل: install + permission consent + publisher dashboard + analytics (downloads/ratings)
 
 ---
 
@@ -182,11 +189,16 @@
 
 ### هدف: Workspace + Governance + Digital Employee
 
-> **وضعیت (2026-07-13): هفته‌های ۲۵-۲۸ کامل شد** (RT-038..043 در
-> `docs/spect/DONE.md`) — با تأیید صریح کاربر زودتر از زمان‌بندی رسمی.
-> هفته‌های ۲۹-۳۲ (Digital Employee + Agent Teams) عمداً به یک batch بعدی
-> موکول شدن — بزرگ‌ترین/پرریسک‌ترین بخش‌های فاز ۳ و طبق
-> `09_TASKS/08-scope-guardrails-mvp.md` هم «Should»/«Later» بودن، نه Must.
+> **وضعیت (2026-07-14): کل فاز ۳ (هفته ۲۵-۳۲) کامل شد** (RT-038..048,
+> RT-054..056 در `docs/spect/DONE.md`) — با تأیید صریح کاربر زودتر از
+> زمان‌بندی رسمی. هفته‌های ۲۹-۳۲ (RT-044..048) با v1-scoping ساخته شدن:
+> Workflow Engine فقط DAG ساده (`agent`/`tool`/`human`/`parallel`/`condition`،
+> بدون `loop`/`notification`/Visual Builder/trigger زمان‌بندی‌شده) طبق
+> `09_TASKS/08-scope-guardrails-mvp.md`. Outcome Engine (تحلیل خودکار
+> KPI/business intelligence) عمداً بیرون این batch موند — مال فاز ۴.
+> Governance (هفته ۲۷-۲۸) هم بعداً (2026-07-14) تکمیل شد: Audit Log
+> export/retention/tamper-evidence (RT-054/055) و HITL عمومی‌شده (RT-056،
+> فقط روی مسیرهای مستقیم اجرای tool، نه Workflow steps — عمداً محدود).
 
 ### هفته ۲۵-۲۶: Organization & Workspace
 
@@ -198,33 +210,33 @@
 
 ### هفته ۲۷-۲۸: Governance
 
-- [ ] Audit Log کامل — پوشش گسترده از قبل هست (chat/agents/skills/marketplace/approvals/login) ولی نه export/retention/tamper-evidence؛ این batch دست نزد
-- [ ] Human-in-the-Loop system — از قبل واقعی و کار می‌کنه ولی فقط روی chat cost/policy scope شده، نه یک قلاب عمومی «هر اکشنی می‌تونه approval بخواد»؛ این batch دست نزد
+- [x] Audit Log کامل — export (`GET /v1/audit/export?format=csv|json`)، retention (`organizations.settings.auditRetentionDays` + `AUDIT_RETENTION_DAYS` + scheduler روزانه)، tamper-evidence (زنجیره‌ی hash SHA-256 با `prev_hash`/`row_hash` + `verifyChain()`؛ فقط از migration 0020 به بعد، ردیف‌های قدیمی‌تر verifiable نیستن) (RT-054, RT-055)
+- [x] Human-in-the-Loop system — عمومی شد فراتر از chat: `PolicyCondition`'s نوع جدید `action_type_in` + قلاب توی دو route مستقیم اجرای tool (`telegram-send`/`webhook-send`)؛ عمداً Workflow Engine's خودِ step های `tool`/`agent` رو نگرفت (scope محدود، نه فراموشی) (RT-056)
 - [x] Approval queue — `ApprovalService.create()` عمومی + `expireStale()` + صفحه‌ی `/approvals` (RT-042؛ trigger واقعی فعلاً همچنان فقط chat-cost/policy است، این batch فقط زیرساخت رو عمومی کرد)
 - [x] Budget management — `WalletService` روی جدول `wallets` که تا الان schema-only بود (RT-043؛ سطح سازمان، opt-in، علاوه بر سقف موجود per-agent)
 - [x] Access Control (RBAC) — baseline از قبل قوی‌ترین بخش بود؛ این batch محدودیت «فقط ۴ نقش سیستمی قابل‌تخصیص» رو برداشت (RT-040)
 
-### هفته ۲۹-۳۰: Digital Employee (موکول شد)
+### هفته ۲۹-۳۰: Digital Employee
 
-- [ ] Agent → Employee transformation
-- [ ] Role system (CEO, Marketing, Sales, …) — فیلد `agents.role` آزاد از قبل هست، یک catalog ساختاریافته نیست
-- [ ] Agent hierarchy (reports_to) — ستون FK از قبل کار می‌کنه، ابزار traversal/validation/UI نیست
+- [x] Agent → Employee transformation — feature جدا نیست؛ حاصل جمع role catalog + hierarchy + KPI + schedule/budget از قبل موجوده (RT-044..046؛ مستند در `docs/spect/DONE.md`'s تصمیم‌های طراحی)
+- [x] Role system (CEO, Marketing, Sales, …) — `AGENT_ROLE_CATALOG` (۱۲ نقش) در `packages/shared`، `agents.role` همچنان `VARCHAR` آزاد (RT-044)
+- [x] Agent hierarchy (reports_to) — `assertNoReportsToCycle` + `listReports`/`listTeam` + org-chart تو-رفته در UI (RT-045)
 - [x] Agent schedule (RT-007 — از قبل کامل و واقعاً کار می‌کنه)
-- [ ] Agent KPI definition — فقط یک ستون JSONB ذخیره‌سازی، بدون هیچ محاسبه/گزارش‌گیری
+- [x] Agent KPI definition — `KpiDefinitionSchema` + `updateKpis` + پنل UI؛ فقط target/current ادمین‌تنظیم، بدون محاسبه‌ی خودکار (RT-046؛ Outcome Engine مال فاز ۴)
 
-### هفته ۳۱-۳۲: Agent Teams (موکول شد، عمداً کاملاً خالی)
+### هفته ۳۱-۳۲: Agent Teams
 
-- [ ] Agent-to-Agent communication
-- [ ] Workflow engine (simple DAG)
-- [ ] Team assignment
-- [ ] Task delegation
+- [x] Agent-to-Agent communication — `agent_messages` + `agent-message-scheduler.ts`، async/fire-and-forget (RT-047)
+- [x] Workflow engine (simple DAG) — `agent`/`tool`/`human`/`parallel`/`condition` step types، اجرای دستی فقط v1، بدون Visual Builder (RT-048)
+- [x] Team assignment — `AgentService.listTeam()` روی `reports_to` موجود، بدون جدول جدید (RT-045)
+- [x] Task delegation — feature جدا نیست؛ همون step نوع `agent` توی Workflow Engine (RT-048)
 
 ### تحویل فاز ۳:
 
 ✅ Multi-tenant با Organization
-✅ Governance — تعمیم‌یافته (Approval queue + Wallet)، نه «کامل» به معنای سند (Audit/HITL گسترش پیدا نکردن)
-❌ Digital Employee با نقش و KPI — موکول شد
-❌ Agent Teams — موکول شد
+✅ Governance — کامل: Approval queue + Wallet + Audit Log (export/retention/tamper-evidence) + HITL عمومی‌شده (محدود به مسیرهای مستقیم tool، نه Workflow steps)
+✅ Digital Employee با نقش و KPI — role catalog + hierarchy + KPI (v1: بدون Outcome Engine خودکار)
+✅ Agent Teams — messaging + Workflow Engine v1 (بدون Visual Builder/scheduled trigger) + team assignment
 
 ---
 

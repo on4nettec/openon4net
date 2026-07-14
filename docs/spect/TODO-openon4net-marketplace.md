@@ -68,6 +68,18 @@
 | MKT-018 | `publisher-skill-service.ts` (`submitSkill`, upsert بر اساس slug) + `marketplace-skill-service.ts` (`listMarketplaceSkills`, `installMarketplaceSkill`) + routeهای مربوطه |          ❌ خیر          |  ✅   |
 | MKT-019 | `PATCH /marketplace/installs/:id/config` — تکمیل یک gap مستندشده‌ی قبلی (`plugin_installs.config` در API doc بود ولی نه در جدول/کد)                                       |          ❌ خیر          |  ✅   |
 
+## بخش E — Permission consent + Analytics + Publisher دسترس‌پذیر از Runtime (2026-07-14)
+
+> کاربر خواست باقی‌مانده‌های فاز ۲ روadmap تکمیل بشه؛ این سه آیتم روی این
+> سرویس (Marketplace) هم کار لازم داشتن، چون سمت Runtime فقط proxy می‌کنه.
+> جزئیات کامل در `docs/spect/DONE.md`.
+
+| #       | تسک                                                                                                                                                                                                                        |  نیاز به اجازه فایل ریشه؟   | وضعیت |
+| ------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | :-------------------------: | :---: |
+| MKT-020 | `listMarketplacePlugins()` حالا `permissions` نسخه‌ی approved رو برمی‌گردونه (قبلاً هیچ‌وقت expose نمی‌شد) — پیش‌نیاز consent gate سمت Runtime (RT-051)                                                                    |           ❌ خیر            |  ✅   |
+| MKT-021 | migration `0005_marketplace_ratings.sql` (`plugin_ratings`/`skill_ratings`، upsert بر اساس (item, org))؛ `installCount` از `COUNT(*)` روی installs موجود (بدون ستون جدید)؛ `ratePlugin`/`rateSkill` + route های `.../rate` | ❌ خیر (فقط migration محلی) |  ✅   |
+| MKT-022 | بدون کد اضافه سمت این سرویس — `/publisher/plugins`/`/publisher/skills` از قبل (بخش A) کامل بودن، فقط هیچ‌وقت از Runtime صدا زده نمی‌شدن؛ کاری که این batch اضافه کرد سمت Runtime بود (RT-053)                              |           ❌ خیر            |  ✅   |
+
 ## بخش C — ⚠️ صراحتاً خارج از MVP guardrail (نیاز به تأیید آگاهانه)
 
 > طبق `docs/spect/09_TASKS/08-scope-guardrails-mvp.md` §3.3: «Marketplace public
@@ -97,6 +109,7 @@
 
 - `MKT-001..MKT-011`
 - `MKT-017..MKT-019` — Skills entity + Plugin config PATCH، ✅ انجام شد ۲۰۲۶-۰۷-۱۲
+- `MKT-020..MKT-022` — permission consent + analytics (downloads/ratings) + publisher dashboard (سمت Runtime، RT-051..053)، ✅ انجام شد ۲۰۲۶-۰۷-۱۴
 
 ### Post-MVP / Public marketplace
 

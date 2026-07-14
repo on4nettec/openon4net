@@ -36,6 +36,18 @@ export const DEFAULT_ROLE_PERMISSIONS: Record<UserRole, string[]> = {
     'invitations:read',
     'invitations:revoke',
     'billing:wallet:credit',
+    'workflows:create',
+    'workflows:read',
+    'workflows:update',
+    'workflows:run',
+    // marketplace:read/install were missing from this seed entirely despite
+    // routes/marketplace.ts requiring them since RT-035 — a pre-existing gap
+    // (fresh orgs' admin role could never actually browse/install), fixed
+    // here alongside adding marketplace:publish for the new publisher
+    // dashboard (MKT-022).
+    'marketplace:read',
+    'marketplace:install',
+    'marketplace:publish',
   ],
   manager: [
     'agents:create',

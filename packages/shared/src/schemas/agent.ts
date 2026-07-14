@@ -43,3 +43,27 @@ export const AgentUpdateSchema = AgentCreateSchema.partial().extend({
   status: z.enum(['active', 'paused', 'archived', 'terminated']).optional(),
 });
 export type AgentUpdateInput = z.infer<typeof AgentUpdateSchema>;
+
+/**
+ * Admin-set target + API-driven current value (roadmap item 15). Stored in
+ * agents.kpi_config.kpis (JSONB, already existed as an opaque blob — this
+ * just gives it a real shape). Not an auto-computed Outcome Engine
+ * (trend analysis / business intelligence) — that's roadmap Phase 4.
+ */
+export const KpiDefinitionSchema = z.object({
+  name: z.string().min(1).max(255),
+  target: z.union([z.string(), z.number()]),
+  current: z.union([z.string(), z.number()]).optional(),
+});
+export type KpiDefinition = z.infer<typeof KpiDefinitionSchema>;
+
+export const AgentKpisUpdateSchema = z.object({
+  kpis: z.array(KpiDefinitionSchema),
+});
+export type AgentKpisUpdateInput = z.infer<typeof AgentKpisUpdateSchema>;
+
+/** Roadmap item 16 — async agent-to-agent (or human-to-agent) messaging, see services/agent-message-service.ts. */
+export const AgentMessageSendSchema = z.object({
+  content: z.string().min(1).max(10_000),
+});
+export type AgentMessageSendInput = z.infer<typeof AgentMessageSendSchema>;

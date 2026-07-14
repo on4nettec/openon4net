@@ -99,3 +99,16 @@ export class ActivationRequiredError extends O2NError {
     this.name = 'ActivationRequiredError';
   }
 }
+
+/** MKT-020 — a plugin upgrade requests permissions the org's currently-active version didn't have; the marketplace service's own PermissionDiffRequiredError, re-thrown Runtime-side with the same shape. */
+export class PermissionDiffRequiredError extends O2NError {
+  constructor(addedPermissions: string[], fromVersion: string, toVersion: string) {
+    super(
+      'PERMISSION_DIFF_REQUIRED',
+      `Upgrading from ${fromVersion} to ${toVersion} requests new permissions: ${addedPermissions.join(', ')} — retry with acknowledgePermissionDiff: true to approve`,
+      409,
+      { addedPermissions, fromVersion, toVersion },
+    );
+    this.name = 'PermissionDiffRequiredError';
+  }
+}

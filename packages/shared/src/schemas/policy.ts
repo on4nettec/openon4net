@@ -13,6 +13,12 @@ export const PolicyConditionSchema = z.discriminatedUnion('type', [
     startHour: z.number().int().min(0).max(23),
     endHour: z.number().int().min(0).max(23),
   }),
+  // RT-056: generalizes the HITL gate beyond chat cost/policy — matches an
+  // action's type string (e.g. "tool-webhook-send"), evaluated wherever a
+  // route opts into the policy check (currently routes/tools.ts's two
+  // direct tool-execution routes; NOT Workflow Engine's own tool/agent
+  // steps — deliberately bounded, see policy-service.ts).
+  z.object({ type: z.literal('action_type_in'), actionTypes: z.array(z.string().min(1)).min(1) }),
 ]);
 export type PolicyCondition = z.infer<typeof PolicyConditionSchema>;
 

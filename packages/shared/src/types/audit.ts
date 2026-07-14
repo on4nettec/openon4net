@@ -17,6 +17,9 @@ export interface AuditLog {
   ipAddress: string | null;
   userAgent: string | null;
   readonly createdAt: string;
+  /** Tamper-evidence hash chain (RT-055) — null for rows written before migration 0020, never verifiable retroactively. */
+  prevHash: string | null;
+  rowHash: string | null;
 }
 
 export type ApprovalQueueStatus = 'pending' | 'approved' | 'rejected' | 'expired';

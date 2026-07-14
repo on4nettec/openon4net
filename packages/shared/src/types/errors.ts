@@ -14,6 +14,7 @@ export type ErrorCode =
   | 'AGENT_NOT_ACTIVE'
   | 'TOOL_EXECUTION_FAILED'
   | 'ACTIVATION_REQUIRED'
+  | 'PERMISSION_DIFF_REQUIRED'
   | 'INTERNAL_ERROR';
 
 export interface ErrorEnvelope {
