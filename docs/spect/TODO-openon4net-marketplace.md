@@ -86,13 +86,18 @@
 >
 > - review pipeline + signing سخت‌گیرانه + payouts» بعد از ۲-۳ مشتری واقعی.
 
-| #       | تسک                                                                                              | یادداشت                                                                             |
-| ------- | ------------------------------------------------------------------------------------------------ | ----------------------------------------------------------------------------------- |
-| MKT-012 | Public marketplace واقعی (چند publisher/سازمان خارجی، نه فقط لوکال)                              | جایگزین دامنه‌ی v0.1 (module داخل API) با v0.2+ سرویس مستقل طبق §9 سند معماری       |
-| MKT-013 | Review pipeline خودکار (SAST/dependency scan) + manual review workflow واقعی                     | فعلاً حتی approve/reject ساده هم بخش A/B پوشش نمی‌ده، این یعنی pipeline قضاوت واقعی |
-| MKT-014 | Signing سخت‌گیرانه (PKI/cosign به‌جای صرفاً checksum) + verified publisher program               | امنیتی، پیش‌نیاز توزیع عمومی artifact                                               |
-| MKT-015 | Revenue share ledger کامل + payout queue واقعی (پول واقعی به publisher)                          | طبق guardrail §4: «payout پولی به publisherها فعلاً ممنوع — credits داخلی کافیه»    |
-| MKT-016 | Kill switch platform-level واقعی (غیرفعال‌سازی global در حادثه) + CDN distribution برای artifact | وابسته به MKT-012 (بدون public marketplace، global kill switch اولویت پایینه)       |
+> **بروزرسانی (2026-07-14):** این جدول قدیمی شده بود — MKT-013/015/016 و نیمی
+> از MKT-014 در یک پاس قبلی (بدون شماره‌گذاری صریح در این فایل) واقعاً ساخته
+> شدن، فقط اینجا هیچ‌وقت ✅ نشدن. جزئیات کامل + ارجاع کد: `docs/spect/DONE.md`.
+
+| #       | تسک                                                                                                     | یادداشت                                                                                                                                                                                                     | وضعیت |
+| ------- | ------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | :---: |
+| MKT-012 | Public marketplace واقعی (چند publisher/سازمان خارجی، نه فقط لوکال)                                     | جایگزین دامنه‌ی v0.1 (module داخل API) با v0.2+ سرویس مستقل طبق §9 سند معماری                                                                                                                               |  ❌   |
+| MKT-013 | Review pipeline — بخش «manual review واقعی» + بخش «هیوریستیک خودکار» ساخته شدن                          | ✅ `reviewPluginVersion()` (approve/reject/needs_changes واقعی، persisted) + `runAutomatedChecks()` (allowlist مجوزها، نه SAST/dependency-scan واقعی — اون نیم دیگه همچنان نیست، به‌صراحت مستند شده در کد)  |  🔧   |
+| MKT-014 | Signing + verified publisher                                                                            | ✅ signing (checksum sha256 + امضای ed25519 روی رجیستری) و flag «verified publisher» (`verifyPublisher()`) ساخته شدن؛ ❌ PKI/cosign سخت‌گیرانه و یک برنامه‌ی واقعی verified-publisher (معیار/KYC) هنوز نیست |  🔧   |
+| MKT-015 | Revenue share ledger کامل + payout queue واقعی (پول واقعی به publisher)                                 | ✅ ledger (`accrueRevenueShare`/`getPublisherLedger`/`createPayoutBatch`، ۷۰/۳۰ طبق سند) ساخته شد؛ ❌ payout هنوز فقط ثبت دفتری است، نه انتقال پول واقعی — طبق guardrail §4 عمداً همینطور می‌مونه           |  🔧   |
+| MKT-016 | Kill switch platform-level واقعی + CDN distribution برای artifact                                       | ✅ kill switch (`getKillSwitch`/`setKillSwitch`) ساخته شد؛ ❌ CDN distribution وابسته به MKT-012 (بدون public marketplace اولویت پایینه) هنوز نیست                                                          |  🔧   |
+| MKT-023 | نمایش `priceCredits` پلاگین‌ها در discovery + endpoint تک‌آیتمی `GET /marketplace/{plugins,skills}/:id` | ✅ انجام شد — پیش‌نیاز RT-057 سمت Runtime (کسر واقعی کیف‌پول سازمان نصب‌کننده برای آیتم‌های پولی). جزئیات در `DONE.md`                                                                                      |  ✅   |
 
 ---
 
@@ -110,6 +115,8 @@
 - `MKT-001..MKT-011`
 - `MKT-017..MKT-019` — Skills entity + Plugin config PATCH، ✅ انجام شد ۲۰۲۶-۰۷-۱۲
 - `MKT-020..MKT-022` — permission consent + analytics (downloads/ratings) + publisher dashboard (سمت Runtime، RT-051..053)، ✅ انجام شد ۲۰۲۶-۰۷-۱۴
+- `MKT-023` — نمایش priceCredits + endpoint تک‌آیتمی (پیش‌نیاز RT-057 پرداخت واقعی سمت Runtime)، ✅ انجام شد ۲۰۲۶-۰۷-۱۴
+- review pipeline (نیم manual)، revenue-share ledger، kill switch، و flag «verified publisher» هم عملاً از قبل ساخته شده بودن (بدون شماره‌ی رسمی در این فایل تا حالا) — جزئیات در بخش C بالا و `DONE.md`
 
 ### Post-MVP / Public marketplace
 

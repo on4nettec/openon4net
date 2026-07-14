@@ -47,13 +47,25 @@ export type AgentUpdateInput = z.infer<typeof AgentUpdateSchema>;
 /**
  * Admin-set target + API-driven current value (roadmap item 15). Stored in
  * agents.kpi_config.kpis (JSONB, already existed as an opaque blob — this
- * just gives it a real shape). Not an auto-computed Outcome Engine
- * (trend analysis / business intelligence) — that's roadmap Phase 4.
+ * just gives it a real shape).
+ *
+ * `metricType` (RT-058, roadmap Phase 4 Outcome Engine): when set to
+ * anything other than 'manual', `current` is no longer admin-set — the
+ * daily kpi-snapshot-scheduler computes it from `audit_logs` and overwrites
+ * it (see gateway/src/services/kpi-computation-service.ts). Omitted/'manual'
+ * keeps the original admin-set-only behavior, fully backward compatible
+ * with every KPI defined before this field existed.
  */
+export const KpiMetricTypeSchema = z.enum(['manual', 'action_count', 'cost_cents', 'success_rate']);
+export type KpiMetricType = z.infer<typeof KpiMetricTypeSchema>;
+
 export const KpiDefinitionSchema = z.object({
   name: z.string().min(1).max(255),
   target: z.union([z.string(), z.number()]),
   current: z.union([z.string(), z.number()]).optional(),
+  metricType: KpiMetricTypeSchema.default('manual'),
+  /** Trailing window the computed metric aggregates over — ignored for `metricType: 'manual'`. */
+  windowDays: z.number().int().positive().default(7),
 });
 export type KpiDefinition = z.infer<typeof KpiDefinitionSchema>;
 

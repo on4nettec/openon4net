@@ -246,31 +246,31 @@
 
 ### هفته ۳۳-۳۴: Marketplace پیشرفته
 
-- [ ] Payment integration
-- [ ] Revenue sharing (70/30)
-- [ ] Plugin review system
-- [ ] Verified publisher program
+- [x] Payment integration — **stub عمداً، طبق تصمیم کاربر** (نه Stripe/درگاه واقعی): گپ واقعی این بود که نصب آیتم پولی هیچ‌وقت کیف‌پول سازمان نصب‌کننده رو کسر نمی‌کرد؛ حالا `routes/marketplace.ts` قبل از نصب قیمت رو از marketplace می‌پرسه و `WalletService.debit()` رو صدا می‌زنه (RT-057, MKT-023). شارژ واقعی کیف‌پول (از طریق کارت/Stripe) همچنان دستی/ادمین است (RT-043)
+- [x] Revenue sharing (70/30) — از قبل ساخته شده بود (`accrueRevenueShare`، ۷۰۰۰bps)، فقط اینجا و در `TODO-openon4net-marketplace.md` هیچ‌وقت ✅ نشده بود؛ payout هنوز فقط دفتری، نه پول واقعی (عمداً، طبق guardrail)
+- [x] Plugin review system — از قبل ساخته شده بود (manual approve/reject + هیوریستیک allowlist خودکار)؛ SAST/dependency-scan واقعی همچنان نیست
+- [x] Verified publisher program — از قبل یک flag ادمین ساده بود (`verifyPublisher`)؛ بدون معیار/KYC واقعی، مستند شده به‌عنوان محدودیت
 
 ### هفته ۳۵-۳۶: Outcome Engine
 
-- [ ] KPI tracking system
-- [ ] Outcome measurement
-- [ ] BI Dashboard (charts, reports)
-- [ ] Automated insights ("فروش ۱۲٪ کم شده…")
+- [x] KPI tracking system — `KpiDefinitionSchema` گرفت `metricType` (`manual`/`action_count`/`cost_cents`/`success_rate`) + `windowDays`؛ پیش‌فرض `manual` یعنی سازگار با عقب (RT-058)
+- [x] Outcome measurement — `agent_kpi_snapshots` (migration جدید) + `kpi-computation-service.ts` (aggregate روی `audit_logs`) + `kpi-snapshot-scheduler.ts` (روزانه) — تاریخچه‌ی روند، نه فقط آخرین مقدار (RT-058)
+- [x] BI Dashboard (charts, reports) — صفحه‌ی `/outcomes` با sparkline دست‌ساز SVG (بدون افزودن کتابخانه‌ی جدید)؛ روت `GET /v1/agents/:id/kpi-outcomes` عمداً insights+anomalies+prediction رو یکجا برمی‌گردونه (RT-059)
+- [x] Automated insights ("فروش ۱۲٪ کم شده…") — `insight-generator.ts`: جمله‌ی template‌شده وقتی `|% change| > 15` — **هیوریستیک آستانه‌ای، نه NLG واقعی** (RT-060)
 
 ### هفته ۳۷-۳۸: Smart Features
 
-- [ ] Auto-reporting (daily/weekly)
-- [ ] Anomaly detection
-- [ ] Predictive analytics
-- [ ] Natural language query on data
+- [x] Auto-reporting (daily/weekly) — opt-in (`organizations.settings.reportingEnabled`/`reportingFrequency`)؛ `report-scheduler.ts` فقط اگه SMTP تنظیم شده باشه ایمیل می‌فرسته، وگرنه گزارش فقط از طریق `GET /v1/reports/latest` در دسترسه (RT-061)
+- [x] Anomaly detection — `anomaly-detector.ts`: Z-score نسبت به میانگین/انحراف‌معیار ۳۰روزه‌ی trailing — **هیوریستیک آماری ساده، نه مدل آموزش‌دیده** (RT-062)
+- [x] Predictive analytics — `trend-predictor.ts`: رگرسیون خطی ساده (OLS) روی نقاط اخیر — **برون‌یابی خطی، نه پیش‌بینی واقعی** (RT-063)
+- [x] Natural language query on data — `nl-query-service.ts`: سوال کاربر با LLM به یک intent ثابت و Zod-validated ترجمه می‌شه (`{metric, agentId, windowDays}`) — **LLM هیچ‌وقت SQL یا کوئری آزاد تولید نمی‌کنه**، فقط از بین گزینه‌های محدود انتخاب می‌کنه؛ جواب عددی با یک تماس دوم LLM به جمله تبدیل می‌شه (RT-064)
 
 ### هفته ۳۹-۴۰: Integration Hub
 
-- [ ] Webhook system بالغ
-- [ ] API برای همه چیز
-- [ ] Zapier/Make-like workflow
-- [ ] Import/Export
+- [x] Webhook system بالغ — `webhook-connector.ts` از قبل فقط outbound بود؛ حالا inbound هم هست: `webhook_endpoints` (migration جدید، token هش‌شده مثل magic-link/invitation)، `POST /v1/webhooks/:token` (public، بدون JWT — خودِ token اعتبارسنجیه)، rate-limited (RT-065)
+- [x] API برای همه چیز — از قبل ۲۲+ فایل route برای موجودیت‌های اصلی بود؛ این batch فقط `GET /v1/skills/:id/export` و `GET /v1/workflows/:id/export` رو اضافه کرد (پایین‌تر)
+- [x] Zapier/Make-like workflow — Workflow Engine's DAG (`agent`/`tool`/`human`/`parallel`/`condition`) از فاز ۳ بود، فقط manual-run؛ حالا `workflows.trigger` ستون جدید (`manual`/`scheduled`/`webhook`) + `workflow-trigger-scheduler.ts` (همون الگوی interval بدون کتابخانه‌ی cron) (RT-066)
+- [x] Import/Export — `GET /v1/skills/:id/export` / `GET /v1/workflows/:id/export` (فقط `{name, description, definition}` قابل‌حمل)؛ «import» یعنی همون `POST` ایجاد موجود، بدون روت جدا؛ UI هر دو صفحه دکمه‌ی Export + حالت paste-JSON برای import گرفتن (RT-067)
 
 ### تحویل فاز ۴:
 

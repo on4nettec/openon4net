@@ -13,6 +13,11 @@ import { z } from 'zod';
  * `parallel` sub-steps are deliberately shallow (`agent`/`tool` only, no
  * nested `parallel`/`condition`) — a real recursive DAG editor is out of
  * scope for v1.
+ *
+ * Triggers (RT-066, roadmap Phase 4): `scheduled` reuses agents.schedule's
+ * `intervalMinutes` shape (no cron-parsing library); `webhook` ties into
+ * webhook_endpoints (RT-065). Still no true event-driven triggers beyond
+ * these two kinds.
  */
 export const WorkflowAgentStepSchema = z.object({
   id: z.string().min(1),
@@ -78,10 +83,23 @@ export const WorkflowDefinitionSchema = z.object({
 });
 export type WorkflowDefinition = z.infer<typeof WorkflowDefinitionSchema>;
 
+export const WorkflowTriggerSchema = z.discriminatedUnion('type', [
+  z.object({ type: z.literal('manual') }),
+  z.object({
+    type: z.literal('scheduled'),
+    intervalMinutes: z.number().int().positive(),
+    /** Scheduler-owned, not client-settable — same convention as AgentScheduleSchema.lastRunAt. */
+    lastRunAt: z.string().datetime().optional(),
+  }),
+  z.object({ type: z.literal('webhook'), webhookEndpointId: z.string().uuid() }),
+]);
+export type WorkflowTrigger = z.infer<typeof WorkflowTriggerSchema>;
+
 export const WorkflowCreateSchema = z.object({
   name: z.string().min(1).max(255),
   description: z.string().max(2000).optional(),
   definition: WorkflowDefinitionSchema,
+  trigger: WorkflowTriggerSchema.default({ type: 'manual' }),
 });
 export type WorkflowCreateInput = z.infer<typeof WorkflowCreateSchema>;
 
@@ -90,5 +108,6 @@ export const WorkflowUpdateSchema = z.object({
   description: z.string().max(2000).nullable().optional(),
   definition: WorkflowDefinitionSchema.optional(),
   status: z.enum(['draft', 'active', 'archived']).optional(),
+  trigger: WorkflowTriggerSchema.optional(),
 });
 export type WorkflowUpdateInput = z.infer<typeof WorkflowUpdateSchema>;
