@@ -27,8 +27,15 @@ export const AuthTokenResponseSchema = z.object({
 });
 export type AuthTokenResponse = z.infer<typeof AuthTokenResponseSchema>;
 
-/** RT-014 — Auth Method Registry (docs/spect/02_ARCHITECTURE/16-authentication-modes.md). */
-export const AuthMethodSchema = z.enum(['password', 'magic_link', 'oauth', 'dev_api_key']);
+/** RT-014 — Auth Method Registry (docs/spect/02_ARCHITECTURE/16-authentication-modes.md). RT-068/069 added oidc/saml (per-org enterprise SSO, see sso.ts). */
+export const AuthMethodSchema = z.enum([
+  'password',
+  'magic_link',
+  'oauth',
+  'dev_api_key',
+  'oidc',
+  'saml',
+]);
 export type AuthMethod = z.infer<typeof AuthMethodSchema>;
 
 export const AuthMethodsResponseSchema = z.object({

@@ -9,8 +9,8 @@ groups:
         labels:
           severity: P1
         annotations:
-          summary: "High 5xx error rate"
-          description: "HTTP 5xx rate > 2% for 5 minutes."
+          summary: 'High 5xx error rate'
+          description: 'HTTP 5xx rate > 2% for 5 minutes.'
 
       - alert: O2NHighLatencyP95
         expr: |
@@ -19,8 +19,8 @@ groups:
         labels:
           severity: P2
         annotations:
-          summary: "High API latency (p95)"
-          description: "p95 latency > 500ms for 10 minutes."
+          summary: 'High API latency (p95)'
+          description: 'p95 latency > 500ms for 10 minutes.'
 
       - alert: O2NCreditSpendSpike
         expr: |
@@ -29,6 +29,33 @@ groups:
         labels:
           severity: P2
         annotations:
-          summary: "Credits spend spike"
-          description: "Credits consumption exceeded threshold."
+          summary: 'Credits spend spike'
+          description: 'Credits consumption exceeded threshold.'
 
+      # RT-072 — SLA monitoring. The 99.9% availability target itself is a
+      # business commitment (docs/spect/DONE.md's Phase 5 section), not
+      # something this alert "achieves" — it's the input signal an on-call
+      # engineer needs to know the target is at risk. 99.9% over 30 days
+      # allows ~43 minutes of downtime; this alerts well before that budget
+      # is exhausted (0.1% error-rate threshold ≈ the SLA's error budget,
+      # evaluated over a 1h window so short blips don't page unnecessarily).
+      - alert: O2NAvailabilitySLABudgetAtRisk
+        expr: |
+          sum(rate(http_requests_total{status_code=~"5.."}[1h])) /
+          sum(rate(http_requests_total[1h])) > 0.001
+        for: 15m
+        labels:
+          severity: P1
+        annotations:
+          summary: 'Error rate threatens the 99.9% availability SLA'
+          description: "5xx rate over the last hour exceeds the 99.9% target's error budget."
+
+      - alert: O2NHealthCheckDegraded
+        expr: |
+          o2n_health_check_status == 0
+        for: 2m
+        labels:
+          severity: P0
+        annotations:
+          summary: 'Gateway health check reports a dependency down'
+          description: "routes/health.ts's DB/Redis check has been failing for 2+ minutes — see /health for which dependency."

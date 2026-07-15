@@ -5,22 +5,47 @@
 
 ---
 
+## ۰. پیاده‌سازی واقعی (RT-071، ۲۰۲۶-۰۷-۱۵)
+
+> این فایل از اول یک سند طراحی هدف (target-state) بود — WAL-G، cross-region
+> replica، MinIO/Neo4j backup، DR test خودکار هفتگی/ماهانه. **هیچ‌کدوم از
+> این‌ها هنوز ساخته نشده.** چیزی که RT-071 واقعاً ساخت خیلی محدودتره:
+
+- `gateway/src/services/backup-service.ts` — `pg_dump -Fc` (custom format،
+  خودش compressed) روی کل دیتابیس، نه continuous WAL archiving. `pg_restore
+--clean --if-exists` برای بازیابی.
+- `gateway/src/services/backup-scheduler.ts` — opt-in (`BACKUP_ENABLED`)،
+  فقط local disk (`BACKUP_DIR`)، بدون آپلود به S3/MinIO/هر storage خارجی —
+  اون قدم صراحتاً یک TODO مستندشده در کده، نه چیزی که جعل شده باشه، چون این
+  محیط credential واقعی cloud نداره.
+- `gateway/scripts/backup-db.mjs` / `restore-db.mjs` — CLI دستی
+  (`pnpm run backup` / `pnpm run restore <file> --confirm`).
+- **RTO/RPO واقعی این پیاده‌سازی** (نه اهداف بخش ۱ زیر که هنوز architecture
+  هدفه): RPO = فاصله‌ی `BACKUP_INTERVAL_HOURS` (پیش‌فرض ۲۴ ساعت — خیلی
+  دورتر از هدف &lt;۱۵ دقیقه‌ی بخش ۱)؛ RTO = زمان دستی اجرای `pg_restore` روی
+  یک instance تازه، بدون failover خودکار.
+- Neo4j/MinIO/Redis backup، cross-region replication، DR test خودکار، و
+  Failover خودکار (بخش‌های ۲-۶ زیر) هنوز اصلاً شروع نشدن.
+
+---
+
 ## ۱. RTO و RPO
 
-| شاخص | مقدار هدف | توضیح |
-|------|-----------|-------|
-| **RTO** (Recovery Time) | < ۱ ساعت | زمان بازگردانی کامل سرویس |
-| **RPO** (Recovery Point) | < ۱۵ دقیقه | حداکثر داده از دست رفته |
+| شاخص                     | مقدار هدف  | توضیح                     |
+| ------------------------ | ---------- | ------------------------- |
+| **RTO** (Recovery Time)  | < ۱ ساعت   | زمان بازگردانی کامل سرویس |
+| **RPO** (Recovery Point) | < ۱۵ دقیقه | حداکثر داده از دست رفته   |
 
 ---
 
 ## ۲. سناریوهای Disaster
 
 ### ۲.۱ Single Service Failure
+
 ```
 سناریو: یکی از سرویس‌ها کرش کرد (مثلاً API)
 تأثیر: کاربران نمی‌توانند چت کنند
-راه‌حل: 
+راه‌حل:
   - Kubernetes自动 restart
   - اگر > ۳ بار کرش کرد → جایگزین پاد
   - Alert به team
@@ -28,6 +53,7 @@ RTO: < ۲ دقیقه
 ```
 
 ### ۲.۲ Database Failure
+
 ```
 سناریو: PostgreSQL down
 تأثیر: همه چیز متوقف می‌شود
@@ -40,6 +66,7 @@ RPO: < ۵ دقیقه
 ```
 
 ### ۲.۳ LLM Provider Outage
+
 ```
 سناریو: OpenAI API down
 تأثیر: درخواست‌های GPT-4o fail
@@ -51,6 +78,7 @@ RTO: < ۳۰ ثانیه (automatic)
 ```
 
 ### ۲.۴ Region Failure
+
 ```
 سناریو: کل region آفلاین (AWS us-east-1 down)
 تأثیر: همه سرویس‌ها down
@@ -63,6 +91,7 @@ RPO: < ۱۵ دقیقه
 ```
 
 ### ۲.۵ Data Corruption
+
 ```
 سناریو: باگ باعث خرابی داده شد
 تأثیر: حافظه Agentها خراب
@@ -81,31 +110,31 @@ RPO: < ۱۵ دقیقه
 ```yaml
 backup:
   postgresql:
-    tool: "pg_dump + wal-g"
-    full_backup: "daily at 03:00 UTC"
-    wal_archiving: "continuous (every 5 min)"
-    retention: "30 days"
-    test_restore: "weekly (automated)"
-    
+    tool: 'pg_dump + wal-g'
+    full_backup: 'daily at 03:00 UTC'
+    wal_archiving: 'continuous (every 5 min)'
+    retention: '30 days'
+    test_restore: 'weekly (automated)'
+
   neo4j:
-    tool: "neo4j-admin dump"
-    full_backup: "daily at 04:00 UTC"
-    retention: "14 days"
-    
+    tool: 'neo4j-admin dump'
+    full_backup: 'daily at 04:00 UTC'
+    retention: '14 days'
+
   minio:
-    tool: "mc mirror to secondary"
-    sync: "continuous"
-    retention: "90 days"
-    
+    tool: 'mc mirror to secondary'
+    sync: 'continuous'
+    retention: '90 days'
+
   redis:
-    tool: "RDB snapshots"
-    frequency: "every 6 hours"
-    retention: "7 days"
-    
+    tool: 'RDB snapshots'
+    frequency: 'every 6 hours'
+    retention: '7 days'
+
   configs:
-    tool: "git"
-    repo: "github.com/on4nettec/infrastructure"
-    frequency: "every change"
+    tool: 'git'
+    repo: 'github.com/on4nettec/infrastructure'
+    frequency: 'every change'
 ```
 
 ---
@@ -113,6 +142,7 @@ backup:
 ## ۴. Recovery Runbook
 
 ### ۴.۱ Database Recovery
+
 ```bash
 # ۱. شناسایی مشکل
 pg_isready -h db-primary
@@ -134,6 +164,7 @@ pg_rewind --target-pgdata /var/lib/postgresql/data \
 ```
 
 ### ۴.۲ Full Region Failover
+
 ```bash
 # ۱. DNS تغییر
 # Update DNS record به region دوم
@@ -157,25 +188,25 @@ curl https://api.on4net.com/health
 
 ```yaml
 dr_alerts:
-  - name: "Primary DB Down"
-    condition: "pg_isready fails > 30s"
-    severity: "P0"
-    action: "Automatic failover + Slack + SMS"
-    
-  - name: "Backup Failed"
-    condition: "No successful backup in 24h"
-    severity: "P1"
-    action: "Slack + investigate"
-    
-  - name: "Region Health"
-    condition: "Region latency > 500ms"
-    severity: "P1"
-    action: "Evaluate failover"
-    
-  - name: "Certificate Expiry"
-    condition: "cert expires < 7 days"
-    severity: "P1"
-    action: "Auto-renew + notification"
+  - name: 'Primary DB Down'
+    condition: 'pg_isready fails > 30s'
+    severity: 'P0'
+    action: 'Automatic failover + Slack + SMS'
+
+  - name: 'Backup Failed'
+    condition: 'No successful backup in 24h'
+    severity: 'P1'
+    action: 'Slack + investigate'
+
+  - name: 'Region Health'
+    condition: 'Region latency > 500ms'
+    severity: 'P1'
+    action: 'Evaluate failover'
+
+  - name: 'Certificate Expiry'
+    condition: 'cert expires < 7 days'
+    severity: 'P1'
+    action: 'Auto-renew + notification'
 ```
 
 ---
@@ -184,25 +215,25 @@ dr_alerts:
 
 ```yaml
 dr_tests:
-  - type: "single_service_failover"
-    frequency: "weekly"
-    duration: "30 min"
-    success_criteria: "RTO < 2 min"
-    
-  - type: "database_failover"
-    frequency: "monthly"
-    duration: "1 hour"
-    success_criteria: "RTO < 15 min, RPO < 5 min"
-    
-  - type: "full_region_failover"
-    frequency: "quarterly"
-    duration: "2 hours"
-    success_criteria: "RTO < 30 min, no data loss"
-    
-  - type: "backup_restore_test"
-    frequency: "weekly"
-    duration: "automated"
-    success_criteria: "data consistent, all services up"
+  - type: 'single_service_failover'
+    frequency: 'weekly'
+    duration: '30 min'
+    success_criteria: 'RTO < 2 min'
+
+  - type: 'database_failover'
+    frequency: 'monthly'
+    duration: '1 hour'
+    success_criteria: 'RTO < 15 min, RPO < 5 min'
+
+  - type: 'full_region_failover'
+    frequency: 'quarterly'
+    duration: '2 hours'
+    success_criteria: 'RTO < 30 min, no data loss'
+
+  - type: 'backup_restore_test'
+    frequency: 'weekly'
+    duration: 'automated'
+    success_criteria: 'data consistent, all services up'
 ```
 
 ---

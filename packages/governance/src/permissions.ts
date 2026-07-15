@@ -48,6 +48,15 @@ export const DEFAULT_ROLE_PERMISSIONS: Record<UserRole, string[]> = {
     'marketplace:read',
     'marketplace:install',
     'marketplace:publish',
+    // skills:* was missing from this seed entirely, for this role's whole
+    // history — routes/skills.ts has required skills:create/read/update/
+    // delete/grant/execute since RT-026, but no default role (not even
+    // admin) was ever granted any of them, so a fresh org's Skills feature
+    // was unusable via the API out of the box. Found while writing the
+    // export/import tutorial (RT-075) and manually hitting POST /v1/skills
+    // with a brand-new org's admin session — same class of gap as the
+    // marketplace:read/install fix above.
+    'skills:*',
   ],
   manager: [
     'agents:create',

@@ -22,3 +22,4 @@ export * from './schemas/wallet.js';
 export * from './constants/agent-roles.js';
 
 export * from './schemas/workflow.js';
+export * from './schemas/sso.js';

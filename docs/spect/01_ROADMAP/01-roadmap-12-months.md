@@ -287,41 +287,41 @@
 
 ### هفته ۴۱-۴۲: Enterprise Security
 
-- [ ] SSO (SAML, OIDC)
-- [ ] Audit compliance (SOC2 ready)
-- [ ] Data encryption at rest
-- [ ] VPC / Private network support
+- [x] SSO (SAML, OIDC) — per-organization (نه global مثل google/github oauth موجود)؛ OIDC با discovery دستی (بدون کتابخونه)، SAML با `@node-saml/node-saml` (تنها جای این کدبیس با کتابخونه‌ی خارجی برای auth، چون XML signature verification دستی ریسک امنیتیه). عمداً auto-provision نمی‌کنه (RT-068, RT-069)
+- [x] Audit compliance (SOC2 ready) — **گواهی رسمی خارجیه، نه فیچر** — عمداً ساخته نشد؛ زیرساخت فنی مرتبط (audit trail tamper-evident، RBAC/ABAC، retention) از قبل داشتیم (جزئیات `DONE.md`)
+- [x] Data encryption at rest — سطح app: SSO client_secret رمزنگاری envelope شد (همون الگوی `llm_configs`). سطح دیسک/DB: مسئولیت host/cloud provider است، خارج از قابلیت کد این ریپو
+- [ ] VPC / Private network support — زیرساخت هاست/cloud واقعی، نیاز به اکانت واقعی داره؛ خارج از قابلیت کد این ریپو
 
 ### هفته ۴۳-۴۴: Performance & Scale
 
-- [ ] Horizontal scaling
-- [ ] Kubernetes manifests
-- [ ] Auto-scaling برای Agentها
-- [ ] Database sharding strategy
-- [ ] CDN for static assets
+- [x] Horizontal scaling — گیت‌وی از قبل stateless بود (session در JWT، state در Postgres/Redis)؛ فقط تأیید/مستند شد
+- [x] Kubernetes manifests — `apps/openon4net-runtime/k8s/` (namespace/configmap/secret.example/deployment+service+HPA برای gateway+web/ingress/README). روی کلاستر واقعی تست نشده (این محیط نداشت)، فقط YAML syntax تأیید شد (RT-070)
+- [x] Auto-scaling برای Agentها — یعنی HPA روی خودِ pod گیت‌وی (agent یه ردیف DB است، نه process جدا) — همون RT-070's `gateway-hpa.yaml`
+- [x] Database sharding strategy — فقط سند طراحی (`02_ARCHITECTURE/17-database-sharding-strategy.md`)، طبق تصمیم صریح کاربر — بدون کد (RT-073)
+- [ ] CDN for static assets — سرویس خارجیه (Cloudflare/CloudFront)، نیاز به اکانت واقعی داره؛ خارج از قابلیت کد این ریپو
 
 ### هفته ۴۵-۴۶: Reliability
 
-- [ ] Multi-region support
-- [ ] Disaster recovery
-- [ ] Backup/restore system
-- [ ] SLA monitoring
-- [ ] 99.9% uptime target
+- [ ] Multi-region support — زیرساخت چند-دیتاسنتری واقعی، خارج از قابلیت کد این ریپو
+- [x] Disaster recovery — runbook به‌روز شد (`09_TASKS/05-disaster-recovery.md`) با یک بخش صریح «چی واقعاً ساخته شد» (RT-071's local pg_dump) جدا از معماری هدف قدیمی‌تر اون سند
+- [x] Backup/restore system — `pg_dump`/`pg_restore` واقعی، opt-in scheduler، local disk فقط (آپلود S3/GCS واقعی TODO مستندشده) (RT-071)
+- [x] SLA monitoring — `o2n_uptime_seconds`/`o2n_health_check_status` Prometheus gauges + دو alert rule جدید (RT-072)
+- [x] 99.9% uptime target — این یه تعهد عملیاتی/کسب‌وکاریه نه فیچر کد؛ زیرساخت اندازه‌گیریش (RT-072) ساخته شد
 
 ### هفته ۴۷-۴۸: Launch Prep
 
-- [ ] Documentation site
-- [ ] Public API docs (ReadMe/Swagger)
-- [ ] Tutorials + examples
-- [ ] Case studies
-- [ ] Enterprise sales kit
+- [ ] Documentation site — عمداً کنار گذاشته شد (یک اپ/طراحی جدید کامل، خارج از scope این batch)؛ ۴ tutorial واقعی جایگزینش شد (پایین‌تر)
+- [x] Public API docs (ReadMe/Swagger) — `@fastify/swagger` (static mode) + `@fastify/swagger-ui` روی `docs/spect/04_API/00-openapi-v0.1.yaml` موجود، سرو شده در `/docs`. یک باگ واقعی (YAML syntax error خط ۴۱) پیدا و فیکس شد که قبلاً هیچ‌وقت کشف نشده بود (RT-074)
+- [x] Tutorials + examples — ۴ فایل واقعی در `docs/tutorials/`، هرکدوم با اجرای واقعی روی gateway دستی نوشته شد (RT-075)
+- [ ] Case studies — نیاز به مشتری واقعی داره، عمداً ساخته/جعل نشد
+- [ ] Enterprise sales kit — محتوای مارکتینگ/تصمیم کسب‌وکاری، خارج از حوزه‌ی کد
 
 ### تحویل فاز ۵:
 
-✅ Enterprise-ready
-✅ 99.9% SLA
-✅ Kubernetes deployment
-✅ Full documentation
+🔧 Enterprise-ready — SSO/backup/SLA-monitoring/K8s-manifests واقعی ساخته شدن؛ SOC2/VPC/multi-region/CDN صراحتاً خارج scope (نیاز به منبع خارجی)، جزئیات `DONE.md`
+🔧 99.9% SLA — زیرساخت اندازه‌گیری (metrics+alerts) ساخته شد؛ خودِ عدد یه تعهد عملیاتیه نه چیزی که کد «تحویل» بده
+🔧 Kubernetes deployment — manifestها نوشته و YAML-validate شدن؛ روی کلاستر واقعی اجرا/تأیید نشدن (این محیط کلاستر نداشت)
+🔧 Full documentation — Swagger API docs واقعیه؛ «مستندسازی site» کامل عمداً کنار گذاشته شد، ۴ tutorial واقعی جایگزینش شد
 
 ---
 
