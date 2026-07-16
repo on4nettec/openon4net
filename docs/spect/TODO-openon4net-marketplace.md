@@ -51,11 +51,33 @@
 
 | #       | تسک                                                                                                                         | نیاز به اجازه فایل ریشه؟ | وضعیت |
 | ------- | --------------------------------------------------------------------------------------------------------------------------- | :----------------------: | :---: |
-| MKT-007 | لایه auth ساده (API key/bearer ثابت) — مثل `MEM-005` در memory، چون این سرویس هم قراره از بیرون (Runtime/admin) صدا زده بشه |          ❌ خیر          |  ❌   |
-| MKT-008 | trace_id passthrough + structured logging مطابق `08-observability-otel.md`                                                  |          ❌ خیر          |  ❌   |
-| MKT-009 | checksum (sha256) verification برای artifact روی install — فقط local file storage، بدون CDN واقعی                           |          ❌ خیر          |  ❌   |
-| MKT-010 | Permission diff on update (طبق §6.2 سند معماری): اگه نسخه جدید permission بیشتر بخواد، install باید re-approve بشه وگرنه رد |          ❌ خیر          |  ❌   |
-| MKT-011 | مستندسازی `API.md` (curl + نمونه response برای هر route) — مثل الگوی memory                                                 |          ❌ خیر          |  ❌   |
+| MKT-007 | لایه auth ساده (API key/bearer ثابت) — مثل `MEM-005` در memory، چون این سرویس هم قراره از بیرون (Runtime/admin) صدا زده بشه |          ❌ خیر          |  ✅   |
+| MKT-008 | trace_id passthrough + structured logging مطابق `08-observability-otel.md`                                                  |          ❌ خیر          |  ✅   |
+| MKT-009 | checksum (sha256) verification برای artifact روی install — فقط local file storage، بدون CDN واقعی                           |          ❌ خیر          |  ✅   |
+| MKT-010 | Permission diff on update (طبق §6.2 سند معماری): اگه نسخه جدید permission بیشتر بخواد، install باید re-approve بشه وگرنه رد |          ❌ خیر          |  ✅   |
+| MKT-011 | مستندسازی `API.md` (curl + نمونه response برای هر route) — مثل الگوی memory                                                 |          ❌ خیر          |  ✅   |
+
+> **۲۰۲۶-۰۷-۱۵ — بازبینی بخش B.** MKT-007..010 از قبل کامل پیاده‌سازی و کامیت شده بودن، فقط
+> این جدول به‌روز نشده بود:
+>
+> - **MKT-007**: `plugins/auth.ts` — چک `Authorization: Bearer <MARKETPLACE_API_KEY>` با
+>   `safeEqual`، در `app.ts` وایر شده. `PUBLIC_ROUTES` فقط `/health` و روت‌های discovery رو
+>   استثنا می‌کنه (`GET /marketplace/plugins`, `/marketplace/plugins/:id`,
+>   `/marketplace/skills`, `/marketplace/skills/:id`).
+> - **MKT-008**: `plugins/trace-id.ts` — `X-Trace-Id` ورودی رو honor می‌کنه، وگرنه یکی می‌سازه،
+>   در پاسخ echo می‌کنه، و `request.log.child({traceId})` برای structured logging.
+> - **MKT-009**: `lib/artifact-storage.ts`'s `verifyChecksum()` — در `installPlugin()` صدا زده
+>   می‌شه، اگه artifact محلی موجود باشه.
+> - **MKT-010**: `services/marketplace-service.ts`'s `installPlugin()` — دیف permission بین
+>   نسخه‌ی فعال قدیم و نسخه‌ی جدید، بدون `acknowledgePermissionDiff` رد می‌کنه
+>   (`PERMISSION_DIFF_REQUIRED`، ۴۰۹).
+>
+> **MKT-011 امروز واقعاً انجام شد** (نه فقط بازبینی) — `API.md` قبلاً فقط plugin routes رو
+> پوشش می‌داد (صفر اشاره به «skill»). بخش‌های جدید اضافه شد: `POST/GET /publisher/skills`،
+> `GET /marketplace/skills` (+ `/:id`)، `POST /marketplace/skills/:id/install`، rating هم
+> برای plugin هم skill (MKT-021)، و `PATCH /marketplace/installs/:id/config` (MKT-019) — همه
+> با پاسخ واقعی گرفته‌شده از سرویس در حال اجرا (نه دست‌نویس)، مطابق قرارداد خودِ فایل
+> («Every example below is a real response from the running service»).
 
 ## بخش D — Skills به‌عنوان یک Marketplace entity (2026-07-12، فاز ۲ تکمیلی Runtime)
 
@@ -79,6 +101,14 @@
 | MKT-020 | `listMarketplacePlugins()` حالا `permissions` نسخه‌ی approved رو برمی‌گردونه (قبلاً هیچ‌وقت expose نمی‌شد) — پیش‌نیاز consent gate سمت Runtime (RT-051)                                                                    |           ❌ خیر            |  ✅   |
 | MKT-021 | migration `0005_marketplace_ratings.sql` (`plugin_ratings`/`skill_ratings`، upsert بر اساس (item, org))؛ `installCount` از `COUNT(*)` روی installs موجود (بدون ستون جدید)؛ `ratePlugin`/`rateSkill` + route های `.../rate` | ❌ خیر (فقط migration محلی) |  ✅   |
 | MKT-022 | بدون کد اضافه سمت این سرویس — `/publisher/plugins`/`/publisher/skills` از قبل (بخش A) کامل بودن، فقط هیچ‌وقت از Runtime صدا زده نمی‌شدن؛ کاری که این batch اضافه کرد سمت Runtime بود (RT-053)                              |           ❌ خیر            |  ✅   |
+
+## بخش F — تکمیلی: اکوسیستم Plugin (طبق جلسه ۴، `06_MEETINGS/04-plugin-ecosystem-architecture.md`)
+
+| #       | تسک                                                                                                                               | نیاز به اجازه فایل ریشه؟ | وضعیت |
+| ------- | --------------------------------------------------------------------------------------------------------------------------------- | :----------------------: | :---: |
+| MKT-024 | دسته‌بندی (category) برای Plugin — ستون/تاکسونومی روی جدول `plugins` + فیلتر در discovery                                         |          ❌ خیر          |  ❌   |
+| MKT-025 | Sandbox test-gate پیش از انتشار — گسترش `plugin_versions.status` (submitted → sandbox_testing → sandbox_passed/rejected → listed) |          ❌ خیر          |  ❌   |
+| MKT-026 | تأیید/تکمیل مدل رایگان/فروشی یکسان برای Skill (طبق ADR-012) — ممکن است بخشی از قبل ساخته شده باشد، نیاز به بررسی                  |          ❌ خیر          |  ❌   |
 
 ## بخش C — ⚠️ صراحتاً خارج از MVP guardrail (نیاز به تأیید آگاهانه)
 

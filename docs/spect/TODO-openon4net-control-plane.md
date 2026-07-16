@@ -35,12 +35,12 @@
 | CP-003 | تست‌های vitest واقعی برای `activation-service` و `wallet-service` (الان `--passWithNoTests` — صفر تست)، مخصوصاً idempotency                                                                                                                                                                                                                       |     ❌ خیر     |  ✅   |
 | CP-004 | `Dockerfile.web` + سرویس `web` در `docker-compose.yml` (الان فقط `gateway` دیپلوی می‌شه)                                                                                                                                                                                                                                                          |     ❌ خیر     |  ✅   |
 | CP-005 | صفحه‌بندی/جستجو برای `GET /admin/organizations` (الان فقط `limit` ساده)                                                                                                                                                                                                                                                                           |     ❌ خیر     |  ✅   |
-| CP-006 | Observability فراتر از trace-id — یک `/metrics` (Prometheus) شبیه چیزی که Runtime تازه ساخت (T-020 معادل)                                                                                                                                                                                                                                         |     ❌ خیر     |  ❌   |
-| CP-007 | مستندسازی محدودیت شناخته‌شده‌ی rate limiter (in-memory، تک-instance) یا Redis-backed کردنش اگه قراره چند replica بالا بیاد                                                                                                                                                                                                                        |     ❌ خیر     |  ❌   |
-| CP-015 | **باگ تأییدشده (curl):** id نامعتبر (نه UUID) توی `/admin/organizations/:id` یا `/admin/wallets/:id/credit` به‌جای 400 تمیز، 500 `INTERNAL_ERROR` برمی‌گردونه — چون Postgres خودش موقع cast به نوع UUID ارور خام می‌ده و `error-handler.ts` فقط `CpError` رو می‌شناسه، نه خطای pg رو. فیکس: یک zod schema برای پارامترهای UUID قبل از رسیدن به DB |     ❌ خیر     |  ❌   |
-| CP-016 | `web/` صفر تست داره (`package.json`'s `test` فقط `echo "no tests yet"`) — برخلاف gateway که ۲۳ تا داره. حداقل: تست‌های واحد برای منطق `lib/api-client.ts` (پارامترهای query، مدیریت 401)                                                                                                                                                          |     ❌ خیر     |  ❌   |
-| CP-017 | `docker-compose.yml` برای `gateway`/`web` هیچ `healthcheck` نداره، و `web`'s `depends_on: [gateway]` فقط منتظر start شدن container می‌مونه نه واقعاً آماده بودن (`/health` سبز بودن)                                                                                                                                                              |     ❌ خیر     |  ❌   |
-| CP-018 | CORS الان `origin: true` است (هر origin ای رو reflect می‌کنه) — برای پلینی که خودش رو «high-value target» معرفی کرده (README) شاید بیش‌ازحد بازه؛ حداقل یک allowlist صریح از `web/`'s origin(ها)                                                                                                                                                  |     ❌ خیر     |  ❌   |
+| CP-006 | Observability فراتر از trace-id — یک `/metrics` (Prometheus) شبیه چیزی که Runtime تازه ساخت (T-020 معادل)                                                                                                                                                                                                                                         |     ❌ خیر     |  ✅   |
+| CP-007 | مستندسازی محدودیت شناخته‌شده‌ی rate limiter (in-memory، تک-instance) یا Redis-backed کردنش اگه قراره چند replica بالا بیاد                                                                                                                                                                                                                        |     ❌ خیر     |  ✅   |
+| CP-015 | **باگ تأییدشده (curl):** id نامعتبر (نه UUID) توی `/admin/organizations/:id` یا `/admin/wallets/:id/credit` به‌جای 400 تمیز، 500 `INTERNAL_ERROR` برمی‌گردونه — چون Postgres خودش موقع cast به نوع UUID ارور خام می‌ده و `error-handler.ts` فقط `CpError` رو می‌شناسه، نه خطای pg رو. فیکس: یک zod schema برای پارامترهای UUID قبل از رسیدن به DB |     ❌ خیر     |  ✅   |
+| CP-016 | `web/` صفر تست داره (`package.json`'s `test` فقط `echo "no tests yet"`) — برخلاف gateway که ۲۳ تا داره. حداقل: تست‌های واحد برای منطق `lib/api-client.ts` (پارامترهای query، مدیریت 401)                                                                                                                                                          |     ❌ خیر     |  ✅   |
+| CP-017 | `docker-compose.yml` برای `gateway`/`web` هیچ `healthcheck` نداره، و `web`'s `depends_on: [gateway]` فقط منتظر start شدن container می‌مونه نه واقعاً آماده بودن (`/health` سبز بودن)                                                                                                                                                              |     ❌ خیر     |  ✅   |
+| CP-018 | CORS الان `origin: true` است (هر origin ای رو reflect می‌کنه) — برای پلینی که خودش رو «high-value target» معرفی کرده (README) شاید بیش‌ازحد بازه؛ حداقل یک allowlist صریح از `web/`'s origin(ها)                                                                                                                                                  |     ❌ خیر     |  ✅   |
 
 > **CP-001 انجام شد (2026-07-10) — جزئیات کامل در `docs/spect/DONE.md`.** یک نکته‌ی جانبی: Postgres
 > بیرونی موجود یک collation-version mismatch از قبل داره (`template1` خراب) — با
@@ -72,6 +72,39 @@
 > کردم. CP-015 واقعاً با curl تأیید شد (نه فقط حدس): `GET /admin/organizations/not-a-valid-uuid`
 > با کلید ادمین درست، 500 `INTERNAL_ERROR` می‌گیره نه 400 — یعنی یک باگ واقعی، کوچیک ولی واقعی.
 > بقیه (CP-016..CP-018) مشاهده‌ان، نه باگ تأییدشده.
+>
+> **CP-006, CP-007, CP-015..CP-018 انجام شدن (کامیت `daa0d0b`، ۲۰۲۶-۰۷-۱۴، در ریپوی خودِ
+> control-plane) — این جدول فقط تا امروز (۲۰۲۶-۰۷-۱۵) به‌روز نشده بود.** با خوندن مستقیم کد
+> تأیید شد، نه فقط commit message:
+>
+> - **CP-006**: `observability/metrics.ts` (`prom-client`، mirror دقیق Runtime's متریک‌های HTTP)
+>   - `routes/metrics.ts` (`GET /metrics`، بدون auth چون Prometheus scraper کلید نداره) — هر دو
+>     در `app.ts` وایر شدن.
+> - **CP-007**: `plugins/rate-limit.ts`'s کامنت بالای فایل صریحاً محدودیت in-memory/تک-instance
+>   رو مستند می‌کنه و توصیه می‌کنه اگه چند replica لازم شد Redis-backed بشه — یعنی خودِ تسک
+>   («مستندسازی یا Redis-backed کردن») با انتخاب مستندسازی (نه تبدیل، چون هنوز Redis اصلاً
+>   جزو infra این پلین نیست) انجام شده.
+> - **CP-015**: `lib/validate-uuid.ts`'s `assertUuid()` (regex-based) قبل از رسیدن به DB در
+>   `routes/admin-organizations.ts` و `routes/admin-wallet.ts` صدا زده می‌شه — با curl واقعی
+>   دوباره تأیید شد امروز: `GET /admin/organizations/not-a-uuid` حالا ۴۰۰ `VALIDATION_ERROR`
+>   می‌ده، نه ۵۰۰.
+> - **CP-016**: `web/lib/api-client.test.ts` (۱۳۶ خط) با vitest واقعی + `vi.stubGlobal('fetch',
+...)` — پوشش `saveAdminKey`/`loadAdminKey`/`clearAdminKey`، ساخت query param، ضمیمه‌شدن
+>   Bearer token، و مسیر خطای `ApiError` روی پاسخ غیر-2xx.
+> - **CP-017**: `docker-compose.yml`'s `web` سرویس `depends_on: { gateway: { condition:
+service_healthy } }` می‌گیره (نه یک لیست ساده)؛ `HEALTHCHECK` خودِ Dockerfileهاست
+>   (`Dockerfile.gateway`/`Dockerfile.web`، هر دو با `node`'s داخلی `http` چون `node:20-slim`
+>   نه `curl` داره نه `wget`).
+> - **CP-018**: `app.ts`'s `cors` register حالا `origin: [ctx.env.WEB_ORIGIN]` هست (نه
+>   `origin: true`)؛ `WEB_ORIGIN` یک `z.string().url()` با پیش‌فرض `http://localhost:3300`. با
+>   curl واقعی امروز دوباره تأیید شد: preflight از یک origin غیرمجاز، `Access-Control-Allow-
+Origin` header نمی‌گیره؛ از `localhost:3300` می‌گیره.
+>
+> **CP-002 هنوز واقعاً ❌ مونده** — تعامل واقعی مرورگر (کلیک کردن روی فرم‌ها) کاری نیست که از
+> طریق این session قابل انجام باشه (ابزار مرورگر در دسترس نیست). به‌جاش امروز یک HTTP-level
+> smoke test واقعی روی gateway در حال اجرا زده شد (`/health`، `/metrics`، باگ UUID، CORS
+> allowlist — همه بالا) که سطح API رو تأیید می‌کنه، ولی این جایگزین تعامل واقعی فرم/fetch در
+> مرورگر نیست — صراحتاً به‌عنوان یک محدودیت باقی می‌مونه، نه یک چیز جعل‌شده.
 
 ## بخش B — تصمیمات ساختاری / خارج از محدوده control-plane (نیاز به اجازه صریح)
 
@@ -88,10 +121,10 @@
 > طبق `docs/spect/09_TASKS/08-scope-guardrails-mvp.md`: «managed AI و provider networks خارج از MVP».
 > اگه اینا رو انتخاب کنی یعنی صریحاً از guardrail عبور می‌کنیم — اشکالی نداره، فقط آگاهانه باشه.
 
-| #      | تسک                                                                                                                                        | یادداشت                                          |
-| ------ | ------------------------------------------------------------------------------------------------------------------------------------------ | ------------------------------------------------ |
-| CP-012 | CP-SP-03 — Managed AI Gateway: router rules، failover، cost tracking managed، circuit breaker                                              | جانشین رسمی T-011 منسوخ Runtime؛ Epic E-063      |
-| CP-013 | CP-SP-04 — Billing واقعی: payment provider، ledger کامل با refund، wallet settlement برای Marketplace، budget hooks، `POST /cost/estimate` | Epic E-064؛ طبق guardrail بعد از ۲-۳ مشتری واقعی |
+| #      | تسک                                                                                                                                        | یادداشت                                                                                                                                                                                                            |
+| ------ | ------------------------------------------------------------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| CP-012 | CP-SP-03 — Managed AI Gateway: router rules، failover، cost tracking managed، circuit breaker                                              | جانشین رسمی T-011 منسوخ Runtime؛ Epic E-063؛ **۲۰۲۶-۰۷-۱۶: پیش‌نیاز صریح RT-078 (Runtime) شد** — ایجنت برنامه‌نویس فقط با AI Gateway واقعی قابل‌استفاده است، طبق `06_MEETINGS/04-plugin-ecosystem-architecture.md` |
+| CP-013 | CP-SP-04 — Billing واقعی: payment provider، ledger کامل با refund، wallet settlement برای Marketplace، budget hooks، `POST /cost/estimate` | Epic E-064؛ طبق guardrail بعد از ۲-۳ مشتری واقعی                                                                                                                                                                   |
 
 ---
 

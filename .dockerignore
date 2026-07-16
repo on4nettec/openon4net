@@ -6,5 +6,9 @@
 **/*.tsbuildinfo
 **/.git
 docs
+# RT-074: Dockerfile.gateway serves this one spec file via @fastify/swagger's
+# static mode at runtime (see app.ts) — it needs to survive the blanket
+# `docs` exclusion above.
+!docs/spect/04_API/00-openapi-v0.1.yaml
 .claude
 .agents
