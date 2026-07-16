@@ -933,6 +933,39 @@ Skill step types یک تسک جدا می‌مونه اگه لازم شد. هیچ
 که باید کل run رو fail کنه). همه‌ی ۱۵۶ تست موجود (نه فقط جدیدها) سبز
 موندن؛ typecheck/lint هر دو تمیز.
 
+### RT-076 — Per-plugin DB isolation (schema/namespace جدا)
+
+✅ انجام شد — تصمیم جلسه ۴: schema/namespace جدا داخل Postgres مشترک، نه
+container/deployment مجزا (بدون orchestration جدید). چون مدل اجرای واقعی
+که ساخته شد (RT-079) یک HTTP-provider بیرونی و stateless است — نه کد
+درون‌فرآیندی که بشه یک شیء memory زنده بهش داد — persistence از طریق خودِ
+درخواست/پاسخ threading شد، نه یک callback API جدید (که نیاز به یک مدل auth
+تازه برای پلاگین داشت):
+
+- `services/plugin-schema-service.ts` (جدید): `PluginSchemaService` —
+  `schemaName(orgId, pluginId)` یک نام قطعی از هش sha256 (فقط
+  `[0-9a-f]`، بدون سطح injection چون هیچ متن خام کاربر مستقیم وارد SQL
+  نمی‌شه)، `ensureSchema()` (`CREATE SCHEMA` + یک جدول `kv` ساده)،
+  `readAll`/`writeAll` (key-value، JSONB، upsert).
+- `plugin-invoker.ts`'s `executePluginStep()`: قبل از فراخوانی provider،
+  state قبلی این جفت (org, plugin) به‌عنوان `_state` به params اضافه
+  می‌شه؛ اگه پاسخ provider خودش یک فیلد `_state` (object) داشته باشه،
+  همون ذخیره می‌شه. امضای تابع یک پارامتر `organizationId` جدید گرفت.
+
+**محدودیت صادقانه، مستندشده:** نیمه‌ی «ارسال state قبلی در درخواست» با
+provider واقعی خارجی (`postman-echo.com`) end-to-end تست شده. نیمه‌ی
+«ذخیره‌ی state برگشتی از پاسخ provider» فقط از طریق تست مستقیم
+`PluginSchemaService` تأیید شده، نه یک پاسخ HTTP زنده — چون SSRF guard
+(به‌درستی) اجازه‌ی سرور تست محلی رو نمی‌ده، و هیچ سرویس خارجی واقعی‌ای
+در دسترس نبود که بشه پاسخ JSON دلخواه ازش گرفت با یک فیلد `_state` در
+ریشه‌ی پاسخ.
+
+۵ تست جدید (`plugin-schema-service.test.ts`: provisioning، round-trip،
+upsert، ایزولیشن کامل بین org/plugin مختلف، حالت خالی) + ۱ تست جدید در
+`plugin-invoker.test.ts` (ارسال state قبلی) + بروزرسانی ۲ assertion موجود
+(چون خروجی حالا `_state` هم داره). همه‌ی ۱۶۲ تست موجود سبز؛ typecheck/lint
+تمیز.
+
 ---
 
 ## صریحاً انجام‌نشده (شناخته‌شده، نه فراموش‌شده)
