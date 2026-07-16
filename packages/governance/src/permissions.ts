@@ -57,6 +57,9 @@ export const DEFAULT_ROLE_PERMISSIONS: Record<UserRole, string[]> = {
     // with a brand-new org's admin session — same class of gap as the
     // marketplace:read/install fix above.
     'skills:*',
+    // RT-080: per-agent Plugin grants — same wildcard convention as skills:*
+    // above, added fresh (no pre-existing gap here since the feature is new).
+    'plugins:*',
   ],
   manager: [
     'agents:create',
