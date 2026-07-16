@@ -895,6 +895,44 @@ webhook_endpoints قبلی):** `agent_plugin_grants.granted_by_user_id` هیچ
 سطح HTTP-client رو تست می‌کنه، نه route handler رو). این یک gap
 از قبل موجود در کل فایل بوده، نه چیزی که این batch ایجاد کرده باشه.
 
+### RT-079 — نوع step جدید `plugin` در Workflow Engine (اولین مسیر واقعی اجرای Plugin)
+
+✅ انجام شد — اولین باری که نصب یک Plugin واقعاً باعث اجرای چیزی می‌شه، نه
+فقط ثبت DB. طبق تصمیم جلسه ۴، محدود به Pluginهای «thin HTTP-provider»
+(همون چیزی که سند sandbox عمداً معلق نگه داشته رو، یعنی اجرای کد دلخواه،
+دور می‌زنه — بدون نیاز به WASM sandbox):
+
+- `packages/shared/src/schemas/workflow.ts`: `WorkflowPluginStepSchema`
+  جدید (`type: 'plugin'`, `pluginId`, `agentRole`, `params`) — کنار
+  ۵ نوع step موجود (`agent`/`tool`/`human`/`parallel`/`condition`).
+  `agentRole` (نه `agentId` ثابت) عیناً مثل `WorkflowAgentStepSchema` —
+  در زمان اجرا resolve می‌شه.
+- `marketplace-client.ts`: نوع `manifest` گسترش یافت تا
+  `provider?: {type: 'http', baseUrl: string}` رو بشناسه.
+- `connectors/plugin-provider-connector.ts` (جدید): `invokePluginProvider()`
+  — عیناً همون SSRF guard `webhook-send` (`assertSafeWebhookUrl`، بازاستفاده
+  نه بازنویسی) رو قبل از هر فراخوانی اجرا می‌کنه.
+- `services/plugin-invoker.ts` (جدید): `executePluginStep()` — سه چک به
+  ترتیب: (۱) پلاگین در Marketplace وجود داره، (۲) **اولین enforcement
+  واقعی RT-080** — `PluginGrantService.hasGrant(agentId, pluginId)`، اگه
+  نه → `PermissionDeniedError`، (۳) manifest واقعاً `provider.type: 'http'`
+  رو declare کرده، وگرنه `ValidationError`.
+- `workflow-executor.ts`'s `runStep()`: نوع `plugin` رو مثل نوع `agent`
+  با `AgentService.findByRole()` resolve می‌کنه، بعد `executePluginStep`
+  رو صدا می‌زنه.
+
+**عمداً خارج از scope این batch:** Skills هنوز این step type رو ندارن
+(RT-079 صریحاً فقط Workflow Engine بود، طبق متن ثبت‌شده‌ی تسک) — گسترش به
+Skill step types یک تسک جدا می‌مونه اگه لازم شد. هیچ تغییری در UI
+(`web/app/workflows/page.tsx`) هم داده نشد — این batch فقط سطح Engine بود.
+
+۴ تست جدید (`plugin-invoker.test.ts`) + ۲ تست جدید در
+`workflow-executor.test.ts` (مسیر موفق با provider واقعی خارجی
+`postman-echo.com` چون SSRF guard آدرس‌های loopback/local رو رد می‌کنه —
+همون محدودیتی که تست‌های `webhook-send` موجود هم داشتن؛ و مسیر بدون grant
+که باید کل run رو fail کنه). همه‌ی ۱۵۶ تست موجود (نه فقط جدیدها) سبز
+موندن؛ typecheck/lint هر دو تمیز.
+
 ---
 
 ## صریحاً انجام‌نشده (شناخته‌شده، نه فراموش‌شده)

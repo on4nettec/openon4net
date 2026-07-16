@@ -96,8 +96,8 @@
 | RT-076 | Per-plugin DB isolation — schema/namespace جدا داخل Postgres مشترک برای Pluginی که نیاز به ذخیره‌سازی دارد | تصمیم جلسه ۴: نه container/deployment مجزا (بدون orchestration جدید)، فقط schema ایزوله؛ گسترش `@o2n/plugin-sdk`                                                   |  ❌   |
 | RT-077 | مسیر نصب self-hosted محلی برای Plugin (بدون نیاز به عبور از Marketplace)                                   | کاربر self-hosted می‌سازد و مستقیم استفاده می‌کند؛ فقط برای **فروش** در Marketplace نیاز به sandbox-گیت (MKT-025) دارد                                             |  ❌   |
 | RT-078 | مسیر اجرای مستقیم Plugin تولیدشده توسط ایجنت برنامه‌نویس در Runtime                                        | **بلاک روی CP-012** (Managed AI Gateway) — طبق تصمیم صریح کاربر، ایجنت برنامه‌نویس فقط با AI Gateway واقعی قابل‌استفاده است؛ جزئیات ورود کد هنگام شروع مشخص می‌شود |  ⏸️   |
-| RT-079 | نوع step جدید `plugin` در Workflow Engine (کنار `agent`/`tool`/`human`/`parallel`/`condition` موجود)       | امکان استفاده از Plugin به‌عنوان یک مرحله‌ی Workflow                                                                                                               |  ❌   |
-| RT-080 | Per-agent Plugin grants (`agent_plugin_grants` + `PluginGrantService`)                                     | ✅ انجام شد — grant/revoke بدون enforcement واقعی هنوز (منتظر RT-079)، جزئیات در `DONE.md`                                                                         |  ✅   |
+| RT-079 | نوع step جدید `plugin` در Workflow Engine (کنار `agent`/`tool`/`human`/`parallel`/`condition` موجود)       | ✅ انجام شد — محدود به Pluginهای thin HTTP-provider؛ اولین enforcement واقعی RT-080، جزئیات در `DONE.md`                                                           |  ✅   |
+| RT-080 | Per-agent Plugin grants (`agent_plugin_grants` + `PluginGrantService`)                                     | ✅ انجام شد — enforcement واقعی حالا در RT-079 وصل شد، جزئیات در `DONE.md`                                                                                         |  ✅   |
 
 ## بخش C — ⚠️ تصمیمات بزرگ‌تر معماری (نیاز به تأیید آگاهانه قبل از شروع)
 
