@@ -837,6 +837,39 @@ webhook_endpoints قبلی):** `agent_plugin_grants.granted_by_user_id` هیچ
 قراره وقتی RT-079 (اولین مسیر واقعی اجرای Plugin — نوع HTTP-provider)
 ساخته شد، به اون dispatch path وصل بشه.
 
+### MKT-025 — Sandbox test-gate پیش از انتشار
+
+✅ انجام شد — `sandbox-service.ts`'s `runSandboxTest()`، و کشف مهم حین این
+کار: ستون `plugins.status` (`draft`/`listed`/`delisted`) از زمان migration
+0001 اصلاً به هیچ منطقی وصل نبود — نه discovery روش فیلتر می‌کرد، نه هیچ
+کدی مقدارش رو تغییر می‌داد (schema مرده). این batch واقعاً وصلش کرد:
+
+- `submitPlugin()`: بعد از هر submit، همون automated permission-allowlist
+  check (MKT-013) این‌بار در سطح Plugin هم اجرا می‌شه → `listed` یا
+  `sandbox_rejected`. هیچ‌وقت یک Plugin از قبل `listed` رو به خاطر یک
+  نسخه‌ی جدید ناموفق پایین نمی‌کشه — فقط همون نسخه در حالت `submitted`
+  می‌مونه (منتظر بازبینی دستی).
+- `reviewPluginVersion()`: وقتی یک انسان دستی یک نسخه رو `approved` می‌کنه،
+  Pluginاش هم به `listed` تغییر می‌کنه (اگه از قبل نبود).
+- `listMarketplacePlugins`: حالا `AND p.status = 'listed'` هم فیلتر
+  می‌کنه — این چیزیه که واقعاً «قابل عرضه در فروشگاه» رو معنا می‌ده.
+  عمداً `getMarketplacePlugin` (تک‌آیتمی، مصرف‌شده توسط RT-057 برای قیمت
+  پیش از نصب) گیت نشد — نصب مستقیم با id هنوز کار می‌کنه حتی قبل از
+  sandbox-test، هم‌راستا با تصمیم «self-hosted می‌تونه مستقیم نصب/استفاده
+  کنه، فقط برای فروش در فروشگاه نیاز به sandbox داره».
+- `POST /admin/plugins/:id/sandbox-test` — اجرای دستی/دوباره (مثلاً بعد
+  از تغییر بدون نسخه‌ی جدید).
+
+**محدودیت صادقانه، مستندشده:** این یک WASM/dynamic sandbox واقعی نیست
+(Level 2 در `09-plugin-sandbox.md` عمداً معلقه) — همون چک‌های استاتیک
+موجود (allowlist مجوز + checksum) رو، این‌بار در سطح Plugin و پیش از
+انتشار عمومی، اجرا می‌کنه.
+
+۶ تست vitest جدید (`sandbox-service.test.ts`) روی Postgres واقعی، بدون
+شکستن هیچ‌کدوم از ۷۹ تست موجود. یک تست ناپایدار (`kill switch`) در یک اجرا
+دیده شد که ربطی به این batch نداشت — race قدیمی روی ردیف مشترک
+`platform_settings` بین فایل‌های تست موازی؛ در اجرای بعدی سبز شد.
+
 ---
 
 ## صریحاً انجام‌نشده (شناخته‌شده، نه فراموش‌شده)
