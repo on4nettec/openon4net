@@ -44,6 +44,24 @@ export const WorkflowHumanStepSchema = z.object({
 });
 export type WorkflowHumanStep = z.infer<typeof WorkflowHumanStepSchema>;
 
+/**
+ * RT-079 (docs/spect/06_MEETINGS/04-plugin-ecosystem-architecture.md) — the
+ * first real Plugin *execution* path. Scoped to "thin HTTP-provider"
+ * plugins only (a manifest declaring `provider: {type: 'http', baseUrl}`) —
+ * not arbitrary code execution, which stays blocked on the deferred WASM
+ * sandbox (02_ARCHITECTURE/09-plugin-sandbox.md Level 2). agentRole (not a
+ * fixed agentId) mirrors WorkflowAgentStepSchema — resolved to a real agent
+ * at run time, whose Plugin grant (RT-080) is checked before invoking.
+ */
+export const WorkflowPluginStepSchema = z.object({
+  id: z.string().min(1),
+  type: z.literal('plugin'),
+  pluginId: z.string().uuid(),
+  agentRole: z.string().min(1),
+  params: z.record(z.unknown()),
+});
+export type WorkflowPluginStep = z.infer<typeof WorkflowPluginStepSchema>;
+
 const WorkflowParallelSubStepSchema = z.discriminatedUnion('type', [
   WorkflowAgentStepSchema,
   WorkflowToolStepSchema,
@@ -74,6 +92,7 @@ export const WorkflowStepSchema = z.discriminatedUnion('type', [
   WorkflowHumanStepSchema,
   WorkflowParallelStepSchema,
   WorkflowConditionStepSchema,
+  WorkflowPluginStepSchema,
 ]);
 export type WorkflowStep = z.infer<typeof WorkflowStepSchema>;
 
