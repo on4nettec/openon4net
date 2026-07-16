@@ -783,6 +783,34 @@ session) پیدا شد که هر چند روز یک‌بار پوشه‌ی build
 
 ---
 
+## اکوسیستم Plugin — جلسه ۴ (۲۰۲۶-۰۷-۱۶، از `06_MEETINGS/04-plugin-ecosystem-architecture.md`)
+
+کاربر شب قبل (۲۰۲۶-۰۷-۱۵ به ۰۷-۱۶) خواست بدون سوال بیشتر، این batch به‌طور
+خودکار جلو بره؛ هر تسک با commit جدا ثبت می‌شه. RT-078 (اجرای مستقیم پلاگین
+ایجنت‌ساز) عمداً کنار گذاشته شد چون به CP-012 (که هنوز ساخته نشده) بلاک است.
+
+### MKT-024 — دسته‌بندی (category) برای Plugin
+
+✅ انجام شد — migration `0006_plugin_categories.sql` (ستون `plugins.category`
+
+- `CHECK` روی یک تاکسونومی ثابت هفت‌تایی: `communication`/`productivity`/
+  `data-analytics`/`devops`/`ai-ml`/`finance`/`other` + ایندکس). `submitPlugin`
+  مقدار `category` رو می‌گیره (اختیاری؛ در نسخه‌ی بعدی همون پلاگین اگه فرستاده
+  نشه، مقدار قبلی دست‌نخورده می‌مونه — `COALESCE`). `listMarketplacePlugins`/
+  `getMarketplacePlugin` مقدار رو برمی‌گردونن؛ `GET /marketplace/plugins` یک
+  query param جدید `category` قبول می‌کنه. ۲ تست vitest جدید روی Postgres
+  واقعی (فیلتر درست کار می‌کنه، مقدار خارج از تاکسونومی رد می‌شه). مستندسازی
+  در `API.md`.
+
+**یک باگ واقعی پیدا و فیکس شد حین این کار:** اول پارامتر فیلتر category رو
+به `$4` مپ کرده بودم درحالی‌که query متن SQL فقط `$1` و `$4` رو ارجاع
+می‌داد (بدون `$2`/`$3`) — Postgres با خطای «could not determine data type of
+parameter $2» رد می‌کرد چون پارامترهای وسط هیچ‌جای متن کوئری ظاهر نمی‌شدن.
+فیکس: شماره‌گذاری پیوسته (`$1`=search، `$2`=category، `$3`=limit، `$4`=offset)
+بدون شکاف. همه‌ی ۷۹ تست سرویس (نه فقط تست‌های جدید) بعد از فیکس سبز شدن.
+
+---
+
 ## صریحاً انجام‌نشده (شناخته‌شده، نه فراموش‌شده)
 
 - **T-009 (Secrets/KMS واقعی):** فقط نسخه MVP env-first + رمزنگاری envelope در DB برای BYOK per-org ساخته شده؛ یکپارچگی با Vault/secret manager واقعی (برای production/enterprise) ساخته نشده.
