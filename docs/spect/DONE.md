@@ -870,6 +870,31 @@ webhook_endpoints قبلی):** `agent_plugin_grants.granted_by_user_id` هیچ
 دیده شد که ربطی به این batch نداشت — race قدیمی روی ردیف مشترک
 `platform_settings` بین فایل‌های تست موازی؛ در اجرای بعدی سبز شد.
 
+### MKT-026 — تأیید مدل رایگان/فروشی یکسان برای Skill (ADR-012)
+
+✅ **verification only، هیچ کد جدیدی لازم نشد** — بررسی مستقیم کد نشون داد
+این قبلاً کامل و کاملاً موازی با Plugin پیاده‌سازی شده بود:
+
+- `marketplace_skills.price_cents` (migration `0003_marketplace_skills.sql`)
+  واقعاً settable روی submit است (`publisher-skill-service.ts`'s
+  `input.priceCents ?? 0`).
+- `listMarketplaceSkills`/`getMarketplaceSkill` مقدار رو در discovery/
+  single-lookup برمی‌گردونن (`marketplace-skill-service.ts`).
+- Runtime's `POST /v1/marketplace/skills/:id/install`
+  (`gateway/src/routes/marketplace.ts:91-125`) دقیقاً همون الگوی
+  debit-before-install رو داره که Plugin install داره (کامنت خود کد:
+  _"RT-057: same debit-before-install ordering as the plugin route
+  above"_) — `WalletService.debit()` قبل از نصب صدا زده می‌شه اگه
+  `priceCents > 0`.
+- ADR-012's activation-gating (`ctx.activationState.isActivated()`) هم
+  دقیقاً به همون شکل، قبل از هر دو نوع نصب (Plugin و Skill)، چک می‌شه.
+
+**یک محدودیت شناخته‌شده (نه جدید، نه چیزی که این verification تغییرش داد):**
+هیچ route-level test برای `routes/marketplace.ts` وجود نداره — نه برای
+مسیر پولی Plugin، نه Skill (فقط `marketplace-client.test.ts` هست که
+سطح HTTP-client رو تست می‌کنه، نه route handler رو). این یک gap
+از قبل موجود در کل فایل بوده، نه چیزی که این batch ایجاد کرده باشه.
+
 ---
 
 ## صریحاً انجام‌نشده (شناخته‌شده، نه فراموش‌شده)
