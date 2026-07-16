@@ -809,6 +809,34 @@ parameter $2» رد می‌کرد چون پارامترهای وسط هیچ‌ج
 فیکس: شماره‌گذاری پیوسته (`$1`=search، `$2`=category، `$3`=limit، `$4`=offset)
 بدون شکاف. همه‌ی ۷۹ تست سرویس (نه فقط تست‌های جدید) بعد از فیکس سبز شدن.
 
+### RT-080 — Per-agent Plugin grants
+
+✅ انجام شد — migration `0024_plugin_grants.sql` (`agent_plugin_grants`، عیناً
+مثل `agent_skill_grants`، ولی `plugin_id` یک cross-plane reference بدون FK
+است چون Plugin هیچ ردیف محلی در Runtime نداره — نصب فقط توی Marketplace
+ثبت می‌شه، نه یک mirror محلی مثل Skills). `PluginGrantService` (`grant`/
+`revoke`/`hasGrant`/`listForAgent`) + سه route جدید: `POST`/`DELETE
+/v1/agents/:id/plugins/:pluginId/grant` و `GET /v1/agents/:id/plugins`.
+چون هیچ جدول محلی برای اعتبارسنجی وجود Plugin نیست، قبل از grant دادن،
+`marketplaceClient.getPlugin()` صدا زده می‌شه (همون الگوی موجود در
+`routes/marketplace.ts`) تا واقعاً وجود پلاگین رو از Marketplace بپرسه.
+Permission جدید `plugins:*` به seed پیش‌فرض admin اضافه شد
+(`packages/governance/src/permissions.ts`). ۴ تست vitest جدید
+(`plugin-grant-service.test.ts`) روی Postgres واقعی.
+
+**یک باگ واقعی پیدا و فیکس شد حین این کار (همون کلاس باگ workflows/
+webhook_endpoints قبلی):** `agent_plugin_grants.granted_by_user_id` هیچ
+`ON DELETE CASCADE` نداره، و `cleanupTestFixture()` قبل از این batch
+`users` رو قبل از حذف grantها پاک می‌کرد → FK violation. فیکس: یک
+`DELETE FROM agent_plugin_grants WHERE agent_id IN (...)` قبل از
+`DELETE FROM users` در `test-support/fixtures.ts` اضافه شد.
+
+**محدودیت شناخته‌شده، نه فراموش‌شده:** این batch فقط CRUD گرنت رو ساخت —
+هنوز هیچ نقطه‌ی enforcement واقعی (چک `hasGrant` هنگام اجرا) وجود نداره،
+چون هیچ execution engine برای Pluginها نیست (طبق تصمیم جلسه ۴). این چک
+قراره وقتی RT-079 (اولین مسیر واقعی اجرای Plugin — نوع HTTP-provider)
+ساخته شد، به اون dispatch path وصل بشه.
+
 ---
 
 ## صریحاً انجام‌نشده (شناخته‌شده، نه فراموش‌شده)

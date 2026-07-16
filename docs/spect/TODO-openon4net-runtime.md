@@ -97,7 +97,7 @@
 | RT-077 | مسیر نصب self-hosted محلی برای Plugin (بدون نیاز به عبور از Marketplace)                                   | کاربر self-hosted می‌سازد و مستقیم استفاده می‌کند؛ فقط برای **فروش** در Marketplace نیاز به sandbox-گیت (MKT-025) دارد                                             |  ❌   |
 | RT-078 | مسیر اجرای مستقیم Plugin تولیدشده توسط ایجنت برنامه‌نویس در Runtime                                        | **بلاک روی CP-012** (Managed AI Gateway) — طبق تصمیم صریح کاربر، ایجنت برنامه‌نویس فقط با AI Gateway واقعی قابل‌استفاده است؛ جزئیات ورود کد هنگام شروع مشخص می‌شود |  ⏸️   |
 | RT-079 | نوع step جدید `plugin` در Workflow Engine (کنار `agent`/`tool`/`human`/`parallel`/`condition` موجود)       | امکان استفاده از Plugin به‌عنوان یک مرحله‌ی Workflow                                                                                                               |  ❌   |
-| RT-080 | Per-agent Plugin grants (`agent_plugin_grants` + `PluginGrantService`)                                     | عیناً مشابه الگوی موجود Skill grants (`agent_skill_grants`/`SkillGrantService`) — grant/revoke دسترسی یک Agent به یک Plugin خاص                                    |  ❌   |
+| RT-080 | Per-agent Plugin grants (`agent_plugin_grants` + `PluginGrantService`)                                     | ✅ انجام شد — grant/revoke بدون enforcement واقعی هنوز (منتظر RT-079)، جزئیات در `DONE.md`                                                                         |  ✅   |
 
 ## بخش C — ⚠️ تصمیمات بزرگ‌تر معماری (نیاز به تأیید آگاهانه قبل از شروع)
 
