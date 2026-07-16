@@ -117,16 +117,24 @@ grant/deny کرد (مشابه چیزی که برای Skills داریم).
 
 ## ۴. Action Items
 
-| #       | تسک                                                                                                                               | مسئول  | Status |
-| ------- | --------------------------------------------------------------------------------------------------------------------------------- | ------ | :----: |
-| RT-076  | Per-plugin DB isolation — schema/namespace جدا برای Pluginی که نیاز به ذخیره‌سازی دارد                                            | Claude |   ❌   |
-| RT-077  | مسیر نصب self-hosted محلی (بدون نیاز به Marketplace) برای Plugin                                                                  | Claude |   ❌   |
-| RT-078  | مسیر اجرای مستقیم Plugin تولیدشده توسط ایجنت برنامه‌نویس — **بلاک روی CP-012**                                                    | Claude |   ⏸️   |
-| RT-079  | نوع step جدید `plugin` در Workflow Engine                                                                                         | Claude |   ❌   |
-| RT-080  | Per-agent Plugin grants (`agent_plugin_grants` + `PluginGrantService`، مشابه Skill grants)                                        | Claude |   ❌   |
-| MKT-024 | دسته‌بندی (category) برای Plugin — ستون/تاکسونومی + فیلتر در discovery                                                            | Claude |   ❌   |
-| MKT-025 | Sandbox test-gate پیش از انتشار — `plugin_versions.status` گسترش (submitted → sandbox_testing → sandbox_passed/rejected → listed) | Claude |   ❌   |
-| MKT-026 | تأیید/تکمیل مدل رایگان/فروشی یکسان برای Skill (طبق ADR-012) — ممکن است بخشی از قبل ساخته شده باشد                                 | Claude |   ❌   |
+| #       | تسک                                                                                                          | مسئول  | Status |
+| ------- | ------------------------------------------------------------------------------------------------------------ | ------ | :----: |
+| RT-076  | Per-plugin DB isolation — schema/namespace جدا برای Pluginی که نیاز به ذخیره‌سازی دارد                       | Claude |   ✅   |
+| RT-077  | مسیر نصب self-hosted محلی (بدون نیاز به Marketplace) برای Plugin                                             | Claude |   ✅   |
+| RT-078  | مسیر اجرای مستقیم Plugin تولیدشده توسط ایجنت برنامه‌نویس — **بلاک روی CP-012**                               | Claude |   ⏸️   |
+| RT-079  | نوع step جدید `plugin` در Workflow Engine                                                                    | Claude |   ✅   |
+| RT-080  | Per-agent Plugin grants (`agent_plugin_grants` + `PluginGrantService`، مشابه Skill grants)                   | Claude |   ✅   |
+| MKT-024 | دسته‌بندی (category) برای Plugin — ستون/تاکسونومی + فیلتر در discovery                                       | Claude |   ✅   |
+| MKT-025 | Sandbox test-gate پیش از انتشار — `plugins.status` گسترش (draft → sandbox_testing → listed/sandbox_rejected) | Claude |   ✅   |
+| MKT-026 | تأیید/تکمیل مدل رایگان/فروشی یکسان برای Skill (طبق ADR-012) — از قبل کامل بوده، فقط verify شد                | Claude |   ✅   |
+
+> **بروزرسانی ۲۰۲۶-۰۷-۱۷ (شب، بدون سوال، طبق دستور صریح کاربر):** هر ۷ تسک
+> غیربلاک این جدول به‌ترتیب ساخته، تست (روی Postgres واقعی)، مستند، و
+> commit/push شدن — هرکدام commit جدای خودش. جزئیات کامل هر کدوم در
+> `DONE.md`. چند باگ واقعی حین کار پیدا/فیکس شد (پارامتر-گپ Postgres در
+> MKT-024، و ۴ مورد از همون کلاس باگ «`created_by_user_id` بدون CASCADE» در
+> `cleanupTestFixture`). RT-078 عمداً دست‌نخورده موند — طبق تصمیم همین
+> جلسه، بلاک روی CP-012 که هنوز ساخته نشده.
 
 جزئیات کامل هر ردیف در `TODO-openon4net-runtime.md` و
 `TODO-openon4net-marketplace.md` ثبت شده؛ این جدول فقط خلاصه/نقشه‌ی
