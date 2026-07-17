@@ -1072,6 +1072,48 @@ rate-limit شد، با همون in-memory limiter موجود CP-007 — نه Red
 `expired` می‌شه، کلید با انقضای آینده عادی کار می‌کنه. همه‌ی ۴۶ تست
 gateway سبز؛ typecheck/lint/build هر سه تمیز.
 
+### CP-026 — نوع شخصی/سازمانی + سقف ۵ کد + سقف seat برای activation key
+
+✅ انجام شد — مسیر صدور self-service جدا از مسیر ادمین موجود
+(`/admin/activation-keys`):
+
+- migration `0003_activation_type_and_seats.sql`: `activation_keys.type`
+  (`personal`|`organizational`, پیش‌فرض `organizational` برای مسیر ادمین
+  قدیمی) + `activation_keys.created_by_user_id` + `organizations.max_users`
+  (NULL = بی‌سقف — فقط مسیر self-service مقدارش می‌ده).
+- `services/activation-service.ts`: `issueSelfServiceActivationKey()`
+  (سقف ۵ کد به‌ازای هر کاربر — عمری، نه فقط کلیدهای فعال؛ `personal` →
+  `maxUsers=1`، `organizational` → `maxUsers=3` پیش‌فرض)، `listActivationKeysForUser()`،
+  `revokeOwnActivationKey()` (فقط کلید خودِ کاربر، حتی با حدسِ id قابل
+  لغوکردن کلید دیگری نیست). `checkIn()`/`CheckInResult` حالا
+  `activationType`/`maxUsers` رو هم برمی‌گردونن — این چیزیه که RT-081
+  می‌خونه.
+- `routes/self-service-activation.ts` (جدید): `POST`/`GET /v1/activation-keys`،
+  `POST /v1/activation-keys/:id/revoke` — همه پشت `requireSession` (نه
+  admin auth).
+- Web: `/account` از یک placeholder به یک صفحه‌ی واقعی مدیریت activation
+  key تبدیل شد (فرم صدور با انتخاب نوع، جدول کلیدها، دکمه لغو).
+
+**۲ باگ واقعی پیدا و فیکس شد حین این کار:**
+۱) migration های `0002`/`0003` بدون `IF NOT EXISTS`/`DO $$` guard نوشته
+شده بودن — چون اسکریپت migrate این ریپو (برخلاف Runtime) هیچ جدول
+tracking نداره و هر بار همه‌ی فایل‌ها رو دوباره اجرا می‌کنه (idempotent
+بودن خودِ SQL تنها تضمینه)، دومین اجرا با `relation already exists` fail
+می‌شد. فیکس شد با `IF NOT EXISTS` روی جدول‌ها/ایندکس‌ها و یک `DO $$` guard
+برای constraint (که Postgres اصلاً `ADD CONSTRAINT IF NOT EXISTS` نداره).
+۲) `routes/activation.ts`'s `POST /activation/check-in` مقادیر جدید
+`activationType`/`maxUsers` رو از `checkIn()` می‌گرفت ولی هیچ‌وقت توی
+پاسخ HTTP برنمی‌گردوند — تست‌های سطح-service این رو نمی‌دیدن چون فقط
+تابع `checkIn()` رو مستقیم صدا می‌زدن، نه route رو. با یک smoke-test
+واقعی روی سرور در حال اجرا (`pnpm dev` + curl با هدر Bearer درست) پیدا
+و فیکس شد.
+
+۹ تست جدید (`self-service-activation.test.ts`). یک smoke-test کامل روی
+سرور واقعی: signup→verify→login→صدور کلید شخصی→صدور کلید سازمانی→لیست→
+check-in واقعی (با `activationType`/`maxUsers` صحیح در پاسخ)→revoke.
+همه‌ی ۵۵ تست gateway + ۱۸ تست web سبز؛ typecheck/lint/build هر سه (هم
+gateway هم web) تمیز.
+
 ---
 
 ## صریحاً انجام‌نشده (شناخته‌شده، نه فراموش‌شده)
