@@ -1321,6 +1321,59 @@ organizationId)` — تابع مستقل (نه متد OrgService، چون org-se
 تأیید شده. همه‌ی ۳۵ فایل تست gateway (۱۷۷ تست) سبز؛ typecheck/lint/build
 هر سه تمیز.
 
+### RT-082 — مخفی/غیرفعال شدن کل ویژگی Agent Access در حالت activation شخصی
+
+✅ انجام شد (در `openon4net-runtime`، به‌همراه یک تغییر کوچک در ریشه‌ی
+مونوریپو) — چون Agent Access (RT-024) یعنی «چه کاربری به کدوم Agent
+دسترسی داره»، و activation شخصی طبق RT-081 دقیقاً یک کاربر داره (و اون
+کاربر همیشه admin بوت‌استرپ سازمانه)، این ویژگی برای حالت شخصی کلاً
+بی‌معنیه:
+
+- **root repo، `packages/shared/src/types/organization.ts`**: `Organization`
+  حالا `activationType`/`maxUsers` رو هم داره (`OrganizationActivationType`
+  جدید). طبق قانون شناخته‌شده‌ی «packages/\* ریشه رو قبل از submodule
+  push کن»، این تغییر جدا commit/push شد **قبل از** هر تغییری در Runtime
+  — چون CI خودِ Runtime (`.github/workflows/ci.yml`) ریشه رو تازه از
+  GitHub checkout می‌کنه، نه از فایل‌های محلی.
+- `services/org-service.ts`: `toOrganization()`/`OrgRow` این دو فیلد رو
+  حالا map می‌کنن (ستون‌هاش از قبل توسط migration RT-081 اضافه شده بودن،
+  فقط تا الان توی `getById()`/`GET /v1/organization` برنمی‌گشتن).
+- `lib/agent-access.ts`: `assertAgentAccessFeatureEnabled(db, organizationId)`
+  (جدید، تابع مستقل مثل `assertSeatAvailable` نه متد کلاس) — اگه
+  `activationType === 'personal'` باشه `ValidationError` می‌ده.
+- سه route در `routes/agents.ts` (`GET/POST .../access`, `POST
+.../access/grant`, `DELETE .../access/:userId`) این چک رو قبل از هر
+  کاری صدا می‌زنن — یعنی حتی اگه کسی مستقیم به route درخواست بزنه (نه از
+  UI)، برای سازمان شخصی رد می‌شه.
+- وب (`app/agents/page.tsx`): `api.getOrganization()` حالا موقع لود صفحه
+  صدا زده می‌شه (تازه، نه از session ذخیره‌شده — چون `activationType`
+  می‌تونه بین دو check-in ساعتی تغییر کنه)؛ دکمه‌ی «Access» فقط وقتی
+  `session.role === 'admin' && activationType !== 'personal'` نشون داده
+  می‌شه (قبلاً فقط شرط admin بود).
+- **عمداً دست‌نخورده موند**: `grantOwner()` که موقع ساخت Agent صدا زده
+  می‌شه (چه سازمان شخصی چه سازمانی) — چون خودِ enforcement
+  (`requireAgentAccessible`) برای admin از قبل کلاً bypass می‌شه، وجود یا
+  عدم وجود یک ردیف در `agent_access_bindings` برای تنها کاربر یک سازمان
+  شخصی هیچ رفتاری رو عوض نمی‌کنه.
+
+smoke-test واقعی روی سرور در حال اجرا: dev-login → ساخت Agent →
+`GET .../access` روی سازمان سازمانی → `200` با binding واقعی → سازمان
+دستی به `personal` تغییر داده شد → همون route → `400 VALIDATION_ERROR`
+(«Agent Access is not available for personal activations…») → همون
+برای `POST .../access/grant`. `GET /v1/organization` هم قبل و بعد چک
+شد تا مطمئن بشیم فیلد `activationType` واقعاً توی پاسخ HTTP برمی‌گرده،
+نه فقط توی type.
+
+۳ تست جدید (`lib/agent-access.test.ts`) + ۱ تست جدید در
+`org-service.test.ts` (تأیید `getById()` این دو فیلد رو برمی‌گردونه).
+**یک شکاف پوشش از قبل موجود، نه از این تسک:** `agent-access-service.ts`
+و `requireAgentAccessible`/چک `hasAccess` داخل `chat-service.ts` هنوز
+هیچ تست مستقیمی ندارن — این تسک فقط تابع تازه‌ی خودش
+(`assertAgentAccessFeatureEnabled`) رو تست کرد، نه کل RT-024 رو
+retroactively پوشش داد. همه‌ی ۳۶ فایل تست gateway (۱۸۰ تست) سبز؛
+typecheck/lint/build هر سه (gateway، web، و `packages/shared` ریشه)
+تمیز.
+
 ---
 
 ## صریحاً انجام‌نشده (شناخته‌شده، نه فراموش‌شده)
