@@ -1279,6 +1279,48 @@ language در `activation-service.test.ts`) + ۱ تست در
 (`api-client.test.ts`). همه‌ی ۹۲ تست gateway + ۲۱ تست web سبز؛
 typecheck/lint/build هر سه (هم gateway هم web) تمیز.
 
+### RT-081 — Runtime سقف seat رو از نوع activation اعمال می‌کنه (شخصی=۱، سازمانی=maxUsers)
+
+✅ انجام شد (در `openon4net-runtime`) — طبق CP-026: Control Plane
+`activationType`/`maxUsers` رو توی جواب check-in برمی‌گردونه، Runtime حالا
+واقعاً بهش گوش می‌ده و enforce می‌کنه:
+
+- migration `0026_activation_seat_limit.sql`: `organizations.activation_type`
+  (پیش‌فرض `'organizational'`، سازگار با orgهای قبلی) + `organizations.max_users`
+  (`NULL` = بدون سقف).
+- `services/activation-client.ts`: `CheckInResult` حالا `activationType`/
+  `maxUsers` رو هم type می‌کنه (قبلاً فیلدهای CP-026 اصلاً خونده نمی‌شدن).
+- `services/org-service.ts`: `updateActivationInfo()` (جدید) — فقط توسط
+  scheduler نوشته می‌شه؛ درست مثل `plan`/`status`، از مسیر self-service
+  `update()` عمداً قابل‌ویرایش نیست (کامنت خود فایل این قانون رو از قبل
+  برای plan/status مستند کرده بود).
+- `services/activation-scheduler.ts`: هر check-in موفق (اول boot، بعد هر
+  ساعت) حالا `updateActivationInfo` رو هم صدا می‌زنه — یعنی حتی اگه
+  Control Plane لحظه‌ی افزودن کاربر در دسترس نباشه، enforcement روی
+  آخرین مقدار شناخته‌شده کار می‌کنه، نه یک فراخوانی زنده به‌ازای هر request.
+- `services/seat-limit-service.ts` (جدید): `assertSeatAvailable(client,
+organizationId)` — تابع مستقل (نه متد OrgService، چون org-service.ts از
+  قبل user-service.ts رو import می‌کنه و متد کلاس باعث import چرخه‌ای
+  می‌شد). شخصی → سقف ثابت ۱؛ سازمانی → `max_users` (`NULL` = نامحدود)؛
+  فقط کاربرهای `is_active = true` شمرده می‌شن (غیرفعال کردن یه کاربر جای
+  خالی آزاد می‌کنه).
+- سیم‌کشی در دو نقطه‌ی واقعی insert کاربر: `UserService.create()` (همون
+  transaction، بعد از چک ایمیل تکراری) و `InvitationService.accept()`
+  (چک نهایی/authoritative، همون transaction با insert). `InvitationService.create()`
+  هم یک چک fail-fast قبل از ساخت دعوت داره — که یه دعوت رو نساخته که
+  قطعاً موقع accept برگرده.
+
+۱۳ تست جدید (`seat-limit-service.test.ts` ۲ تا، ۴ تست در
+`user-service.test.ts`، ۲ تست در `invitation-service.test.ts`، ۲ تست در
+`org-service.test.ts`، به‌روزرسانی fixture در `activation-client.test.ts`)
+— همه با Postgres واقعی، شامل تست race-محور «کاربر غیرفعال جای خودش رو
+آزاد می‌کنه» و «چک دوباره در accept حتی اگه در لحظه‌ی create قبول شده
+بود». Route-level smoke test عمداً انجام نشد: برخلاف باگ CP-026 (که یک
+فیلد جدید در پاسخ HTTP بود)، این‌جا route هیچ shape جدیدی نداره — فقط
+همون مسیر خطای `ValidationError`ی که از قبل با تست‌های duplicate-email
+تأیید شده. همه‌ی ۳۵ فایل تست gateway (۱۷۷ تست) سبز؛ typecheck/lint/build
+هر سه تمیز.
+
 ---
 
 ## صریحاً انجام‌نشده (شناخته‌شده، نه فراموش‌شده)
