@@ -126,6 +126,14 @@ Origin` header نمی‌گیره؛ از `localhost:3300` می‌گیره.
 | CP-012 | CP-SP-03 — Managed AI Gateway: router rules، failover، cost tracking managed، circuit breaker                                              | جانشین رسمی T-011 منسوخ Runtime؛ Epic E-063؛ **۲۰۲۶-۰۷-۱۶: پیش‌نیاز صریح RT-078 (Runtime) شد** — ایجنت برنامه‌نویس فقط با AI Gateway واقعی قابل‌استفاده است، طبق `06_MEETINGS/04-plugin-ecosystem-architecture.md` |
 | CP-013 | CP-SP-04 — Billing واقعی: payment provider، ledger کامل با refund، wallet settlement برای Marketplace، budget hooks، `POST /cost/estimate` | Epic E-064؛ طبق guardrail بعد از ۲-۳ مشتری واقعی                                                                                                                                                                   |
 
+## بخش D — ثبت‌نام self-service + مدل activation شخصی/سازمانی (جلسه ۵، `06_MEETINGS/05-self-service-signup-and-activation-model.md`)
+
+| #      | تسک                                                                                                          | یادداشت                                                                                                                |
+| ------ | ------------------------------------------------------------------------------------------------------------ | ---------------------------------------------------------------------------------------------------------------------- |
+| CP-025 | ثبت‌نام self-service (ایمیل/پسورد + مگ‌لینک) — جدول `users` جدید در Control Plane، لاگین/session واقعی       | Control Plane امروز اصلاً جدول `users` نداره — این یک زیرساخت احراز هویت کاملاً جدیده                                  |
+| CP-026 | `activation_keys` نوع شخصی/سازمانی + سقف ۵ کد به‌ازای کاربر + سقف seat (۳ رایگان سازمانی، بدون پرداخت واقعی) | به CP-025 وابسته است                                                                                                   |
+| CP-027 | مارکت‌پلیس در Control Plane — Control Plane مستقیم API مارکت‌پلیس رو صدا بزنه، UI خودش رو بسازه              | مثل الگوی موجود Runtime (`services/marketplace-client.ts`)؛ نه micro-frontend واقعی، نه frontend جدید برای Marketplace |
+
 ---
 
 ## نحوه استفاده

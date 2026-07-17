@@ -99,6 +99,13 @@
 | RT-079 | نوع step جدید `plugin` در Workflow Engine (کنار `agent`/`tool`/`human`/`parallel`/`condition` موجود)       | ✅ انجام شد — محدود به Pluginهای thin HTTP-provider؛ اولین enforcement واقعی RT-080، جزئیات در `DONE.md`                                                           |  ✅   |
 | RT-080 | Per-agent Plugin grants (`agent_plugin_grants` + `PluginGrantService`)                                     | ✅ انجام شد — enforcement واقعی حالا در RT-079 وصل شد، جزئیات در `DONE.md`                                                                                         |  ✅   |
 
+## بخش B۲ — مدل activation شخصی/سازمانی (جلسه ۵، `06_MEETINGS/05-self-service-signup-and-activation-model.md`)
+
+| #      | تسک                                                                                                          | یادداشت                                                   | وضعیت |
+| ------ | ------------------------------------------------------------------------------------------------------------ | --------------------------------------------------------- | :---: |
+| RT-081 | Activation check-in نوع/سقف seat رو از Control Plane می‌گیره؛ enforce سقف کاربر (شخصی=۱، سازمانی=seat limit) | به CP-026 وابسته است (باید نوع/سقف از Control Plane بیاد) |  ❌   |
+| RT-082 | در حالت activation شخصی، کل UI/routeهای Agent Access مخفی/غیرفعال بشه                                        | به RT-081 وابسته است                                      |  ❌   |
+
 ## بخش C — ⚠️ تصمیمات بزرگ‌تر معماری (نیاز به تأیید آگاهانه قبل از شروع)
 
 | #      | تسک                                                                         | یادداشت                                                                                                                                                                                                                                             |
