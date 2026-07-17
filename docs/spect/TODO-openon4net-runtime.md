@@ -105,7 +105,7 @@
 | ------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------ | ----------------------------------------------------------------------------------------- | :---: |
 | RT-081 | Activation check-in نوع/سقف seat رو از Control Plane می‌گیره؛ enforce سقف کاربر (شخصی=۱، سازمانی=seat limit)                                                 | ✅ انجام شد — `assertSeatAvailable` در UserService/InvitationService، جزئیات در `DONE.md` |  ✅   |
 | RT-082 | در حالت activation شخصی، کل UI/routeهای Agent Access مخفی/غیرفعال بشه                                                                                        | ✅ انجام شد — `assertAgentAccessFeatureEnabled` + گیت UI، جزئیات در `DONE.md`             |  ✅   |
-| RT-083 | چندزبانگی — `organizations.language` (پیش‌فرض) + `users.language` (override شخصی) + انتخاب زبان اولین ورود + JSON locale/AI-generation + RTL/LTR واقعی در چت | مستقل از بقیه‌ی بخش B۲؛ پوشش‌دهنده‌ی بخش RTL/LTR سند RT-021 (نه بخش ۳ پنل اون)            |  ❌   |
+| RT-083 | چندزبانگی — `organizations.language` (پیش‌فرض) + `users.language` (override شخصی) + انتخاب زبان اولین ورود + JSON locale/AI-generation + RTL/LTR واقعی در چت | ✅ انجام شد — `/v1/locales/:lang` + `/v1/users/me` + dir واقعی در چت، جزئیات در `DONE.md` |  ✅   |
 
 ## بخش C — ⚠️ تصمیمات بزرگ‌تر معماری (نیاز به تأیید آگاهانه قبل از شروع)
 

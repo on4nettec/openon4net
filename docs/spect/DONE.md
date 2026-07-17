@@ -1374,6 +1374,77 @@ retroactively پوشش داد. همه‌ی ۳۶ فایل تست gateway (۱۸۰ 
 typecheck/lint/build هر سه (gateway، web، و `packages/shared` ریشه)
 تمیز.
 
+### RT-083 — چندزبانگی در Runtime + RTL/LTR واقعی در چت (تکمیل بخش جامانده از RT-021)
+
+✅ انجام شد (در `openon4net-runtime`، به‌همراه یک تغییر ریشه‌ای دیگر در
+`packages/shared`) — آخرین تسک این batch. طبق جلسه ۵: فایل‌های JSON
+مرجع + AI-generation عیناً مثل CP-028، ولی به‌همراه چیزی که Control
+Plane نمی‌تونست بسازه (چون جدول `users` نداره به همون معنا): override
+شخصیِ هر کاربر، مستقل از پیش‌فرض سازمانش.
+
+- **root repo، `packages/shared`**: `Organization.language` (همیشه
+  ست‌شده) و `User.language` (`string | null` — `null` یعنی «هنوز
+  انتخاب نکرده»، همون سیگنال اولین ورود) به type ها اضافه شد؛
+  `OrganizationUpdateSchema` یک `language` اختیاری گرفت،
+  `SelfLanguageUpdateSchema` جدید (فقط `{language}`) برای مسیر
+  self-service کاربر عادی. طبق قانون «packages/\* ریشه رو قبل از
+  submodule» جدا commit/push شد.
+- migration `0027_language.sql`: `organizations.language` (پیش‌فرض
+  `'en'`) + `users.language` (nullable، بدون پیش‌فرض).
+- `services/locale-service.ts` + `routes/locales.ts` (جدید) — کپی دقیق
+  معماری CP-028 (`en.json` مرجع در git، cache روی دیسک برای زبان‌های
+  تولیدشده، AI translation عمداً یک fetch جدا و ساده به Anthropic،
+  **نه** از طریق `ProviderConfigService`/`ChatService` سازمانی — چون
+  تولید locale یک عملیات global و یک‌بارمصرفه، نه هزینه‌ی چت یک org).
+  `GET /v1/locales/:lang` به‌خاطر global auth hook (`plugins/auth.ts`)
+  باید صریحاً به `PUBLIC_ROUTES` اضافه می‌شد، چیزی که در Control Plane
+  لازم نبود (اون auth model متفاوته).
+- `services/org-service.ts`: `update()` حالا `language` رو هم می‌گیره
+  (admin-facing، مثل `name`).
+- `services/user-service.ts`: `updateOwnLanguage(userId, language)`
+  (جدید، تابع مستقل — نه از طریق `update()` ادمین‌محورِ موجود که
+  صراحتاً self-PATCH رو رد می‌کنه).
+- `routes/users.ts`: `GET/PATCH /v1/users/me` (جدید) — هر کاربر
+  signed-in، بدون نیاز به `users:read`/`users:write`، چون فقط ردیف خودش
+  رو می‌بینه/عوض می‌کنه. `GET .../me` هم همون endpoint‌ایه که فرانت برای
+  تشخیص «اولین ورود» صداش می‌زنه (`language === null`).
+- وب: `lib/i18n.ts` (جدید) — `isRtlLanguage()` + `applyDocumentDirection()`
+  (روی `document.documentElement` مستقیم، چون این اپ SSR/cookie-session
+  نداره، همه‌چیز client-side session-based هست). `/agents` بلاک می‌شه
+  با یک بنر انتخاب زبان تا وقتی `me.language !== null` بشه (طبق متن
+  جلسه ۵: «اولین ورود کاربر یک انتخاب زبان نشون می‌ده»)؛ چون هم
+  `/login` هم `/accept-invite` هر دو به `/agents` redirect می‌کنن، این
+  یک نقطه‌ی مشترک هر دو مسیر ورود رو پوشش می‌ده. صفحه‌ی `/settings`
+  پیش‌فرض زبان سازمان رو (admin-only) قابل‌ویرایش کرد.
+- **صفحه‌ی چت (`agents/[id]/chat/page.tsx`) — بخش RTL/LTR واقعی**:
+  زبان مؤثر (`user.language ?? organization.language`) واقعاً
+  `document.documentElement.dir`/`lang` رو ست می‌کنه (نه صرفاً
+  `text-align`)؛ چون layout موجود قبلاً کاملاً با flex/gap ساخته شده
+  بود (بدون هیچ `margin-left`/`text-align: left` سخت‌کدشده)، خودِ
+  balloon‌های پیام (`alignSelf: flex-end/flex-start`) طبق spec خودِ
+  Flexbox زیر `dir="rtl"` **خودکار** جهت عوض می‌کنن — نیازی به تغییر
+  منطق نبود. چیزی که واقعاً نیاز به فیکس داشت: فلش سخت‌کدشده‌ی `←`
+  (حالا جهت‌آگاهه، `Agents →` در RTL).
+- **عمداً محدود به همین صفحه، نه کل اپ**: طبق متن دقیق تسک («RTL/LTR
+  واقعی **در چت**»)، `dir` فقط توی صفحه‌ی چت (و به‌عنوان یک مزیت جانبی،
+  صفحه‌ی `/agents` هم چون همون‌جا زبان انتخاب می‌شه) واقعاً اعمال شد؛
+  صفحات دیگه (settings, users, ...) هنوز LTR انگلیسی‌محورن — یک گسترش
+  آینده، نه بخشی از این تسک.
+
+smoke-test واقعی روی سرور در حال اجرا: dev-login → `GET /v1/locales/en`
+(مرجع واقعی) → `GET /v1/users/me` (`language: null`, تأیید سیگنال
+اولین ورود) → `GET /v1/organization` (`language: "en"`) →
+`PATCH /v1/users/me {language: "fa"}` → `GET .../me` دوباره (`fa`) →
+رد فرمت نامعتبر (`persian"` → ۴۰۰) → `PATCH /v1/organization
+{language: "ar"}` → `GET /v1/locales/xx` بدون AI key → ۴۰۰ با پیام
+روشن.
+
+۵ تست جدید (`locale-service.test.ts`) + ۲ تست در `org-service.test.ts`
+
+- ۳ تست در `user-service.test.ts`. همه‌ی ۳۷ فایل تست gateway (۱۹۰ تست)
+  سبز؛ typecheck/lint/build هر سه (gateway، web، `packages/shared` ریشه)
+  تمیز.
+
 ---
 
 ## صریحاً انجام‌نشده (شناخته‌شده، نه فراموش‌شده)
