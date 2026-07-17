@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { LanguageCodeSchema } from './organization.js';
 
 export const UserCreateSchema = z.object({
   email: z.string().email(),
@@ -20,3 +21,9 @@ export const UserUpdateSchema = z
     message: 'At least one of role, workspaceId, or isActive must be provided',
   });
 export type UserUpdateInput = z.infer<typeof UserUpdateSchema>;
+
+// RT-083 — self-service, deliberately separate from UserUpdateSchema above
+// (which is admin-only and explicitly blocks self-PATCH — see
+// routes/users.ts). Any signed-in user can set their own language.
+export const SelfLanguageUpdateSchema = z.object({ language: LanguageCodeSchema });
+export type SelfLanguageUpdateInput = z.infer<typeof SelfLanguageUpdateSchema>;

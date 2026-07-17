@@ -16,6 +16,9 @@ export interface Organization {
   // meaningless with a single user. maxUsers is null when unlimited.
   activationType: OrganizationActivationType;
   maxUsers: number | null;
+  // RT-083 — org-level i18n default. Always set (defaults to 'en'). A user
+  // with users.language === null inherits this; see User.language below.
+  language: string;
   readonly createdAt: string;
   updatedAt: string;
 }
@@ -52,5 +55,10 @@ export interface User {
   organizationId: string;
   settings: Record<string, unknown>;
   isActive: boolean;
+  // RT-083 — per-user override of organizations.language. null means "no
+  // preference chosen yet" — the effective language is
+  // `user.language ?? organization.language`, and null is also the signal
+  // the frontend uses to show the first-login language picker.
+  language: string | null;
   readonly createdAt: string;
 }
