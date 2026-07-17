@@ -136,7 +136,7 @@ Origin` header نمی‌گیره؛ از `localhost:3300` می‌گیره.
 | CP-028 | چندزبانگی — `organizations.language` + انتخاب زبان اولین ورود + JSON locale (`en.json` مرجع) + AI-generation برای زبان غایب               | فقط پیش‌فرض سازمانی (بدون per-user، چون `users` نداره تا CP-025) — مستقل از بقیه‌ی بخش D                               |
 | CP-029 | قفل activation key سازمانی به IP استاتیک/دامنه — چک در هر check-in، عدم تطابق = رد                                                        | ✅ انجام شد — اختیاری، قابل‌ویرایش بعداً، جزئیات در `DONE.md`                                                          |
 | CP-030 | Revoke/expire واقعی — route ادمین برای لغو دستی + اجرای واقعی `expires_at`                                                                | ✅ انجام شد — انقضا lazy در لحظه‌ی استفاده، revoke دستی via route، جزئیات در `DONE.md`                                 |
-| CP-031 | مدل Reseller/Host — entity `resellers` (سهمیه `max_connected_instances`) + `activation_keys.reseller_id` + API صدور/لغو کلید در سقف سهمیه | جهت‌گیری تأییدشده در جلسه ۳ (`06_MEETINGS/03-finetuning-and-model-routing.md`)؛ بدون تسویه‌ی مالی واقعی (طبق CP-013)   |
+| CP-031 | مدل Reseller/Host — entity `resellers` (سهمیه `max_connected_instances`) + `activation_keys.reseller_id` + API صدور/لغو کلید در سقف سهمیه | ✅ انجام شد — سهمیه بر اساس کلیدهای فعال (نه عمری)، جزئیات در `DONE.md`                                                |
 
 ---
 

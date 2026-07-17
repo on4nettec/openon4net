@@ -1146,6 +1146,45 @@ resolve واقعی دامنه — با `localhost` به‌جای mock، fail-clo
 اگه فرستاده بشه). همه‌ی ۶۶ تست gateway سبز؛ typecheck/lint/build هر سه
 (gateway و web) تمیز.
 
+### CP-031 — مدل Reseller/Host (جهت‌گیری تأییدشده‌ی جلسه ۳، حالا واقعاً ساخته شد)
+
+✅ انجام شد — یک Reseller یک کاربر عادی (CP-025) هست که یک اپراتور
+سهمیه بهش داده، نه یک سیستم auth کاملاً جدید:
+
+- migration `0005_resellers.sql`: جدول `resellers` (`user_id` یکتا،
+  `display_name`، `max_connected_instances`، `status`) +
+  `activation_keys.reseller_id` (nullable — null یعنی مسیر مستقیم/
+  self-service معمولی).
+- `services/reseller-service.ts` (جدید): `grantResellerStatus()` (فقط
+  اپراتور — upsert بر اساس ایمیل کاربر)، `issueResellerActivationKey()`
+  (سقف در برابر سهمیه، نه سقف ۵تایی CP-026)، `listResellerActivationKeys()`،
+  `revokeResellerActivationKey()` (scope‌شده، reseller دیگه نمی‌تونه کلید
+  reseller دیگه رو لغو کنه).
+- `routes/admin-resellers.ts` (جدید): `POST`/`GET /admin/resellers` —
+  فقط اپراتور.
+- `routes/reseller.ts` (جدید): `POST`/`GET /v1/reseller/activation-keys`،
+  `POST /v1/reseller/activation-keys/:id/revoke` — با همون
+  `requireSession` موجود، بعد چک `resellers.user_id` (نه یک API scope
+  کاملاً جدا).
+- **تسویه‌ی مالی واقعی عمداً ساخته نشد** — طبق تصمیم جلسه ۵ و
+  guardrail شناخته‌شده‌ی CP-013، این جدول فقط سهمیه و مصرفش رو ردیابی
+  می‌کنه، پول جابه‌جا نمی‌شه.
+
+**یک تصمیم طراحی مهم که حین smoke-test واقعی اصلاح شد:** اول
+`countInstancesForReseller` همه‌ی کلیدهای صادرشده (حتی revoked) رو
+می‌شمرد — یعنی لغو کردن مشتری رفته، سهمیه رو برای همیشه می‌سوزوند.
+با یک curl واقعی (صدور تا سقف، لغو یکی، تلاش صدور دوباره) این رفتار
+اشتباه پیدا شد؛ چون «max_connected_instances» طبق جلسه ۳ یعنی ظرفیت
+**فعلی متصل**، نه سقف عمری (برخلاف سقف ۵تایی CP-026 که عمداً عمریه، چون
+هدفش جلوگیری از سوءاستفاده از ثبت‌نام رایگانه). فیکس شد: فقط کلیدهای
+`status = 'active'` شمرده می‌شن — لغو یک مشتری، جای اون رو واقعاً آزاد
+می‌کنه.
+
+۹ تست جدید (`reseller-service.test.ts`) + یک smoke-test کامل روی سرور
+واقعی: grant reseller → login → صدور تا سقف ۲ → رد سومی → لغو یکی →
+صدور موفق چهارمی (بعد از فیکس سهمیه) → توکن نامعتبر رد می‌شه. همه‌ی ۷۵
+تست gateway سبز؛ typecheck/lint/build هر سه تمیز.
+
 ---
 
 ## صریحاً انجام‌نشده (شناخته‌شده، نه فراموش‌شده)
