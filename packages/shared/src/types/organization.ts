@@ -1,6 +1,8 @@
 export type OrganizationPlan = 'starter' | 'team' | 'business' | 'enterprise';
 export type OrganizationStatus = 'active' | 'suspended' | 'canceled';
 
+export type OrganizationActivationType = 'personal' | 'organizational';
+
 export interface Organization {
   readonly id: string;
   name: string;
@@ -8,6 +10,12 @@ export interface Organization {
   plan: OrganizationPlan;
   status: OrganizationStatus;
   settings: Record<string, unknown>;
+  // RT-081/RT-082 — mirrored from Control Plane's CP-026 activation-key type
+  // on every check-in (activation-scheduler.ts). 'personal' caps this org at
+  // exactly one user and hides the Agent Access feature (RT-082) — it's
+  // meaningless with a single user. maxUsers is null when unlimited.
+  activationType: OrganizationActivationType;
+  maxUsers: number | null;
   readonly createdAt: string;
   updatedAt: string;
 }
