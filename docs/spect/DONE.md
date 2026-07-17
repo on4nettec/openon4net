@@ -1114,6 +1114,38 @@ check-in واقعی (با `activationType`/`maxUsers` صحیح در پاسخ)→
 همه‌ی ۵۵ تست gateway + ۱۸ تست web سبز؛ typecheck/lint/build هر سه (هم
 gateway هم web) تمیز.
 
+### CP-029 — قفل IP/دامنه برای activation key سازمانی
+
+✅ انجام شد — طبق پیشنهاد خود کاربر: موقع صدور کلید سازمانی، یک IP
+استاتیک یا دامنه اختیاری گرفته می‌شه؛ هر check-in بعدی IP مبدأ درخواست
+رو باهاش مقایسه می‌کنه:
+
+- migration `0004_bound_host.sql`: `activation_keys.bound_host` — فقط
+  برای نوع `organizational`، اختیاری (NULL = بدون قفل، رفتار قبلی
+  دست‌نخورده می‌مونه). کلیدهای شخصی هیچ‌وقت این ستون رو استفاده نمی‌کنن
+  (تصمیم جلسه ۵).
+- `lib/bound-host.ts` (جدید): `hostMatchesCallerIp()` — اگه `boundHost`
+  یک IP باشه مقایسه مستقیم، اگه دامنه باشه هر بار DNS resolve می‌شه (نه
+  یک snapshot قدیمی، پس تغییر DNS مشتری نیاز به صدور کلید جدید نداره).
+  خطای DNS resolution = fail-closed (رد، نه قبول).
+- `authenticateActivationKey()`/`checkIn()` یک پارامتر اختیاری `callerIp`
+  گرفتن — فقط وقتی هم `callerIp` هم `bound_host` مقدار داشته باشن قفل
+  فعال می‌شه؛ همه‌ی فراخوانی‌های قبلی (بدون این پارامتر) دست‌نخورده کار
+  می‌کنن.
+- `routes/activation.ts` حالا `request.ip` رو به `checkIn()` می‌ده.
+- Self-service: `PATCH /v1/activation-keys/:id/bound-host` (جدید) —
+  چون IP/دامنه‌ی واقعی مشتری می‌تونه عوض بشه، بدون نیاز به صدور دوباره‌ی
+  کلید قابل‌ویرایشه. صفحه‌ی `/account` هم آپدیت شد (فیلد اختیاری در فرم
+  صدور + ستون «Locked to» با امکان ویرایش در جدول).
+
+۶ تست جدید (`bound-host.test.ts`: IP دقیق، عدم‌تطابق، IPv4-mapped-IPv6،
+resolve واقعی دامنه — با `localhost` به‌جای mock، fail-closed روی دامنه‌ی
+غیرقابل‌resolve) + ۵ تست جدید در `activation-service.test.ts` (بدون قفل
+از هر IP کار می‌کنه، قفل با IP درست کار می‌کنه، قفل با IP غلط رد می‌شه،
+بدون callerIp اصلاً چک نمی‌شه، کلید شخصی هیچ‌وقت bound_host نمی‌گیره حتی
+اگه فرستاده بشه). همه‌ی ۶۶ تست gateway سبز؛ typecheck/lint/build هر سه
+(gateway و web) تمیز.
+
 ---
 
 ## صریحاً انجام‌نشده (شناخته‌شده، نه فراموش‌شده)
