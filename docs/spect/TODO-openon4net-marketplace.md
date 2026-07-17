@@ -110,6 +110,15 @@
 | MKT-025 | Sandbox test-gate پیش از انتشار — گسترش `plugins.status` (draft → sandbox_testing → listed/sandbox_rejected) |          ❌ خیر          |  ✅   |
 | MKT-026 | تأیید/تکمیل مدل رایگان/فروشی یکسان برای Skill (طبق ADR-012)                                                  |          ❌ خیر          |  ✅   |
 
+## بخش G — یادداشت (جلسه ۶، هنوز تسک شماره‌دار نیست)
+
+> طبق `06_MEETINGS/06-agent-definition-review-and-runtime-gaps.md`: Control Plane قراره
+> بعد از تأیید activation code یک توکن امنیتی اختصاصی برای ارتباط Marketplace/Control-Plane
+> صادر کنه (`CP-032` در `TODO-openon4net-control-plane.md`)، به‌جای secret ثابت فعلی
+> (`MARKETPLACE_API_KEY`). سمت Marketplace (پذیرش/verify این توکن به‌جای فقط API key ثابت)
+> بعد از مشخص‌شدن پروتکل دقیق در CP-032 به‌عنوان یک MKT-xxx شماره‌دار می‌شه — الان فقط برای
+> آگاهی ثبت شد.
+
 ## بخش C — ⚠️ صراحتاً خارج از MVP guardrail (نیاز به تأیید آگاهانه)
 
 > طبق `docs/spect/09_TASKS/08-scope-guardrails-mvp.md` §3.3: «Marketplace public
