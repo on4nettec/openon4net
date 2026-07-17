@@ -11,18 +11,22 @@
 
 یک Chatbot جواب می‌دهد. یک **Digital Employee** کار می‌کند.
 
-| ویژگی | Chatbot | Digital Employee |
-|--------|---------|-----------------|
-| **نقش** | کمک‌کننده | کارمند |
-| **ساختار** | بدون ساختار | نقش، وظایف، KPI |
-| **حافظه** | مکالمه | ۶ لایه + Memory Graph |
-| **مسئولیت** | ندارد | دارد |
-| **حقوق** | ندارد | budget مصرف مدل = حقوق |
-| **مرخصی** | همیشه آنلاین | همیشه آنلاین (۲۴/۷) |
-| **گزارش** | می‌تواند | باید (دوره‌ای) |
-| **ارتقا** | ندارد | یاد می‌گیرد و Skill می‌سازد |
-| **اخراج** | غیرفعال می‌شود | غیرفعال + بایگانی |
-| **تیم** | تکی | تیمی با Agentهای دیگر |
+> تعریف فنی کامل Agent (حلقه‌ی ادراک/تصمیم/عمل + نقش + مهارت + ابزار + ارتباط بین Agentها +
+> مشارکت در Workflow) در `06-glossary.md`'s Agent entry آمده — این سند روی همان پایه، استعاره‌ی
+> «کارمند دیجیتال» را می‌سازد.
+
+| ویژگی       | Chatbot        | Digital Employee            |
+| ----------- | -------------- | --------------------------- |
+| **نقش**     | کمک‌کننده      | کارمند                      |
+| **ساختار**  | بدون ساختار    | نقش، وظایف، KPI             |
+| **حافظه**   | مکالمه         | ۶ لایه + Memory Graph       |
+| **مسئولیت** | ندارد          | دارد                        |
+| **حقوق**    | ندارد          | budget مصرف مدل = حقوق      |
+| **مرخصی**   | همیشه آنلاین   | همیشه آنلاین (۲۴/۷)         |
+| **گزارش**   | می‌تواند       | باید (دوره‌ای)              |
+| **ارتقا**   | ندارد          | یاد می‌گیرد و Skill می‌سازد |
+| **اخراج**   | غیرفعال می‌شود | غیرفعال + بایگانی           |
+| **تیم**     | تکی            | تیمی با Agentهای دیگر       |
 
 ---
 
@@ -62,55 +66,55 @@
 ## ۳. مشخصات یک Digital Employee
 
 ```yaml
-id: "marketing-01"
-name: "Marketing Agent - Alpha"
-role: "Marketing Manager"
-department: "Marketing"
+id: 'marketing-01'
+name: 'Marketing Agent - Alpha'
+role: 'Marketing Manager'
+department: 'Marketing'
 
-reportsTo: "ceo-01"
+reportsTo: 'ceo-01'
 team:
-  - "designer-01"
-  - "copywriter-01"
-  - "video-creator-01"
+  - 'designer-01'
+  - 'copywriter-01'
+  - 'video-creator-01'
 
-status: "active"  # active | paused | archived | terminated
+status: 'active' # active | paused | archived | terminated
 
 budget:
-  monthly: 500   # $
-  used: 320      # $
-  model: "gpt-4o"
+  monthly: 500 # $
+  used: 320 # $
+  model: 'gpt-4o'
 
 skills:
-  - "send-weekly-report"
-  - "analyze-campaign"
-  - "social-media-scheduling"
+  - 'send-weekly-report'
+  - 'analyze-campaign'
+  - 'social-media-scheduling'
 
 kpis:
-  - name: "campaigns/month"
+  - name: 'campaigns/month'
     target: 10
     current: 8
-  - name: "response-time"
-    target: "< 5 min"
-    current: "2.3 min"
+  - name: 'response-time'
+    target: '< 5 min'
+    current: '2.3 min'
 
 memory:
   layers: [1, 2, 3, 4, 5]
   graph: true
-  size: "2.4 GB"
+  size: '2.4 GB'
 
 schedules:
-  - task: "morning-report"
-    time: "08:00"
-    days: ["mon", "tue", "wed", "thu", "fri"]
-  - task: "campaign-review"
-    time: "14:00"
-    days: ["wed"]
+  - task: 'morning-report'
+    time: '08:00'
+    days: ['mon', 'tue', 'wed', 'thu', 'fri']
+  - task: 'campaign-review'
+    time: '14:00'
+    days: ['wed']
 
 permissions:
-  - "email:read"
-  - "email:send"
-  - "database:analytics:read"
-  - "social:post"
+  - 'email:read'
+  - 'email:send'
+  - 'database:analytics:read'
+  - 'social:post'
 ```
 
 ---
@@ -120,6 +124,7 @@ permissions:
 ### چرا Governance؟
 
 شرکت‌ها به Agentها اعتماد می‌کنند اما کنترل می‌خواهند. Governance به مدیران می‌دهد:
+
 - **Visibility:** ببینند Agentها چه می‌کنند
 - **Control:** محدود کنند، تأیید کنند، متوقف کنند
 - **Audit:** همه چیز ثبت شود
@@ -149,30 +154,31 @@ Status: ⏳ منتظر تأیید سروش
 
 ### ۴.۲ Human-in-the-Loop
 
-| سطح تأیید | توضیح |
-|-----------|--------|
-| **Auto** | بدون نیاز به انسان |
-| **Notify** | انجام بده + اطلاع بده |
-| **Approve** | قبل از انجام، تأیید بگیر |
+| سطح تأیید    | توضیح                    |
+| ------------ | ------------------------ |
+| **Auto**     | بدون نیاز به انسان       |
+| **Notify**   | انجام بده + اطلاع بده    |
+| **Approve**  | قبل از انجام، تأیید بگیر |
 | **Escalate** | به مدیر انسانی ارجاع بده |
 
 ### قوانین مثال:
+
 ```yaml
 rules:
-  - action: "send-email"
-    condition: "recipients > 100"
-    level: "approve"
-    approver: "soroush"
+  - action: 'send-email'
+    condition: 'recipients > 100'
+    level: 'approve'
+    approver: 'soroush'
 
-  - action: "create-contract"
-    condition: "value > 10000"
-    level: "approve"
-    approver: "ceo-human"
+  - action: 'create-contract'
+    condition: 'value > 10000'
+    level: 'approve'
+    approver: 'ceo-human'
 
-  - action: "delete-file"
-    condition: "always"
-    level: "approve"
-    timeout: "24h"  # اگر تأیید نشد، منقضی
+  - action: 'delete-file'
+    condition: 'always'
+    level: 'approve'
+    timeout: '24h' # اگر تأیید نشد، منقضی
 ```
 
 ### ۴.۳ Budget Control
@@ -276,29 +282,32 @@ Agent فقط جواب نمی‌دهد. تحلیل می‌کند:
 ## ۷. Rollback (بازگردانی تصمیمات)
 
 ### چرا؟
+
 Agentها اشتباه می‌کنند. Governance باید بتواند:
+
 - یک تصمیم را برگرداند
 - عواقب آن را خنثی کند
 - Agent را به حالت قبل بازگرداند
 
 ### Rollback Types:
+
 ```yaml
 rollback:
   email:
-    action: "recall"  # در Outlook/Gmail
-    limit: "last 24h"
+    action: 'recall' # در Outlook/Gmail
+    limit: 'last 24h'
 
   social-post:
-    action: "delete"
-    limit: "always"
+    action: 'delete'
+    limit: 'always'
 
   database-change:
-    action: "restore-snapshot"
-    limit: "last 48h"
+    action: 'restore-snapshot'
+    limit: 'last 48h'
 
   contract:
-    action: "flag-for-review"
-    limit: "manual"
+    action: 'flag-for-review'
+    limit: 'manual'
 ```
 
 ---
@@ -308,6 +317,7 @@ rollback:
 هر Agent باید گزارش دهد. مثل یک کارمند واقعی.
 
 ### Daily Report:
+
 ```
 گزارش روزانه — Marketing Agent (۰۷ July ۲۰۲۶)
 ────────────────────────────────────
@@ -326,6 +336,7 @@ KPI امروز:
 ```
 
 ### Weekly Report:
+
 ```
 گزارش هفتگی — هفته ۲۷ (July ۲۰۲۶)
 ───────────────────────────────────
@@ -349,5 +360,5 @@ Skillهای جدید:
 ---
 
 > **خلاصه:** Digital Employee + Governance = Agentهای واقعی.
-> 
+>
 > Agentها کارمند دیجیتال با نقش، وظایف، بودجه، KPI و گزارش‌اند. Governance به شرکت‌ها کنترل کامل می‌دهد: لاگ، Human-in-the-Loop, budget, rollback. Outcome Engine نتیجه را اندازه می‌گیرد، نه فقط کار را.
