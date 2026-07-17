@@ -1185,6 +1185,52 @@ resolve واقعی دامنه — با `localhost` به‌جای mock، fail-clo
 صدور موفق چهارمی (بعد از فیکس سهمیه) → توکن نامعتبر رد می‌شه. همه‌ی ۷۵
 تست gateway سبز؛ typecheck/lint/build هر سه تمیز.
 
+### CP-027 — نمایش Marketplace داخل Control Plane (فراخوانی مستقیم API، بدون micro-frontend)
+
+✅ انجام شد — طبق تصمیم جلسه ۵: Control Plane مستقیماً به API عمومی
+Marketplace (یک سرویس/repo جدا) وصل می‌شه و خودش UI رو رندر می‌کنه؛ نه
+micro-frontend، نه iframe:
+
+- `services/marketplace-client.ts` (جدید): `listPlugins/getPlugin/
+listSkills/getSkill` — wrapper نازک روی fetch به
+  `MARKETPLACE_SERVICE_URL` (env جدید، اختیاری)؛ اگه تنظیم نشده باشه یا
+  پاسخ غیر-2xx برگرده، `ValidationError` می‌ده. تست‌هاش دقیقاً همون
+  الگوی `marketplace-client.test.ts` خود Runtime رو تکرار می‌کنن: یک
+  `http.createServer` محلی جای سرویس واقعی Marketplace می‌شینه (نه
+  mock کردن fetch).
+- `routes/marketplace.ts` (جدید): `GET /v1/marketplace/plugins[/:id]`،
+  `GET /v1/marketplace/skills[/:id]` — پشت `requireSession` +
+  `requireActivatedUser` (جدید، صدا می‌زنه `hasActivatedAnyRuntime`).
+  یعنی طبق متن جلسه ۵ («وقتی کاربر activation خودش رو در Runtime فعال
+  می‌کنه، دسترسی استفاده از مارکت‌پلیس براش باز می‌شه»): صرفِ signup یا
+  حتی صدور یک activation key کافی نیست، باید حداقل یک بار واقعاً
+  check-in شده باشه.
+- `services/activation-service.ts`: `hasActivatedAnyRuntime(db, userId)`
+  (جدید) — `last_seen_at IS NOT NULL` رو چک می‌کنه، نه `status =
+'active'` فعلی؛ عمداً چون یک self-hoster واقعی که بعداً کلیدش رو لغو
+  کرده نباید دسترسی مرورِ Marketplace رو از دست بده (تست مخصوص این رفتار
+  اضافه شد).
+- وب: صفحه‌ی `/marketplace` (جدید) — تب plugins/skills، جستجو، و مسیر
+  ۴۰۱ («هنوز activate نکردی») که پیام مخصوص «یک Runtime رو activate کن»
+  نشون می‌ده به‌جای خطای عمومی. لینک از `/account` هم اضافه شد.
+  «نصب» این‌جا نیست — طبق جلسه ۵ فقط مرور، نصب واقعی داخل خود Runtime
+  کاربر اتفاق می‌افته.
+
+smoke-test واقعی روی سرور در حال اجرا (نه فقط تست‌های واحد): signup →
+verify → login → `GET /v1/marketplace/plugins` قبل از activation →
+`401 UNAUTHORIZED` با پیام دقیق «Activate at least one Runtime
+deployment…» → صدور کلید شخصی + check-in واقعی → همون درخواست دوباره →
+دیگه ۴۰۱ نیست، رد می‌شه تا `marketplaceClient` و چون
+`MARKETPLACE_SERVICE_URL` در این محیط تنظیم نشده با
+`400 VALIDATION_ERROR` («Marketplace integration is not configured»)
+برمی‌گرده — یعنی gate درست عبور کرد و درخواست واقعاً به لایه‌ی client
+رسید.
+
+۹ تست جدید gateway (`marketplace-client.test.ts` ۵ تا + ۴ تست
+`hasActivatedAnyRuntime` در `self-service-activation.test.ts`). همه‌ی
+۸۴ تست gateway + ۱۸ تست web سبز؛ typecheck/lint/build هر سه (هم
+gateway هم web) تمیز.
+
 ---
 
 ## صریحاً انجام‌نشده (شناخته‌شده، نه فراموش‌شده)
