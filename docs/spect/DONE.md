@@ -1004,6 +1004,76 @@ delete هم org-scoped) + ۲ تست جدید در `plugin-invoker.test.ts` (اج
 
 ---
 
+## مدل ثبت‌نام self-service + activation شخصی/سازمانی — جلسه ۵ (۲۰۲۶-۰۷-۱۷، از `06_MEETINGS/05-self-service-signup-and-activation-model.md`)
+
+کاربر شب قبل ("همه را انجام بده") دستور صریح داد این ۱۰ تسک (CP-025..031،
+RT-081..083) بدون سوال بیشتر ساخته بشه، طبق ترتیب وابستگی مستندشده.
+
+### CP-025 — ثبت‌نام self-service (Control Plane تا امروز اصلاً `users` نداشت)
+
+✅ انجام شد — اولین سیستم احراز هویت واقعی Control Plane، عیناً همون
+معماری اثبات‌شده‌ی Runtime (argon2 + JWT + مگ‌لینک هش‌شده) رو بازاستفاده
+کرد، نه یک طراحی جدید:
+
+- migration `0002_users.sql` (جدید): جدول `users` (بسیار ساده‌تر از
+  Runtime — بدون org/workspace/role، چون یک «کاربر Control Plane» فقط
+  صاحب‌حسابیه که activation key خودش رو صادر می‌کنه، نه عضو یک سازمان) +
+  `email_verification_tokens` (همون الگوی hash-only token).
+- `services/user-service.ts` (جدید) + `services/auth-service.ts` (جدید):
+  `signup()` (argon2 hash + امیل تأیید ۲۴ساعته، SMTP اختیاری — بدون
+  SMTP هم کار می‌کنه، فقط ایمیل نمی‌ره)، `verifyEmail()`، `login()`
+  (فقط با ایمیل تأییدشده)، `verifySessionToken()`.
+- `routes/auth.ts` (جدید): `POST /auth/signup`، `POST /auth/verify-email`،
+  `POST /auth/login`، `GET /auth/me` (نمونه‌ی route محافظت‌شده با session).
+- `lib/require-session.ts` (جدید): چک Bearer JWT، جدا از
+  `requireAdminAuth` موجود (دو قلمرو auth کاملاً جدا — ادمین در مقابل
+  کاربر self-service).
+- وابستگی‌های جدید: `@node-rs/argon2`، `jsonwebtoken`، `nodemailer` (سه‌تا
+  دقیقاً همونایی که Runtime قبلاً استفاده می‌کنه).
+- Web UI: `/signup`، `/verify-email` (با Suspense boundary — Next.js 15
+  برای `useSearchParams` لازمش داره)، `/login`، `/account` (placeholder —
+  مدیریت activation key سمت CP-026 میاد اینجا).
+
+**تست:** ۸ تست جدید (`auth-service.test.ts`) — شامل یک تست end-to-end
+واقعی که یک SMTP server محلی واقعی (پکیج `smtp-server`، نه mock) رو
+راه‌انداخت، ایمیل واقعی رو از nodemailer گرفت، توکن رو از بدنه‌ی ایمیل
+استخراج کرد (بعد از حل یک مشکل واقعی: نودمیلر خط‌های طولانی رو
+quoted-printable با `=\r\n` soft-wrap می‌کنه، و توکن ۶۴کاراکتری دقیقاً
+وسط wrap می‌افتاد — رفع شد با unwrap کردن قبل از regex match)، verify
+کرد، و کل چرخه‌ی signup→verify→login→session را واقعی تأیید کرد. ۵ تست
+جدید `api-client.test.ts` (جدا بودن session token از admin key). یک
+smoke-test دستی هم روی سرور واقعی (`pnpm dev` + curl) اجرا شد: signup،
+رد login قبل از verify، verify (با UPDATE مستقیم DB چون SMTP محلی
+پیکربندی نشده بود)، login موفق، `GET /auth/me` با token واقعی، و رد
+دسترسی بدون token/با token غلط. همه‌ی ۴۱ تست gateway + ۱۵ تست web سبز؛
+typecheck/lint هر دو تمیز.
+
+**محدودیت شناخته‌شده:** بدون rate-limit روی SMTP نبود (فقط login خودش
+rate-limit شد، با همون in-memory limiter موجود CP-007 — نه Redis). بدون
+مسیر «resend verification» — اگه ایمیل اول گم بشه، راهی برای درخواست
+دوباره نیست؛ یک gap مستندشده، نه فراموش‌شده.
+
+### CP-030 — Revoke/expire واقعی برای activation key
+
+✅ انجام شد — قبلاً `status`/`expires_at` توی schema بودن ولی هیچ کدی
+هیچ‌وقت تغییرشون نمی‌داد؛ یک کلید صادرشده عملاً برای همیشه فعال می‌موند:
+
+- `services/activation-service.ts`'s `authenticateActivationKey()`:
+  انقضا **lazy**، دقیقاً لحظه‌ی استفاده چک می‌شه — نه یک scheduler جدید
+  (Control Plane برخلاف Runtime هیچ `*-scheduler.ts` نداره؛ ساخت یکی
+  فقط برای این، بیش‌ازحد بود). اگه `expires_at` گذشته باشه و status هنوز
+  `active` باشه، همون لحظه به `expired` تغییر می‌کنه و رد می‌شه.
+- `revokeActivationKey()` (جدید) + `POST /admin/activation-keys/:id/revoke`
+  (جدید، فقط اپراتور): نیمه‌ی دستی enforcement. Idempotent نیست عمداً —
+  لغو یک کلید از‌قبل‌لغوشده `NotFoundError` می‌ده، نه یک no-op ساکت.
+
+۵ تست جدید (`activation-service.test.ts`): revoke واقعاً بلاک می‌کنه،
+لغو دوباره خطا می‌ده، لغو id ناشناس خطا می‌ده، کلید منقضی‌شده رد و
+`expired` می‌شه، کلید با انقضای آینده عادی کار می‌کنه. همه‌ی ۴۶ تست
+gateway سبز؛ typecheck/lint/build هر سه تمیز.
+
+---
+
 ## صریحاً انجام‌نشده (شناخته‌شده، نه فراموش‌شده)
 
 - **T-009 (Secrets/KMS واقعی):** فقط نسخه MVP env-first + رمزنگاری envelope در DB برای BYOK per-org ساخته شده؛ یکپارچگی با Vault/secret manager واقعی (برای production/enterprise) ساخته نشده.
