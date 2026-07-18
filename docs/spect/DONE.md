@@ -1760,6 +1760,49 @@ feature)` — می‌خونه از `activationState.lastCheckIn?.featureFlags` (
 
 ---
 
+### RT-019 — KMS Provider Registry (۲۰۲۶-۰۷-۱۸)
+
+✅ انجام شد — زیرساخت پایه برای rotation واقعی، مستقل از اینکه RT-020
+(Vault) ساخته بشه یا نه (فعلاً موکول شده، طبق تصمیم کاربر).
+
+- **`gateway/src/lib/kms/types.ts`**: اینترفیس `KmsProvider` (`encrypt`,
+  `decrypt(ciphertext, keyId)`, `isStale(keyId)`).
+- **`gateway/src/lib/kms/env-provider.ts`**: تنها provider موجود، wrapper
+  دور همون AES-256-GCM قبلی (`lib/crypto.ts`). **یک باگ طراحی واقعی حین
+  نوشتن تست پیدا و فیکس شد**: طرح اولیه `keyId` رو برچسب نقشی
+  («current»/«previous») می‌ذاشت — که غلط از آب درمیومد، چون بعد از یک
+  rotation دوم، معنی «current» عوض می‌شه ولی ردیف‌های قدیمی همون رشته‌ی
+  «current» رو نگه می‌دارن و به کلید اشتباه اشاره می‌کنن. فیکس: `keyId`
+  الان fingerprint خودِ کلید است (`sha256(key).slice(0,16)`) — مستقل از
+  اینکه کدوم env var فعلاً اون کلید رو نگه داشته، برای همیشه درست می‌مونه.
+- **`gateway/src/lib/kms/registry.ts`**: `createKmsRegistry(env)` — فعلاً
+  فقط provider «env» رجیستر می‌شه؛ `primary` (برای نوشتن) + `resolve(providerId)`
+  (برای خوندن secretهای قدیمی، حتی اگه primary بعداً عوض بشه).
+- **`env.ts`**: `CONFIG_ENCRYPTION_KEY_PREVIOUS` جدید (اختیاری) — موقع
+  rotation، مقدار قبلیِ `CONFIG_ENCRYPTION_KEY` اینجا می‌ره.
+- **Migration `0028_kms_provider_registry.sql`**: ستون‌های `kms_provider_id`/
+  `kms_key_id`/`kms_key_version` روی `llm_configs` و `sso_configs` (پیش‌فرض
+  `'env'`/fingerprint فعلی/`1` — بدون نیاز به backfill، چون تنها provider‌ای
+  که تا حالا وجود داشته دقیقاً همینه).
+- **`provider-config-service.ts`/`sso-config-service.ts`**: هر دو از
+  `encryptSecret`/`decryptSecret` مستقیم به `this.kms.primary.encrypt()`/
+  `this.kms.resolve(row.kms_provider_id).decrypt()` منتقل شدن + **re-encrypt-on-read**:
+  اگه کلیدی که یک ردیف رو رمزنگاری کرده دیگه «stale» باشه (یعنی کلید
+  اصلی عوض شده)، بعد از رمزگشایی موفق، دوباره با کلید فعلی رمزنگاری و
+  ذخیره می‌شه — best-effort (اگه UPDATE fail بشه، مقدار درست همچنان
+  برگردونده می‌شه، فقط دفعه بعد دوباره تلاش می‌کنه).
+- **تست واقعی**: `lib/kms/env-provider.test.ts` (۴ تست، شامل یک سناریوی
+  کامل rotation که خودِ باگ بالا رو گیر انداخت) + یک تست integration جدید
+  در `sso-config-service.test.ts` که **واقعاً** یک rotation رو شبیه‌سازی
+  می‌کنه: ذخیره با کلید قدیم → ساخت instance جدید با `CONFIG_ENCRYPTION_KEY`
+  جدید + `_PREVIOUS` = کلید قدیم → `resolve()` هم مقدار درست رو برمی‌گردونه
+  هم ردیف DB رو واقعاً به کلید جدید منتقل می‌کنه (تأیید شده با یک SELECT
+  مستقیم قبل/بعد) → یک بار دیگه بدون `_PREVIOUS` هم درست کار می‌کنه. کل
+  مجموعه‌ی gateway (۳۹ فایل، ۱۹۹ تست) پاس شد. Migration واقعی روی DB
+  واقعی هم اجرا و تأیید شد.
+
+---
+
 ## صریحاً انجام‌نشده (شناخته‌شده، نه فراموش‌شده)
 
 - **T-009 (Secrets/KMS واقعی):** فقط نسخه MVP env-first + رمزنگاری envelope در DB برای BYOK per-org ساخته شده؛ یکپارچگی با Vault/secret manager واقعی (برای production/enterprise) ساخته نشده.
