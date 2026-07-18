@@ -2242,9 +2242,31 @@ organization.language`) رو خودش می‌گیره (همون fetch سازما
   تمیز apply کرد (۰۰۰۸ که به `vector` نیاز داره طبق همون رفتار
   همیشگی skip شد)، بعد کل مجموعه‌ی gateway (۴۴ فایل، ۲۲۳ تست، ۷
   skip) پاس شد — دقیقاً همون توالی که این workflow الان اجرا می‌کنه.
-  Push شد و «Install dependencies»/«Build» توی CI واقعی سبز شدن؛
-  انتظار می‌ره «Lint, typecheck, test» هم توی اولین run بعد از این
-  فیکس سبز بشه (تأیید نهایی هنوز در انتظار یک push بعدی است).
+
+- **⚠️ یک لایه‌ی سوم، غیرمنتظره، هم پیدا شد**: بعد از فیکس‌های بالا،
+  «Install dependencies» و «Build» توی CI واقعی سبز شدن، ولی «Lint,
+  typecheck, test» همچنان — و این‌بار **دقیقاً و همیشه همون سه فایل**
+  (`agent-message-service.test.ts`, `health.test.ts`,
+  `agent-access.test.ts`) با «password authentication failed for user
+  "on4netdbuser"» (یعنی fallback هاردکدشده‌ی `test-support/db.ts`، نه
+  مقدار `DATABASE_URL` واقعی) fail می‌کرد — با اینکه محلی (حتی با
+  کانتینرهای تازه، حتی با `--env-mode=strict --force`) این قابل
+  تکرار نبود. تشخیص واقعی (نه حدس): یک مرحله‌ی موقت اضافه شد که
+  vitest رو مستقیم (بدون turbo) اجرا می‌کرد؛ همزمان `turbo.json`
+  (روت) یک `"env": ["DATABASE_URL", "REDIS_URL"]` صریح برای تسک
+  `test` گرفت — طبق مستندات Turborepo، یک متغیر محیطی فقط وقتی
+  تضمین می‌شه به پردازش فرزند یک تسک برسه که همین‌جا declare بشه،
+  صرف‌نظر از این‌که سطح job/step چی ست شده. بعد از این فیکس، run
+  کامل سبز شد (هم مرحله‌ی تشخیصیِ مستقیم، هم «Lint, typecheck,
+  test» واقعی از طریق turbo) — مرحله‌ی تشخیصی موقت بعداً حذف شد.
+  **درس**: تنظیم env در سطح GitHub Actions (`job.env`/`step.env`)
+  کافی نیست وقتی یک ابزار build مثل Turborepo واسط اجراست؛ باید توی
+  خودِ `turbo.json` هم صریح declare بشه.
+
+- **نتیجه‌ی نهایی، تأییدشده با واقعیت نه امید**: commit
+  `1e6c8f6` (runtime) + `2950df6` (root) → CI کامل سبز
+  (`lint-typecheck-test-build`: success، همه‌ی ۱۶ step). این اولین
+  بار از ۲۰۲۶-۰۷-۱۲ است که CI این ریپو واقعاً سبز می‌شه.
 
 ---
 
