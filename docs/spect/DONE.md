@@ -1866,6 +1866,48 @@ feature)` — می‌خونه از `activationState.lastCheckIn?.featureFlags` (
 
 ---
 
+### RT-025 — فایل‌های workspace اختصاصی per-agent (۲۰۲۶-۰۷-۱۸)
+
+✅ انجام شد — بلافاصله بعد از RT-030، همون زیرساخت MinIO رو استفاده کرد
+و **یک باگ امنیتی واقعی توی خودِ RT-030 پیدا کرد**.
+
+- **⚠️ باگ امنیتی پیدا/فیکس‌شده**: نسخه‌ی اول `lib/object-storage.ts`
+  (RT-030) کل باکت رو public می‌کرد تا لوگوی برندینگ قابل‌دیدن باشه. اگه
+  همون تابع بدون تغییر برای فایل‌های workspace (این تسک) هم استفاده
+  می‌شد، یعنی **فایل‌های خصوصی هر سازمان به کل اینترنت لو می‌رفت** — قبل
+  از نوشتن هیچ کد جدیدی، `object-storage.ts` بازنویسی شد: `uploadFile()`
+  حالا یک پارامتر `{ public?: boolean }` می‌گیره؛ `public: true` (فقط
+  برندینگ) یک policy عمومی **محدود به همون prefix** (نه کل باکت) اضافه
+  می‌کنه؛ پیش‌فرض (`public` نبودن، یعنی فایل‌های workspace) یک presigned
+  URL یک‌ساعته برمی‌گردونه، نه لینک دائمی. یک تست جدید مشخصاً این رو
+  تأیید می‌کنه: آپلود یک فایل private و یک فایل public کنار هم توی همون
+  باکت، بعد تأیید مستقیم با `fetch` بدون امضا که فایل private واقعاً
+  ۴۰۳/۴۰۴ می‌گیره.
+- **Migration `0030_workspace_files.sql`**: جدول `workspace_files`
+  (metadata فقط — بدون ستون url، چون presigned URL هر بار تازه ساخته
+  می‌شه، نه cache شده).
+- **`services/workspace-file-service.ts`**: CRUD ساده، org-scoped روی
+  `getById`/`delete` (یک file id هیچ‌وقت بین سازمان‌ها resolve نمی‌شه).
+- **Routes (`routes/agent-files.ts`)**: عمداً **agent-scoped**
+  (`/v1/agents/:agentId/files`) نه workspace-scoped — تا بتونه از همون
+  `requireAgentAccessible` موجود (همون چک دسترسی chat/tools) استفاده
+  کنه، به‌جای اختراع یک مفهوم membership جدا برای workspace. سقف حجم
+  ۲۰ مگابایت.
+- **UI**: پنل «Files» توگل‌شونده کنار چت (`agents/[id]/chat/page.tsx`) —
+  لیست/آپلود/دانلود/حذف. چون RT-021 (چیدمان ۳پنلی Control/Chat/Workspace)
+  هنوز ساخته نشده، این یک پنل ساده‌ی self-contained است، نه بخشی از اون
+  چیدمان کامل — بعداً راحت داخلش جا می‌گیره.
+- **تست واقعی**: ۴ تست جدید `workspace-file-service.test.ts` (شامل تست
+  org-isolation) + ۳ تست امنیتی جدید در `object-storage.test.ts` (پابلیک،
+  private-presigned، private-کنار-پابلیک-بدون-لو-رفتن). کل مجموعه‌ی
+  gateway (۴۱ فایل، ۲۰۷ تست) پاس شد. یک HTTP smoke-test کامل end-to-end
+  دستی: آپلود یک فایل واقعی → لیست → گرفتن presigned URL → واقعاً
+  `fetch` محتوای درست → حذف (۲۰۴) → لیست دوباره خالی. Cleanup این‌بار
+  درست انجام شد (با ترتیب صحیح `audit_logs` قبل از `users`/`organizations`
+  — طبق همون الگوی `cleanupTestFixture` که از قبل توی تست‌ها بود).
+
+---
+
 ## صریحاً انجام‌نشده (شناخته‌شده، نه فراموش‌شده)
 
 - **T-009 (Secrets/KMS واقعی):** فقط نسخه MVP env-first + رمزنگاری envelope در DB برای BYOK per-org ساخته شده؛ یکپارچگی با Vault/secret manager واقعی (برای production/enterprise) ساخته نشده.
