@@ -1908,6 +1908,71 @@ feature)` — می‌خونه از `activationState.lastCheckIn?.featureFlags` (
 
 ---
 
+### RT-031 — Context Contract + Prompt Builder (۲۰۲۶-۰۷-۱۸)
+
+✅ انجام شد — قبل از این، کل system prompt هر چت یک خط ثابت بود:
+`You are ${agent.name}, a ${agent.role} digital employee.` — بدون
+workspace/org/memory/tools/زبان. طبق
+`docs/spect/02_ARCHITECTURE/01-system-overview.md`'s "Context Contract"،
+context باید یک artifact رسمی با لایه‌های مشخص باشه، نه متن آزاد.
+
+- **`services/context-builder.ts`** (`ContextBuilder.build()`) این
+  لایه‌ها رو از داده‌ی واقعی می‌سازه:
+  - `identity`: نام/نقش/id همون Agent (از قبل شناخته‌شده بود، فقط حالا
+    رسمی شد)
+  - `task`: پیام فعلی + conversationId
+  - `workspace`: نام سازمان + نام workspace (از `OrgService`/
+    `WorkspaceService` — `WorkspaceService` یک متد `getById` جدید گرفت،
+    قبلاً نداشت)
+  - `memory`: خلاصه‌ی مکالمه (`conversations.summary`، از قبل توسط
+    `maybeSummarize` پر می‌شد ولی هیچ‌وقت به prompt نمی‌رفت) + جست‌وجوی
+    semantic (`searchMessagesSemantic`) روی پیام‌های قدیمی‌تر — فقط وقتی
+    مکالمه از پنجره‌ی ۱۰ پیام اخیر (که همین الان کامل replay می‌شه)
+    بزرگ‌تره، تا تکراری نشه
+  - `tools`: اسم Skillها/Pluginهای grant‌شده به همین Agent (از
+    `SkillGrantService`/`PluginGrantService` + resolve اسم واقعی از
+    `SkillService`/`LocalPluginService`). **محدودیت شناخته‌شده**: grant
+    یک Plugin نصب‌شده از Marketplace (id بین‌پلین، بدون ردیف
+    `local_plugins`) در این لایه resolve نمی‌شه — بی‌صدا حذف می‌شه، نه
+    خطا (تست مشخصاً همینو چک می‌کنه)
+  - `permissions`: بودجه‌ی باقی‌مونده‌ی Agent (`monthlyBudgetCents -
+usedBudgetCents`)
+  - `language`: `user.language ?? organization.language` — محاسبه‌شده
+    سمت سرور (بخشی از artifact رسمی)، نه گرفته‌شده از فرانت
+  - `trace`: traceId همون که از قبل بود
+- **`services/prompt-builder.ts`** (`buildSystemPrompt()`): تابع خالص،
+  context رو به یک system message فشرده می‌کنه — هر بخش فقط وقتی خالی
+  نیست اضافه می‌شه (یک Agent بدون grant/بدون خلاصه/بدون memory مرتبط
+  همون prompt کوتاه قبلی رو می‌گیره، بدون تورم).
+- **سیم‌کشی**: `chat-service.ts`'s `prepare()` حالا `ContextBuilder` رو
+  صدا می‌زنه و `systemPrompt` رو از `buildSystemPrompt(context)` می‌گیره
+  به‌جای اون خط ثابت قبلی.
+- **⚠️ باگ واقعی پیدا/فیکس‌شده در زیرساخت مشترک تست‌ها**: هیچ تست قبلی
+  مستقیماً `MemoryService`/conversation نساخته بود، پس
+  `test-support/fixtures.ts`'s `cleanupTestFixture()` هیچ‌وقت
+  `conversations` رو قبل از `users` پاک نمی‌کرد —
+  `conversations.user_id` هیچ `ON DELETE CASCADE` نداره
+  (`migrations/0003_memory.sql`)، پس اولین تستی که واقعاً یک مکالمه
+  ساخت (تست‌های همین تسک) با خطای FK واقعی مواجه شد. فیکس شد: یک
+  `DELETE FROM conversations WHERE agent_id IN (...)` قبل از
+  `DELETE FROM users` اضافه شد (messages از طریق conversation_id
+  cascade می‌شه، نیازی به DELETE جدا نداره).
+- **تست واقعی**: ۷ تست جدید `prompt-builder.test.ts` (تابع خالص) + ۴
+  تست جدید `context-builder.test.ts` (Postgres واقعی — identity/
+  workspace/language، resolve اسم skill/plugin واقعی + حذف بی‌صدای
+  grant بین‌پلینی، آستانه‌ی relevant-memory، اولویت زبان کاربر روی
+  سازمان). کل مجموعه‌ی gateway (۴۳ فایل، ۲۱۸ تست) پاس شد. یک
+  HTTP smoke-test کامل end-to-end با مدل واقعی محلی (Ollama
+  `gemma3:4b`): ساخت Agent → چت "اسمت چیه و توی چه workspace‌ای هستی؟"
+  → جواب مدل واقعاً "RT031 Agent" و "Default Workspace" رو از همون
+  system prompt جدید در آورد (نه از قبل می‌دونست) → ساخت+grant یک
+  Skill به اسم «Send Weekly Report» → پرسیدن «اسم دقیق toolهات رو
+  بگو» → مدل دقیقاً همون اسم رو verbatim برگردوند، که ثابت می‌کنه
+  لایه‌ی `tools` واقعاً به system prompt رسیده، نه صرفاً کد نوشته‌شده
+  و تست‌شده در خلأ.
+
+---
+
 ## صریحاً انجام‌نشده (شناخته‌شده، نه فراموش‌شده)
 
 - **T-009 (Secrets/KMS واقعی):** فقط نسخه MVP env-first + رمزنگاری envelope در DB برای BYOK per-org ساخته شده؛ یکپارچگی با Vault/secret manager واقعی (برای production/enterprise) ساخته نشده.
