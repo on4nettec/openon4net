@@ -2585,6 +2585,73 @@ type: 'proxy-access' }` — فیلد `type` عمداً اضافه شده که JW
 
 ---
 
+### RT-086 — Agent-to-agent delegation خودکار (۲۰۲۶-۰۷-۱۸)
+
+> ساخته شده روی همون agentic loop RT-085 — نه یک سیستم جدا. مدل هیچ‌وقت
+> تصمیم نمی‌گیره «delegate کنم یا نه»؛ فقط اسم یک Skill رو صدا می‌زنه، و
+> سیستم پشت صحنه تصمیم می‌گیره خودش اجراش کنه یا از یک Agent دیگه بخواد.
+
+- **تبلیغ Skill به مدل، مستقل از grant**: `agentic-tools.ts`'s
+  `buildSkillTools(skills)` تابعی جدید — هر Skill فعال سازمان (نه فقط ۲
+  Tool ثابت RT-085) یک تابع قابل‌فراخوانی می‌شه با نام پایدار
+  `skill_<نام‌پاکسازی‌شده>_<۸ کاراکتر اول id>` (چون اسم Skillها می‌تونه
+  تکراری باشه ولی id نه). این تبلیغ **صرف‌نظر از اینکه خودِ Agent فعلی
+  اون Skill رو grant داره یا نه** انجام می‌شه — چک واقعی grant موقع
+  _اجراست_، نه موقع تصمیم مدل. دقیقاً همین چیزی که «خودکار» رو معنا
+  می‌ده: مدل هیچ‌وقت لازم نیست بدونه یا اهمیت بده کدوم Agent واقعاً
+  کارش رو انجام می‌ده.
+- **کوئری معکوس جدید**: `SkillGrantService.findGrantedAgent(organizationId,
+skillId, excludeAgentId)` — برعکسِ `listForAgent()` موجود (که
+  Agent→Skillهاش رو می‌ده)؛ این یکی Skill→کدوم Agent دیگه‌ی همون سازمان
+  grant داره رو پیدا می‌کنه (جدیدترین grant، تساوی دلبخواهی ولی
+  deterministic). قبلاً چنین کوئری‌ای اصلاً وجود نداشت.
+- **`chat-service.ts`'s `runSkillCall()`**: وقتی مدل یک تابع Skill-محور
+  صدا می‌زنه: (۱) اگه Agent فعلی grant داره → مستقیم `executeSkill()`.
+  (۲) اگه نداره → `findGrantedAgent()`؛ اگه یک delegate پیدا شد، یک ردیف
+  **واقعی** `agent_messages` (from=Agent فعلی, to=delegate) برای
+  audit/inbox ثبت می‌شه، Skill **سینکرون** (نه از طریق چرخه‌ی async
+  فعلی ۳۰ثانیه‌ای زمان‌بند پیام‌ها) روی delegate اجرا می‌شه — چون این
+  turn چت به نتیجه‌ی فوری نیاز داره، نه یک پاسخ دیرتر — و پیام
+  `delivered`/`failed` می‌شه بسته به نتیجه. (۳) اگه هیچ Agent‌ای grant
+  نداشت، خطای روشن «No agent in this organization has ... granted»
+  برمی‌گرده.
+- **تفاوت آگاهانه با سیستم پیام‌رسانی موجود**: `agent_messages` امروز
+  کاملاً async/fire-and-forget بود (زمان‌بند هر ۳۰ ثانیه یه‌بار پیام‌های
+  pending رو با یک تماس کامل `chat()` جدید به Agent مقصد تحویل می‌ده، و
+  پاسخ هیچ‌وقت به فرستنده برنمی‌گرده). RT-086 از همون جدول برای
+  **audit trail** استفاده می‌کنه (پس در inbox واقعی Agent مقصد هم دیده
+  می‌شه) ولی خودِ اجرا رو مستقیم (نه از طریق آن چرخه‌ی async) صدا می‌زنه،
+  چون منتظر ماندن ۳۰ ثانیه برای یک ابزار داخل یک چت زنده قابل‌قبول نیست.
+- **narrowing وابستگی executeSkill()**: مثل `executeTool()` در RT-085،
+  `executeSkill(ctx, ...)` به `executeSkill(db, env, ...)` تبدیل شد —
+  فقط همون دو تیکه‌ای که واقعاً لازم داشت، نه کل `AppContext`. این
+  اجازه داد `ChatService` مستقیم صداش بزنه (هم برای اجرای محلی هم برای
+  اجرا به‌نمایندگی از یک delegate) بدون نیاز به AppContext کامل توی
+  constructor. `routes/skills.ts` و `skill-executor.test.ts` تطبیق دادن
+  شدن.
+- **persistTurn()**: ردیف `role:'tool'` برای یک Skill delegate‌شده
+  `metadata.delegatedTo` (اسم Agent مقصد) رو هم داره، و `content` یک
+  پسوند «(delegated to X)» می‌گیره — قابل‌مشاهده در تاریخچه بدون نیاز
+  به کاوش دستی.
+- **UI**: بلوک tool-call (RT-085) حالا وقتی `delegatedTo` ست باشه، اسم
+  Skill رو با «(delegated to X)» نشون می‌ده — هم برای پیام‌های تاریخی
+  هم استریم زنده (`onToolResult` callback گرفت پارامتر چهارم).
+- **تست‌های واقعی (نه mock)**: ۳ تست جدید `chat-service.test.ts` — اجرای
+  مستقیم وقتی Agent فعلی grant داره؛ delegation واقعی با یک **Agent
+  دوم واقعی** (نه فیک) که واقعاً grant داره، تأیید یک ردیف واقعی
+  `agent_messages` با وضعیت `delivered` و `fromAgentId` درست؛ و خطای
+  روشن وقتی هیچ Agent‌ای grant نداره. همه با اجرای واقعی webhook به
+  `postman-echo.com` (همون الگوی RT-085).
+- **smoke test واقعی end-to-end**: gateway واقعی بالا آورده شد، ۲ Agent
+  واقعی ساخته شد، یک Skill واقعی + grant فقط به Agent دوم، و تأیید شد
+  مسیر HTTP مستقیم اجرای Skill روی Agent اول درست رد می‌شه («This agent
+  has not been granted this skill») — دقیقاً همون سناریویی که RT-086
+  قراره به‌جاش خودکار delegate کنه به‌جای رد کردن با خطا.
+- **کل مجموعه‌ی gateway (۴۷ فایل، ۲۴۵ تست) + typecheck/lint هر دو ریپو
+  (gateway/web) پاس شد؛ `next build` واقعی وب هم بدون خطا.**
+
+---
+
 ## صریحاً انجام‌نشده (شناخته‌شده، نه فراموش‌شده)
 
 - **T-009 (Secrets/KMS واقعی):** فقط نسخه MVP env-first + رمزنگاری envelope در DB برای BYOK per-org ساخته شده؛ یکپارچگی با Vault/secret manager واقعی (برای production/enterprise) ساخته نشده.
