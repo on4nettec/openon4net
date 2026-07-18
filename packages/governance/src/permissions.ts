@@ -32,6 +32,7 @@ export const DEFAULT_ROLE_PERMISSIONS: Record<UserRole, string[]> = {
     'policies:write',
     'organization:read',
     'organization:write',
+    'branding:update',
     'invitations:create',
     'invitations:read',
     'invitations:revoke',

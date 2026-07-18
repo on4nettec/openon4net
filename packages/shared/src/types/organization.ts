@@ -19,6 +19,10 @@ export interface Organization {
   // RT-083 — org-level i18n default. Always set (defaults to 'en'). A user
   // with users.language === null inherits this; see User.language below.
   language: string;
+  // RT-030 — org branding, both optional. null means "using the default
+  // O2N mark" — never a broken/empty <img>.
+  logoLightUrl: string | null;
+  logoDarkUrl: string | null;
   readonly createdAt: string;
   updatedAt: string;
 }
