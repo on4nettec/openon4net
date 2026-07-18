@@ -14,10 +14,21 @@ export interface LlmCompletionResult {
   model: string;
   inputTokens: number;
   outputTokens: number;
+  /**
+   * RT-084 — the model's reasoning/thinking trace, separate from `content`
+   * (the actual answer). Populated when the underlying provider exposes one:
+   * currently only openai-compatible-provider.ts's read of a response's
+   * `reasoning_content` field (e.g. DeepSeek's deepseek-reasoner, some
+   * Ollama reasoning models). Native Anthropic extended thinking is NOT
+   * implemented here — see anthropic-provider.ts's comment for why.
+   */
+  reasoning?: string;
 }
 
 export interface LlmStreamChunk {
   delta: string;
+  /** RT-084 — true when `delta` is a reasoning-trace chunk, not the answer itself. */
+  isReasoning?: boolean;
 }
 
 /**

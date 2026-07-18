@@ -31,11 +31,19 @@ export function createOpenAiCompatibleProvider(
           messages: req.messages,
         });
         const choice = response.choices[0];
+        // RT-084 — `reasoning_content` is not part of the official OpenAI
+        // schema (hence the cast), but several OpenAI-compatible providers
+        // return it anyway on reasoning-capable models: DeepSeek's
+        // deepseek-reasoner, and some Ollama models via its OpenAI-compat
+        // endpoint. Absent for every other model — always safe to read.
+        const reasoning = (choice?.message as { reasoning_content?: string } | undefined)
+          ?.reasoning_content;
         return {
           content: choice?.message?.content ?? '',
           model: response.model,
           inputTokens: response.usage?.prompt_tokens ?? 0,
           outputTokens: response.usage?.completion_tokens ?? 0,
+          ...(reasoning ? { reasoning } : {}),
         };
       } catch (err) {
         throw new LlmProviderError(name, `${name} completion failed`, isRetryable(err), err);
@@ -51,8 +59,11 @@ export function createOpenAiCompatibleProvider(
           stream: true,
         });
         for await (const chunk of stream) {
-          const delta = chunk.choices[0]?.delta?.content;
-          if (delta) yield { delta };
+          const delta = chunk.choices[0]?.delta;
+          const reasoningDelta = (delta as { reasoning_content?: string } | undefined)
+            ?.reasoning_content;
+          if (reasoningDelta) yield { delta: reasoningDelta, isReasoning: true };
+          if (delta?.content) yield { delta: delta.content };
         }
       } catch (err) {
         throw new LlmProviderError(name, `${name} stream failed`, isRetryable(err), err);

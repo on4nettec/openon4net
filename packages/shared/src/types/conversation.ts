@@ -1,5 +1,9 @@
 export type ConversationStatus = 'active' | 'summarized' | 'archived';
-export type MessageRole = 'user' | 'agent' | 'system' | 'tool';
+// RT-084 — 'thought' holds a captured reasoning/thinking trace, stored as
+// its own row immediately before the 'agent' row it belongs to. Never
+// replayed back into the LLM's own context (see chat-service.ts's
+// toLlmRole()), same treatment as 'tool'.
+export type MessageRole = 'user' | 'agent' | 'system' | 'tool' | 'thought';
 
 export interface Conversation {
   readonly id: string;

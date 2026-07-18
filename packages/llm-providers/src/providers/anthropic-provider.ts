@@ -18,6 +18,20 @@ function splitSystem(messages: LlmCompletionRequest['messages']): {
   return { system, rest };
 }
 
+/**
+ * RT-084 — native Anthropic "extended thinking" (a `thinking` request param
+ * + `ThinkingBlock`/`thinking_delta` response types) is NOT implemented
+ * here: the installed @anthropic-ai/sdk (0.30.1) predates that feature
+ * entirely — its ContentBlock union is only `TextBlock | ToolUseBlock`, no
+ * thinking variant, in either the stable or beta messages API. Supporting
+ * it needs bumping the SDK (0.30.1 → 0.11x+, ~80 minor versions), which
+ * risks behavior changes to the complete()/stream() methods every other
+ * Anthropic-backed feature in this codebase already depends on — a
+ * separate, deliberately-scoped upgrade, not bundled into this task.
+ * openai-compatible-provider.ts's `reasoning_content` extraction (DeepSeek's
+ * deepseek-reasoner, some Ollama models) is the real, working half of RT-084
+ * for now.
+ */
 export function createAnthropicProvider(apiKey: string): LlmProvider {
   const client = new Anthropic({ apiKey });
 
