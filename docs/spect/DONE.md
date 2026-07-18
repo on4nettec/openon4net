@@ -1666,6 +1666,63 @@ image/png`، `sw.js` با `Content-Type: application/javascript`، همه
 
 ---
 
+### RT-028/RT-078 — Feature gating روی لایسنس Managed AI Gateway + اجرای مستقیم Plugin (۲۰۲۶-۰۷-۱۸)
+
+✅ انجام شد — بعد از تکمیل CP-012، بلاک RT-078 برداشته شد و هر دو تسک
+باهم ساخته شدن چون واقعاً یک گیت مشترکن (`02_ARCHITECTURE/02-ai-gateway.md`
+§1.2) که در دو نقطه اعمال می‌شه.
+
+- **`packages/governance/src/errors.ts`**: `FeatureNotAvailableError` جدید
+  (کد `FEATURE_NOT_AVAILABLE`، اضافه شده به `@o2n/shared`'s `ErrorCode` هم) —
+  همون کد خطایی که خودِ سند معماری صراحتاً نام برده.
+- **`gateway/src/services/license-service.ts` (جدید)**: `hasFeature(activationState,
+feature)` — می‌خونه از `activationState.lastCheckIn?.featureFlags` (که
+  CP-012 حالا واقعی پرش می‌کنه). **عمداً پیش‌فرضش برعکس** `ActivationState.isActivated()`
+  است: `isActivated()` برای self-host بدون Control Plane پیش‌فرض `true`
+  می‌مونه (اصل self-host-first)، ولی یک فیچر پولی مثل Managed AI Gateway
+  «رایگان» نمی‌شه فقط چون Platform در دسترس نیست یا هیچ‌وقت پیکربندی نشده —
+  پیش‌فرض این تابع `false` است.
+- **RT-028 — دو نقطه‌ی enforcement**:
+  - `routes/agents.ts`: `assertProgrammerRoleAllowed()` روی هم `POST /v1/agents`
+    (ساخت) هم `PATCH /v1/agents/:id` (فقط وقتی `role` واقعاً توی بدنه هست) —
+    اگه role درخواستی `programmer` باشه و لایسنس نباشه، `FeatureNotAvailableError`
+    (۴۰۲) + یک ردیف audit (`agent-role-denied-no-license`, `status: 'failed'`).
+  - `routes/local-plugins.ts`: همون گیت روی دسته‌ی `devops` (نزدیک‌ترین
+    مقدار موجود در `PLUGIN_CATEGORIES` به «Development» سند معماری — تصمیم
+    خودم، مستندشده اینجا) هنگام `POST /v1/plugins`.
+  - **جانبی**: یک gap واقعی پیدا شد حین کار — `web/app/roles/page.tsx`'s
+    `PERMISSION_CATALOG` هیچ‌وقت گروه `plugins` رو نداشت (با اینکه
+    `plugins:create/read/grant` از RT-077/080 وجود داشتن) — یعنی نقش‌های
+    سفارشی (نه admin، چون admin از قبل `plugins:*` wildcard داره) هیچ‌وقت
+    نمی‌تونستن از UI این permissionها رو بگیرن. اضافه شد (+ `plugins:execute`
+    جدید این batch).
+- **RT-078 — `routes/plugin-execute.ts` (جدید)**: `POST
+/v1/agents/:agentId/plugins/:pluginId/execute` — اولین مسیر اجرای Plugin
+  **خارج از Workflow** (تا الان `executePluginStep` فقط از
+  `WorkflowExecutor` صدا زده می‌شد، RT-079). محدود به agent با
+  `role === 'programmer'` + همون گیت لایسنس؛ منطق واقعی (grant check،
+  invoke، state persist) عیناً از `plugin-invoker.ts` دوباره استفاده شد —
+  این route فقط گیت + audit تازه اضافه کرد. permission جدید
+  `plugins:execute`.
+- **`activation-client.ts`**: `CheckInResult`'s فیلد جدید `aiGatewayEnabled`
+  (opt-in واقعی سازمان، جدا از `featureFlags.managedAiGateway` که سطح
+  پلنه) اضافه شد برای هم‌خوانی نوع با پاسخ واقعی Platform — **هنوز مصرف
+  نمی‌شه** توی گیت‌های RT-028/078 چون متن دقیق سند («سازمان‌هایی که خریده‌اند»)
+  فقط سطح پلن رو می‌گه، نه toggle عملیاتی روتینگ.
+- **تست واقعی**: ۴ تست جدید (`license-service.test.ts`) + کل مجموعه‌ی
+  gateway (۳۸ فایل، ۱۹۴ تست، بدون شمردن ۳ تای skip شده‌ی از قبل) پاس شد —
+  شامل فیکس یک gap محیطی واقعی پیدا‌شده در راه: `health.test.ts`'s ۲ تست
+  Redis همیشه fail می‌شدن چون هیچ Redis container‌ای بالا نبود (نه ربطی
+  به این تغییرات) — یک container Redis واقعی بالا آورده شد، حالا ۱۹۴/۱۹۴.
+  یک HTTP smoke-test کامل دستی هم انجام شد: gateway واقعی بالا اومد، لاگین
+  واقعی (`dev_api_key`) گرفته شد، و هر سه رفتار با curl تأیید شد — ساخت
+  Agent با role=programmer بدون لایسنس ۴۰۲ داد، ساخت Agent با role عادی
+  ۲۰۰ داد (بدون تأثیر جانبی)، ساخت Plugin با category=devops بدون لایسنس
+  ۴۰۲ داد، اجرای مستقیم Plugin روی یک agent غیر-programmer با پیام خطای
+  درست رد شد.
+
+---
+
 ## صریحاً انجام‌نشده (شناخته‌شده، نه فراموش‌شده)
 
 - **T-009 (Secrets/KMS واقعی):** فقط نسخه MVP env-first + رمزنگاری envelope در DB برای BYOK per-org ساخته شده؛ یکپارچگی با Vault/secret manager واقعی (برای production/enterprise) ساخته نشده.
