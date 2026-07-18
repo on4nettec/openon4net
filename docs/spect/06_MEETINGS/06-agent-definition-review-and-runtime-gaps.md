@@ -116,19 +116,53 @@ message` — طبق `SkillStepSchema`'s v1 scope) و برای اینکه یک ک
   مشترک دیگر دارد، این‌جا فقط طراحی/شروع کار به‌عنوان تسک Control Plane (که مالک activation
   است) ثبت می‌شود؛ سمت Runtime/Marketplace بعد از مشخص‌شدن پروتکل دنبال می‌شود.
 
+### موضوع ۱۰ (بروزرسانی، همون روز): رفرنس‌های استاندارد برای Skill و ساخت Agent
+
+- **بحث:** کاربر دو رفرنس معرفی کرد: `agentskills.io/home` برای استاندارد Skill (موضوع ۴
+  بالا، تا اینجا سؤال باز مونده بود)، و `agentprotocol.ai` به‌عنوان بهترین رفرنس فعلی برای
+  «ساخت Agent».
+- **یافته (فچ مستقیم صفحات):**
+  - **`agentskills.io`** — استاندارد باز **Agent Skills**، اصلش از Anthropic، حالا توسط
+    خیلی از ابزارهای agent پذیرفته شده (Claude Code, Cursor, VS Code, GitHub Copilot,
+    Gemini CLI, OpenAI Codex, و ده‌ها مورد دیگه). یک Skill یعنی یک پوشه با `SKILL.md`
+    الزامی (حداقل `name`+`description` + دستورالعمل)، به‌همراه `scripts/`/`references/`/
+    `assets/` اختیاری. لود شدن با **progressive disclosure**: discovery (فقط
+    name+description در استارت) → activation (وقتی task با description تطبیق داره، کل
+    `SKILL.md` لود می‌شه) → execution (اجرای دستورالعمل، احتمالاً با اسکریپت‌های بسته‌بندی
+    شده). اسپک کامل در `/specification`، ریپو در `github.com/agentskills/agentskills`.
+  - **`agentprotocol.ai`** — این خودش یک استاندارد واحد نیست، یک **راهنمای مستقل و
+    vendor-neutral** درباره‌ی چند پروتکل ارتباط Agent است: خودِ **Agent Protocol** (یک REST
+    API استاندارد با مدل task/step — `POST /ap/v1/agent/tasks` +
+    `POST .../tasks/{id}/steps` — که در اصل توسط AI Engineer Foundation ساخته شده، برای
+    _راندن_ یک Agent از بیرون با یک HTTP قراردادی مشترک، نه برای حلقه‌ی داخلی تصمیم‌گیری
+    مدل)، به‌همراه پوشش **MCP** (استاندارد Anthropic برای تعریف/فراخوانی ابزار — مستقیماً
+    مرتبط با RT-085) و **A2A / Agent2Agent** (استاندارد گوگل برای تعامل بین Agentها —
+    مستقیماً مرتبط با RT-086).
+- **تصمیم:**
+  - `agentskills.io` رسماً به‌عنوان استاندارد Skill پذیرفته شد — RT-087 دیگه منتظر تصمیم
+    کاربر نیست، ولی نکته‌ی مهم: این یعنی یک **تغییر معنایی واقعی** نسبت به مدل فعلی
+    Runtime (`SkillDefinitionSchema` امروز فقط JSON با `steps[].type: 'tool'` ثابته، نه
+    پوشه/دستورالعمل طبیعی‌زبان) — طراحی مسیر migration باید هنگام شروع RT-087 مشخص بشه،
+    نه این‌جا.
+  - `agentprotocol.ai` به‌عنوان رفرنس معماری برای RT-085 (بخش MCP) و RT-086 (بخش A2A)
+    یادداشت شد؛ خودِ Agent Protocol (task/step REST API خارجی) مستقیماً برای هیچ‌کدوم از
+    تسک‌های امروز کاربرد ندارد چون درباره‌ی _راندن_ یک Agent از بیرونه، نه معماری داخلی —
+    اگه بعداً بحث «Runtime Agentها از بیرون از طریق یک API استاندارد قابل‌کنترل باشن» پیش
+    اومد، همون‌جا مجدد بررسی می‌شه.
+
 ## ۳. Action Items
 
-| #      | تسک                                                                                                                                                      | Plane         | یادداشت                                                                                                                                |    وضعیت     |
-| ------ | -------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------- | -------------------------------------------------------------------------------------------------------------------------------------- | :----------: |
-| RT-085 | Native tool/skill-calling loop در چت (agentic/ReAct) — مدل وسط مکالمه تصمیم بگیرد ابزار/Skill صدا بزند، نتیجه در چت دیده شود و در Memory ذخیره شود       | Runtime       | مکمل RT-084 (فرایند فکری)؛ نیاز به لایه‌ی tool schema در `@o2n/llm-providers`                                                          |      ❌      |
-| RT-086 | Agent-to-agent delegation خودکار — وقتی مهارت/ابزار لازم به خودِ Agent grant نشده ولی Agent دیگری دارد، درخواست انجام کار بده                            | Runtime       | بر پایه‌ی `agent_messages` موجود، ولی trigger خودکار نه پیام دستی                                                                      |      ❌      |
-| RT-087 | استاندارد رسمی Skill + گسترش فرم no-code (`/skills`) فراتر از webhook/telegram، برای کارمند غیرفنی هم قابل‌استفاده                                       | Runtime       | ⏸️ نیاز به تصمیم کاربر: کدام استاندارد دقیقاً (MCP یا قرارداد داخلی)؟                                                                  | ⏸️ منتظر شما |
-| RT-088 | Agent Schedule غنی‌تر — انتخاب tool/skill/workflow هدف + الگوی ساعت/روز/ماه (نه فقط interval) + مفهوم timezone (سازمانی، مشابه الگوی زبان RT-083)        | Runtime       | گسترش RT-007، نه جایگزینی — self-scheduling فعلی حذف نمی‌شود                                                                           |      ❌      |
-| RT-089 | فیکس تنظیمات LLM provider — apiKey برای ollama اختیاری شود + لیست مدل‌های واقعی هر provider (نه input آزاد)                                              | Runtime       | باگ + خلأ واقعی، تأیید شده در کد (`LlmConfigSetSchema`, `web/app/settings/page.tsx`)                                                   |      ❌      |
-| RT-090 | جایگزینی SSE با WebSocket برای استریم چت + رویدادهای real-time اجرای Tool/Skill (RT-085)                                                                 | Runtime       | ⚠️ معکوس‌کننده‌ی تصمیم ۲۰۲۶-۰۷-۱۱ (`DONE.md`) — کاربر امروز صریحاً این تصمیم رو عوض کرد                                                |      ❌      |
-| RT-091 | i18n کامل UI (همه‌ی منوها/صفحات)، نه فقط چت — گسترش RT-083                                                                                               | Runtime       | صفحات باقی‌مانده: Skills, Marketplace, Users, Roles, Policies, Workflows, ...                                                          |      ❌      |
-| RT-092 | صفحه‌ی first-run برای وارد کردن activation code (به‌جای فقط env var دستی)                                                                                | Runtime       | وابسته به CP-032 برای توکن تولیدشده بعد از تأیید                                                                                       |      ❌      |
-| CP-032 | صدور توکن امنیتی اختصاصی برای ارتباط Marketplace/Control-Plane، بعد از تأیید موفق activation code (به‌جای secretهای ثابت فعلی مثل `MARKETPLACE_API_KEY`) | Control Plane | ⚠️ تغییر سه‌پلینی — پروتکل دقیق (شکل فایل کانفیگ JSON، طول عمر توکن، rotation) نیاز به یک تصمیم معماری جدا قبل از پیاده‌سازی کامل داره |      ❌      |
+| #      | تسک                                                                                                                                                      | Plane         | یادداشت                                                                                                                                | وضعیت |
+| ------ | -------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------- | -------------------------------------------------------------------------------------------------------------------------------------- | :---: |
+| RT-085 | Native tool/skill-calling loop در چت (agentic/ReAct) — مدل وسط مکالمه تصمیم بگیرد ابزار/Skill صدا بزند، نتیجه در چت دیده شود و در Memory ذخیره شود       | Runtime       | مکمل RT-084 (فرایند فکری)؛ نیاز به لایه‌ی tool schema در `@o2n/llm-providers`                                                          |  ❌   |
+| RT-086 | Agent-to-agent delegation خودکار — وقتی مهارت/ابزار لازم به خودِ Agent grant نشده ولی Agent دیگری دارد، درخواست انجام کار بده                            | Runtime       | بر پایه‌ی `agent_messages` موجود، ولی trigger خودکار نه پیام دستی                                                                      |  ❌   |
+| RT-087 | Skillها مطابق استاندارد باز Agent Skills (`agentskills.io`) بازطراحی شوند + فرم no-code گسترش پیدا کنه                                                   | Runtime       | ✅ استاندارد مشخص شد (موضوع ۱۰) — پوشه + `SKILL.md` + progressive disclosure؛ تغییر معنایی واقعی نسبت به مدل فعلی، جزئیات در موضوع ۱۰  |  ❌   |
+| RT-088 | Agent Schedule غنی‌تر — انتخاب tool/skill/workflow هدف + الگوی ساعت/روز/ماه (نه فقط interval) + مفهوم timezone (سازمانی، مشابه الگوی زبان RT-083)        | Runtime       | گسترش RT-007، نه جایگزینی — self-scheduling فعلی حذف نمی‌شود                                                                           |  ❌   |
+| RT-089 | فیکس تنظیمات LLM provider — apiKey برای ollama اختیاری شود + لیست مدل‌های واقعی هر provider (نه input آزاد)                                              | Runtime       | باگ + خلأ واقعی، تأیید شده در کد (`LlmConfigSetSchema`, `web/app/settings/page.tsx`)                                                   |  ❌   |
+| RT-090 | جایگزینی SSE با WebSocket برای استریم چت + رویدادهای real-time اجرای Tool/Skill (RT-085)                                                                 | Runtime       | ⚠️ معکوس‌کننده‌ی تصمیم ۲۰۲۶-۰۷-۱۱ (`DONE.md`) — کاربر امروز صریحاً این تصمیم رو عوض کرد                                                |  ❌   |
+| RT-091 | i18n کامل UI (همه‌ی منوها/صفحات)، نه فقط چت — گسترش RT-083                                                                                               | Runtime       | صفحات باقی‌مانده: Skills, Marketplace, Users, Roles, Policies, Workflows, ...                                                          |  ❌   |
+| RT-092 | صفحه‌ی first-run برای وارد کردن activation code (به‌جای فقط env var دستی)                                                                                | Runtime       | وابسته به CP-032 برای توکن تولیدشده بعد از تأیید                                                                                       |  ❌   |
+| CP-032 | صدور توکن امنیتی اختصاصی برای ارتباط Marketplace/Control-Plane، بعد از تأیید موفق activation code (به‌جای secretهای ثابت فعلی مثل `MARKETPLACE_API_KEY`) | Control Plane | ⚠️ تغییر سه‌پلینی — پروتکل دقیق (شکل فایل کانفیگ JSON، طول عمر توکن، rotation) نیاز به یک تصمیم معماری جدا قبل از پیاده‌سازی کامل داره |  ❌   |
 
 ## ۴. نکات آزاد
 
@@ -140,6 +174,8 @@ message` — طبق `SkillStepSchema`'s v1 scope) و برای اینکه یک ک
 
 ---
 
-> **خلاصه:** ۸ تسک Runtime (RT-085..092) + ۱ تسک Control Plane (CP-032) ثبت شد. یکی از آن‌ها
-> (RT-087) منتظر مشخص‌شدن استاندارد Skill از طرف کاربره. دو تصمیم قبلی بازبینی شد: یکی
-> (Model Router) تأیید مجدد، یکی (WebSocket) معکوس شد.
+> **خلاصه:** ۸ تسک Runtime (RT-085..092) + ۱ تسک Control Plane (CP-032) ثبت شد. دو تصمیم
+> قبلی بازبینی شد: یکی (Model Router) تأیید مجدد، یکی (WebSocket) معکوس شد. همون روز
+> (موضوع ۱۰) استاندارد Skill هم مشخص شد: **Agent Skills** (`agentskills.io`)، به‌همراه
+> رفرنس `agentprotocol.ai` برای MCP (تصمیم‌گیری فراخوانی ابزار، RT-085) و A2A (تعامل بین
+> Agentها، RT-086) — هیچ‌کدوم از ۹ تسک دیگه منتظر تصمیم کاربر نیستن.
