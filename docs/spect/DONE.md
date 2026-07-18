@@ -2489,6 +2489,102 @@ type: 'proxy-access' }` — فیلد `type` عمداً اضافه شده که JW
 
 ---
 
+### RT-085 — Native tool/skill-calling loop در چت (agentic/ReAct) (۲۰۲۶-۰۷-۱۸، subset)
+
+> Scope واقعی: دو Tool موجود (`telegram-send`/`webhook-send`)، نه Skillهای
+> دلخواه کاربر — چون Skillهای امروز پارامترهای از پیش تعیین‌شده‌ی ثابت دارن
+> (بدون ورودی dynamic runtime)، نامناسب برای اینکه مدل خودش محتوا رو در لحظه
+> تصمیم بگیره. تعمیم به Skillهای دلخواه یک تسک جدا و بزرگ‌تره (نیاز به
+> پشتیبانی از پارامتر runtime در `skill-executor.ts`)، عمداً خارج از این batch.
+
+- **`@o2n/llm-providers`**: انواع جدید `LlmToolDefinition` (نام/شرح/JSON Schema
+  پارامترها) و `LlmToolCall` (id/نام/آرگومان‌های parse‌شده). `LlmMessage` یک
+  role جدید `'tool'` گرفت + فیلدهای اختیاری `toolCallId`/`toolCalls` برای
+  round-trip واقعی. `LlmCompletionRequest.tools؟`/`LlmCompletionResult.toolCalls؟`.
+  **هر دو** provider سیم‌کشی شدن: `openai-compatible-provider.ts` (شکل
+  function-calling رسمی OpenAI، کار می‌کنه با Ollama/DeepSeek/OpenAI خودش چون
+  همه از همون endpoint سازگار استفاده می‌کنن) و `anthropic-provider.ts` (شکل
+  `tool_use`/`tool_result` بومی Anthropic — یک پارامتر اختیاری `baseUrl` هم
+  اضافه شد تا اولین‌بار قابل تست واقعی HTTP بشه، چون این provider قبلاً هیچ
+  تستی نداشت).
+- **`gateway/src/services/agentic-tools.ts` (جدید)**: JSON Schema دستی دو
+  Tool موجود (مطابق `TelegramSendSchema`/`WebhookSendSchema` موجود در
+  `packages/shared`، بدون نیاز به وابستگی zod-to-json-schema برای این دو
+  اسکیمای ساده). `buildAvailableTools(userPermissions)` فقط Toolهایی رو
+  advertise می‌کنه که خودِ کاربر واقعاً RBAC permission‌شون رو داره
+  (`tools:telegram-send`/`tools:webhook-send`) — دقیقاً همون permission که
+  مسیر HTTP مستقیم (`routes/tools.ts`) enforce می‌کنه، پس مدل حتی نمی‌تونه
+  ببینه Toolای وجود داره که کاربر پشت این چت اجازه‌ی صداکردنش رو نداره.
+- **`chat-service.ts`'s `runToolLoop()`**: حلقه‌ی ReAct واقعی — تا
+  `MAX_TOOL_ITERATIONS=5` دور تصمیم‌گیری؛ هر دور مدل رو با Toolهای موجود صدا
+  می‌زنه، اگه `toolCalls` برگردوند هرکدوم رو اجرا می‌کنه (از طریق
+  `tool-dispatcher.ts`'s `executeTool()` موجود — **بدون** ساخت مسیر اجرای
+  جدید، فقط استفاده‌ی مجدد از همون connectorها) و نتیجه رو به‌عنوان یک پیام
+  `role:'tool'` برای دور بعد اضافه می‌کنه؛ اگه دیگه `toolCalls`ای نبود، همون
+  جواب نهاییه. اگه سقف دور بزنه، یک تماس آخر **بدون** Tool اجباری می‌کنه تا
+  مدل مجبور به جواب متنی بشه (جلوگیری از حلقه‌ی ابدی).
+  **حسابداری هزینه/توکن روی تمام دورها جمع می‌شه**، نه فقط دور آخر — یک باگ
+  واقعی که حین نوشتن این خلاصه پیدا و فیکس شد قبل از رسیدن به تست (حلقه‌های
+  چند-دوره‌ای هزینه‌ی واقعی چند تماس LLM دارن، نه فقط یکی).
+- **Policy gate (RT-008/RT-056) رعایت شد، نه دور زده شد**: یک Tool call که
+  توسط policy سازمانی نیاز به تأیید داره **اجرا نمی‌شه** — چون مکانیزم
+  «ادامه‌ی این turn چت بعد از تأیید انسانی» هنوز وجود نداره (این‌کار یک
+  async resume-workflow واقعی می‌خواد، خارج از scope این batch). به‌جاش به
+  مدل یک پیام خطا برمی‌گرده («این اکشن نیاز به تأیید دستی داره») که مدل
+  می‌تونه به کاربر منتقلش کنه — این یک bypass امنیتی نیست، دقیقاً همون گیت
+  مسیر HTTP مستقیم `routes/tools.ts` رعایت می‌شه، فقط این‌جا نمی‌شه صبر کرد.
+- **persistTurn()**: هر Tool call این turn، به ترتیب، به‌عنوان یک ردیف
+  `role:'tool'` جدید نوشته می‌شه (پیش از ردیف `thought`/`agent`) —
+  `content` یک خلاصه‌ی کوتاه انسانی (`Called webhook_send`)، `metadata`
+  ساختاریافته (`name`/`arguments`/`result` یا `error`). `toLlmRole()` هنوز
+  `'tool'` رو `null` می‌کنه (RT-084's رفتار برای `'thought'` هم همینه) —
+  یعنی این ردیف‌ها هرگز به‌عنوان تاریخچه‌ی مکالمه در turn بعدی replay
+  نمی‌شن؛ فقط round-trip داخلِ همین یک turn (بین دورهای runToolLoop) معنا
+  داره.
+- **`chatStream()`**: وقتی Toolای موجود باشه، دورهای تصمیم‌گیری از طریق
+  تماس‌های non-streaming `complete()` انجام می‌شن (اجرای یک Tool واقعی به
+  آرگومان کامل نیاز داره، نه JSON استریم‌شده‌ی نصفه) و فریم‌های `tool_call`/
+  `tool_result` بلافاصله پخش می‌شن؛ وقتی مدل دیگه Tool صدا نزنه، محتوای
+  نهایی (که از همون آخرین `complete()` کامله) به‌عنوان یک فریم `token`
+  واحد پخش می‌شه — **نه** یک تماس `stream()` جداگانه‌ی دوم فقط برای گرفتن
+  همون متن token-به-token (که هزینه‌ی یک تماس اضافه‌ی LLM رو به هر turn
+  اضافه می‌کرد، حتی وقتی Tool واقعاً صدا زده نشه). Agentهای بدون هیچ
+  permission ابزاری همچنان دقیقاً همون مسیر قدیمی `stream()` مستقیم رو
+  می‌گیرن — صفر تغییر رفتار/هزینه براشون.
+- **`routes/chat.ts`**: هر دو مسیر (`POST /chat` و `GET /chat/ws`)
+  `request.auth.permissions` رو به‌عنوان `userPermissions` پاس می‌دن.
+  **عمداً محدود به چت تعاملی انسانی** — بقیه‌ی call siteها
+  (`approvals.ts`, `webhooks.ts`, `agent-message-scheduler.ts`,
+  `scheduler.ts`, `workflow-executor.ts`) این پارامتر رو پاس نمی‌دن (پیش‌فرض
+  خالی → بدون Tool)، چون هیچ انسان مسئولی پشت یک اجرای خودکار/webhook/
+  scheduled نیست که بشه بابت یک Tool call خودمختار پاسخ‌گو دونستش.
+- **تست‌های واقعی (نه mock)**: ۶ تست جدید در `chat-service.test.ts` با یک
+  fake provider کنترل‌شده (اجرای واقعی webhook به `postman-echo.com`،
+  policy gate واقعی، نام Tool نامعتبر از یک «مدل توهم‌زده»، و برخورد واقعی
+  با سقف ۵ دوره) + ۵ تست HTTP واقعی جدید در `llm-providers` (۳ برای
+  OpenAI-compat، ۲ برای Anthropic که اولین تست این provider هم بود) که
+  پروتکل سیمی واقعی هر دو ارائه‌دهنده رو با پاسخ‌های به‌درستی‌شکل‌دهی‌شده
+  تأیید می‌کنن (نه فقط typecheck).
+- **⚠️ محدودیت واقعی کشف‌شده حین تست زنده**: مدل‌های Ollama محلی موجود در
+  این محیط (`qwen2.5-coder:14b`، هم از `/v1/chat/completions` سازگار-OpenAI
+  هم از `/api/chat` بومی خودِ Ollama با پارامتر `tools` امتحان شد) عملاً
+  `tool_calls` واقعی برنمی‌گردونن — فقط متن JSON‌شکل داخل خودِ `content`
+  می‌نویسن، بدون اینکه فیلد ساختاریافته‌ی `tool_calls` پر بشه. این یک
+  محدودیت واقعیِ خودِ مدل/قالب چتشه (این build خاص از GGUF ظاهراً template
+  function-calling نداره)، **نه باگی در کد این‌جا** — کد دقیقاً طبق پروتکل
+  رسمی سیمی هر دو provider پیاده‌سازی و با پاسخ‌های صحیح تست شده. کلید API
+  واقعی OpenAI/Anthropic برای اثبات با یک مدل واقعاً tool-capable در این
+  محیط موجود نبود؛ این باقی‌مونده‌ی صادقانه‌ست، نه چیزی که پنهان بشه.
+- **UI**: `web/lib/api-client.ts`'s `StreamCallbacks` گرفت
+  `onToolCall`/`onToolResult` (اختیاری، سازگار با کد قدیمی). صفحه‌ی چت یک
+  بلوک مجزا («🔧 Show/Hide tool calls»، collapsed پیش‌فرض، دقیقاً همون الگوی
+  بلوک reasoning) بالای حباب پاسخ نشون می‌ده، شامل نام/آرگومان/نتیجه یا
+  خطای هر Tool call. `toDisplayMessages()` ردیف‌های `'tool'` رو (مثل
+  `'thought'`) با ردیف `'agent'` بعدی جفت می‌کنه. `next build` واقعی وب هم
+  بدون خطا کامل شد.
+
+---
+
 ## صریحاً انجام‌نشده (شناخته‌شده، نه فراموش‌شده)
 
 - **T-009 (Secrets/KMS واقعی):** فقط نسخه MVP env-first + رمزنگاری envelope در DB برای BYOK per-org ساخته شده؛ یکپارچگی با Vault/secret manager واقعی (برای production/enterprise) ساخته نشده.
