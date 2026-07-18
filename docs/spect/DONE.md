@@ -1447,6 +1447,55 @@ smoke-test واقعی روی سرور در حال اجرا: dev-login → `GET /
 
 ---
 
+### RT-094/RT-095/RT-096 — Design System pass روی وب Runtime (نقد UI/UX کاربر، ۲۰۲۶-۰۷-۱۸)
+
+✅ انجام شد — پاسخ به نقد صریح کاربر («از نظر ui/ux اصلا قابل قبول نیست»)،
+با کمک skill پلاگین `ui-ux-pro-max` (بخش design-system، معماری primitive
+→ semantic → component token طبق `references/primitive-tokens.md`/
+`semantic-tokens.md`).
+
+- **RT-094 — لایه‌ی token مشترک**: `web/app/globals.css` کامل بازنویسی
+  شد با یک سیستم سه‌لایه (primitive gray/blue/status scale → semantic
+  background/surface/border/primary/success/warning/error → استفاده در
+  base elementها). رنگ‌های primitive عیناً برابر رنگ‌های hex قبلی انتخاب
+  شدن (مثلاً `--color-gray-900: #0f1115`) تا رنگ واقعی صفحه عوض نشه،
+  فقط منبعش متمرکز بشه. اضافه‌شده‌ی واقعی که قبلاً اصلاً نبود: `:focus-visible`
+  ring (قبلاً هیچ focus style‌ای، یک gap واقعی دسترس‌پذیری)، `:hover`/`:active`
+  روی button/input (قبلاً هیچ)، کلاس‌های `.badge-success/warning/error/neutral`
+  (برای وضعیت‌ها، به جای رنگ inline پراکنده).
+- **RT-095/RT-096 — اعمال روی صفحات**: به‌جای بازنویسی JSX هر ۱۸ صفحه
+  از صفر (ریسک بالا برای فرم‌های stateful موجود بدون تست UI خودکار)،
+  دو تغییر ساختاری واقعی انجام شد:
+  - جایگزینی مکانیکی همه‌ی literal hex رنگ (۱۷۹ مورد در ۱۸ فایل — تأیید
+    شده با grep قبل/بعد) با `var(--color-...)` — یعنی همه‌ی صفحات حالا
+    واقعاً از همون token layer استفاده می‌کنن، نه فقط globals.css.
+  - **کامپوننت مشترک جدید `web/components/TopBar.tsx`** (اولین کامپوننت
+    مشترک در این اپ — قبلش هیچ `web/components/` وجود نداشت) که nav
+    تکراری ۱۶ صفحه رو یکی کرد. این استخراج یک باگ واقعی UX رو هم فیکس
+    کرد: قبلش nav هر صفحه دستی نگه‌داری می‌شد و واقعاً ناهماهنگ بود —
+    بعضی صفحات (`audit`, `workflows`, `skills`, ...) لینک‌های
+    admin-only (Workspaces/Users/Roles/Policies) رو بدون هیچ گیتی به
+    همه نشون می‌دادن، بعضی دیگه (`outcomes`, `webhooks`,
+    `marketplace/publisher`) تقریباً هیچ nav‌ای نداشتن جز یک لینک
+    بازگشت، و «Sign out» فقط توی `/agents` وجود داشت. `TopBar` حالا:
+    یک لیست کانونیک لینک (۱۴ مورد)، gating صحیح روی `session.role ===
+'admin'`، highlight صفحه‌ی جاری (`usePathname`)، و «Sign out»
+    یکسان همه‌جا.
+  - عمداً دست‌نخورده موند: صفحه‌ی چت (`agents/[id]/chat/page.tsx`) —
+    nav مینیمال اون صفحه (فقط بازگشت + نام Agent + rate limit) عمدیه
+    (تجربه‌ی متمرکز چت)، نه یک gap؛ بازطراحی واقعی این صفحه به ۳ پنل
+    (Control/Chat/Workspace) کار RT-021 جداست، نه این batch.
+- **تست واقعی**: `pnpm build` کامل (۲۲ روت، typecheck+lint+build سه‌تایی
+  Next.js) قبل و بعد از تغییرات پاس شد؛ dev server واقعی بالا اومد و هر
+  صفحه‌ی تغییریافته (login/agents/settings/audit/workflows/policies/
+  workspaces) `200` برگردوند؛ CSS کامپایل‌شده‌ی واقعی سرو شده از dev
+  server چک شد که token‌ها درسته اعمال شدن. **محدودیت صادقانه:** هیچ
+  ابزار مرورگر واقعی (screenshot/Playwright) در دسترس نبود، پس تأیید
+  بصری نهایی (رنگ/spacing درست دیده می‌شه از نظر انسانی) انجام نشده —
+  فقط تأیید کد/build/HTTP.
+
+---
+
 ## صریحاً انجام‌نشده (شناخته‌شده، نه فراموش‌شده)
 
 - **T-009 (Secrets/KMS واقعی):** فقط نسخه MVP env-first + رمزنگاری envelope در DB برای BYOK per-org ساخته شده؛ یکپارچگی با Vault/secret manager واقعی (برای production/enterprise) ساخته نشده.
