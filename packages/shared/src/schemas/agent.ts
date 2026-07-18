@@ -8,17 +8,69 @@ export const AgentModelPreferencesSchema = z
   .strict();
 
 /**
- * Periodic autonomous check-in (RT-007) — every intervalMinutes, the
- * scheduler (services/scheduler.ts) sends `prompt` to the agent as if a
- * user had typed it. lastRunAt is scheduler-owned, not client-settable
- * (overwritten on every tick) — only present so the scheduler survives a
- * gateway restart without a separate table.
+ * RT-088 — what runs when the schedule fires. Optional: omitted means the
+ * legacy behavior (AgentScheduleSchema's flat `prompt` field, sent as a
+ * chat message) — this is purely additive, so existing stored schedules
+ * (no `target` field at all) keep working unchanged.
+ */
+export const AgentScheduleTargetSchema = z.discriminatedUnion('type', [
+  z.object({ type: z.literal('chat'), prompt: z.string().min(1) }),
+  z.object({
+    type: z.literal('tool'),
+    tool: z.enum(['telegram-send', 'webhook-send']),
+    params: z.record(z.unknown()).default({}),
+  }),
+  z.object({
+    type: z.literal('skill'),
+    skillId: z.string().uuid(),
+    params: z.record(z.unknown()).default({}),
+  }),
+  z.object({ type: z.literal('workflow'), workflowId: z.string().uuid() }),
+]);
+export type AgentScheduleTarget = z.infer<typeof AgentScheduleTargetSchema>;
+
+/**
+ * RT-088 — when the schedule fires. Optional: omitted means the legacy
+ * behavior (AgentScheduleSchema's flat `intervalMinutes` field). `cron`'s
+ * fields are evaluated against the organization's timezone (organizations.
+ * timezone, mirroring RT-083's language column) — omitting `hour` means
+ * "every hour" (only `minute` is checked), omitting `daysOfWeek` means
+ * "every day". Not full cron syntax (no step values, no ranges) — a
+ * no-code-friendly subset covering "every day at 9am", "every Monday at
+ * 9am", "on the 1st of the month at midnight", etc.
+ */
+export const AgentScheduleTimingSchema = z.discriminatedUnion('type', [
+  z.object({ type: z.literal('interval'), intervalMinutes: z.number().int().positive() }),
+  z.object({
+    type: z.literal('cron'),
+    minute: z.number().int().min(0).max(59).default(0),
+    hour: z.number().int().min(0).max(23).optional(),
+    daysOfWeek: z.array(z.number().int().min(0).max(6)).min(1).optional(),
+    dayOfMonth: z.number().int().min(1).max(31).optional(),
+  }),
+]);
+export type AgentScheduleTiming = z.infer<typeof AgentScheduleTimingSchema>;
+
+/**
+ * Periodic autonomous check-in (RT-007). Legacy shape: every
+ * intervalMinutes, the scheduler (services/scheduler.ts) sends `prompt` to
+ * the agent as if a user had typed it. lastRunAt is scheduler-owned, not
+ * client-settable (overwritten on every tick) — only present so the
+ * scheduler survives a gateway restart without a separate table.
+ *
+ * RT-088 — `target`/`timing` are additive, richer alternatives: when set,
+ * the scheduler prefers them over the flat `intervalMinutes`/`prompt`
+ * fields above (see services/scheduler.ts's dispatch logic). Both are
+ * optional so nothing about the original RT-007 shape or behavior changes
+ * for an agent that never configures them.
  */
 export const AgentScheduleSchema = z.object({
   enabled: z.boolean().default(false),
   intervalMinutes: z.number().int().positive().optional(),
   prompt: z.string().min(1).optional(),
   lastRunAt: z.string().datetime().optional(),
+  target: AgentScheduleTargetSchema.optional(),
+  timing: AgentScheduleTimingSchema.optional(),
 });
 export type AgentSchedule = z.infer<typeof AgentScheduleSchema>;
 
