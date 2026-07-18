@@ -2106,6 +2106,44 @@ configSchema }`).
 
 ---
 
+### RT-071 — تکمیل: آپلود ابری backup (۲۰۲۶-۰۷-۱۸)
+
+✅ کامل شد — بخش `pg_dump`/`pg_restore` + scheduler opt-in از قبل
+انجام شده بود؛ این تسک فقط گپ صریحاً ثبت‌شده («آپلود ابری TODO») رو
+بست، با استفاده از همون زیرساخت MinIO/S3 که RT-025/RT-030 ساختن —
+بدون هیچ credential/سرویس ابری جدید.
+
+- **`services/backup-service.ts`**'s `uploadBackupToCloud(env, filePath)`:
+  فایل local dump رو زیر prefix خصوصی `backups/` آپلود می‌کنه
+  (`uploadFile(..., { public: false })`‌ی پیش‌فرض — یک dump دیتابیس
+  هیچ‌وقت نباید public باشه). Best-effort دقیقاً مثل الگوی embeddings/
+  SMTP/Marketplace این پروژه: اگه object storage پیکربندی نشده باشه
+  یا آپلود fail بشه، `null` برمی‌گردونه (نه throw) — یک outage توی
+  آپلود ابری نباید یعنی «backup fail شد»، چون فایل local از قبل با
+  موفقیت نوشته شده و به‌تنهایی هم مفیده.
+- **`services/backup-scheduler.ts`**: بعد از `runBackup()` موفق، اگه
+  `isObjectStorageConfigured(ctx.env)` باشه، `uploadBackupToCloud`
+  صدا زده می‌شه؛ سازمانی که MinIO پیکربندی نکرده دقیقاً همون رفتار
+  local-disk-only قبلی رو می‌گیره، بدون تغییر.
+- **`scripts/backup-db.mjs`** (CLI دستی، `pnpm run backup`) هم همین
+  قابلیت رو گرفت — یک env object حداقلی (فقط فیلدهایی که
+  `object-storage.js` واقعاً می‌خونه) می‌سازه، بدون نیاز به کل
+  Zod validation فایل `env.ts` (همون الگوی سبک‌وزنی که `migrate.mjs`
+  از قبل داشت).
+- **تست واقعی**: ۲ تست جدید در `backup-service.test.ts` — یکی همیشه
+  اجرا می‌شه (بدون MinIO پیکربندی‌شده، `null` برمی‌گردونه، نه throw)،
+  یکی روی MinIO واقعی (`describeIfMinio`، دقیقاً الگوی
+  `object-storage.test.ts`): آپلود یک فایل fake-dump واقعی → گرفتن
+  presigned URL → `fetch` واقعی محتوای درست گرفت → یک درخواست مستقیم
+  بدون امضا به همون کلید واقعاً ۲۰۰ نگرفت (private بودن تأیید شد).
+  کل مجموعه‌ی gateway با MinIO فعال: ۴۴ فایل، ۲۲۷ تست پاس، ۳ تا
+  skip (همون تست‌های قبلی pg_dump/pg_restore — این محیط این
+  باینری‌ها رو روی PATH نداره، محدودیت محیطی از قبل مستندشده، نه
+  چیزی که این تسک ایجاد کرده باشه؛ `pg_dump`/`pg_restore` فقط داخل
+  کانتینر Postgres هست، نه روی host).
+
+---
+
 ## صریحاً انجام‌نشده (شناخته‌شده، نه فراموش‌شده)
 
 - **T-009 (Secrets/KMS واقعی):** فقط نسخه MVP env-first + رمزنگاری envelope در DB برای BYOK per-org ساخته شده؛ یکپارچگی با Vault/secret manager واقعی (برای production/enterprise) ساخته نشده.
