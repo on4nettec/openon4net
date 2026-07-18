@@ -1824,6 +1824,48 @@ feature)` — می‌خونه از `activationState.lastCheckIn?.featureFlags` (
 
 ---
 
+### RT-030 — Branding (آپلود لوگو) با MinIO/S3 واقعی (۲۰۲۶-۰۷-۱۸)
+
+✅ انجام شد — اولین integration واقعی این پروژه با object storage.
+
+- **Migration `0029_org_branding.sql`**: `organizations.logo_light_url`/
+  `logo_dark_url` (هر دو nullable — یعنی بدون لوگو، همون نشان پیش‌فرض O2N).
+- **`lib/object-storage.ts` (جدید)**: wrapper نازک دور `@aws-sdk/client-s3`،
+  به یک MinIO خودمیزبان اشاره می‌کنه (چون MinIO سازگار با S3 است، همین
+  کد بدون تغییر روی AWS S3 واقعی هم بعداً کار می‌کنه). **یک یافته‌ی واقعی
+  حین تست**: باکت‌های MinIO پیش‌فرض کاملاً private هستن — آپلود اول موفق
+  می‌شد ولی URL برگشتی ۴۰۳ می‌داد روی fetch. فیکس: `ensureBucket()` حالا
+  یک bucket policy با `s3:GetObject` عمومی هم روی باکت تازه‌ساز می‌ذاره —
+  چون لوگوی برندینگ باید برای هر بازدیدکننده‌ی صفحه لاگین/sidebar قابل‌دیدن
+  باشه، نه فقط API call‌های احراز‌هویت‌شده.
+- **`env.ts`**: `MINIO_ENDPOINT`/`MINIO_PORT`/`MINIO_USE_SSL`/`MINIO_ROOT_USER`/
+  `MINIO_ROOT_PASSWORD`/`MINIO_BUCKET`/`MINIO_PUBLIC_URL` — همه اختیاری،
+  همون الگوی «degrade gracefully» (بدون پیکربندی، مسیر upload با پیام
+  روشن ۴۰۰ می‌ده، نه crash).
+- **Routes**: `POST /v1/organization/branding` (multipart، یک variant
+  `light`/`dark` در هر بار، `@fastify/multipart` با سقف ۲ مگابایت، permission
+  جدید `branding:update` + audit).
+- **UI**: بخش Branding در Settings (دو `<input type="file">` + پیش‌نمایش
+  لوگوی فعلی)؛ `Sidebar.tsx` حالا لوگوی سازمان رو (اولویت با نسخه‌ی
+  dark-background چون پس‌زمینه‌ی sidebar تیره‌ست) به‌جای متن اسم سازمان
+  نشون می‌ده، اگه ست شده باشه.
+- **عمداً ساخته نشده**: برندینگ در صفحه‌ی login — قبل از احراز هویت هنوز
+  معلوم نیست کاربر مال کدوم سازمانه (بدون یک مرحله‌ی جدید «اول slug رو
+  وارد کن» که خارج scope این تسک بود)، پس این بخش از یادداشت اصلی RT-030
+  عمداً پیاده نشد.
+- **تست واقعی**: `lib/object-storage.test.ts` — یک تست unit (بدون MinIO)
+  - یک تست integration واقعی که وقتی `MINIO_ENDPOINT` ست باشه اجرا می‌شه
+    (وگرنه با `describe.skip` رد می‌شه، نه fail): آپلود واقعی + fetch واقعی
+    از همون URL برگشتی، محتوا بایت‌به‌بایت چک شد. `org-service.test.ts`
+    دو تست جدید برای `updateBranding` (پیش‌فرض null، ست‌کردن یک variant
+    بدون پاک‌کردن اون یکی). کل مجموعه‌ی gateway (۴۰ فایل، ۲۰۳ تست، +۱ تست
+    integration وقتی MinIO env ست بشه) پاس شد. یک HTTP smoke-test کامل
+    دستی هم: gateway واقعی + MinIO واقعی بالا اومدن، یک PNG واقعی (تولیدشده
+    با یک اسکریپت PNG-encoder دستی) از طریق `curl -F` آپلود شد، URL برگشتی
+    با `curl` دیگه fetch شد و `200`/`image/png` واقعی گرفت.
+
+---
+
 ## صریحاً انجام‌نشده (شناخته‌شده، نه فراموش‌شده)
 
 - **T-009 (Secrets/KMS واقعی):** فقط نسخه MVP env-first + رمزنگاری envelope در DB برای BYOK per-org ساخته شده؛ یکپارچگی با Vault/secret manager واقعی (برای production/enterprise) ساخته نشده.
