@@ -2652,6 +2652,70 @@ skillId, excludeAgentId)` — برعکسِ `listForAgent()` موجود (که
 
 ---
 
+### RT-087 — Skills مطابق استاندارد باز Agent Skills (۲۰۲۶-۰۷-۱۸، subset تأییدشده)
+
+> تصمیم معماری (سوال از کاربر، ۲۰۲۶-۰۷-۱۸): «فرمت جدید، فقط دستورالعمل
+> (توصیه‌شده)» — یک فرمت جدید و **افزوده** به کنار مدل JSON قدیمی (نه
+> جایگزینش)، بدون اجرای `scripts/` (که یک تصمیم sandboxing/امنیتی جدا و
+> بزرگ‌تره، عمداً به تسک بعدی موکول شد). این یعنی هیچ‌کدوم از RT-085/RT-086
+> نیازی به تغییر نداشتن.
+
+- **جدول‌های کاملاً جدید**: `migrations/0032_skill_packages.sql` —
+  `agent_skill_packages` (name/description/instructions/status) و
+  `agent_skill_package_grants` (mirror دقیق `agent_skill_grants` موجود).
+  `skills`/`agent_skill_grants` قدیمی دست‌نخورده موندن.
+- **`packages/shared/src/schemas/skill-package.ts` (جدید)**:
+  `SkillPackageCreateSchema` (فرم ساختاریافته no-code)،
+  `SkillPackageImportSchema` (متن خام SKILL.md).
+- **`gateway/src/services/skill-package-markdown.ts` (جدید)**: parser دستی
+  frontmatter (`---\nname: ...\ndescription: ...\n---\n<body>`) — بدون
+  وابستگی yaml جدید، چون این subset فقط دو مقدار flat رشته‌ای می‌خواد،
+  نه ساختار تودرتو. تست شده با ۶ مورد واقعی (فایل خوش‌فرم، quote‌های
+  اطراف مقدار، بدون frontmatter، بدون name، بدون description، body خالی).
+- **`SkillPackageService`/`SkillPackageGrantService` (جدید)**: CRUD کامل +
+  `importFromMarkdown()` + `listGrantedForAgent()` (یک JOIN، برای
+  ساخت لیست ابزارهای هر turn چت). `SkillPackageGrantService` بدون
+  `findGrantedAgent()`ی شبیه RT-086 — مستندات محض هیچ side effectای نداره
+  که بشه delegate کرد.
+- **`routes/skill-packages.ts` (جدید)**: CRUD کامل + `/import` + grant/revoke
+  - لیست grantهای هر Agent — mirror دقیق `routes/skills.ts` با همون قرارداد
+    permission (پیشوند `skills:` — مثل `skills:package-create` — تا زیر
+    wildcard موجود `skills:*` نقش admin بیفته، بدون نیاز به migration جدید
+    RBAC).
+- **`agentic-tools.ts`'s `buildSkillPackageTools()`**: برخلاف RT-086's
+  `buildSkillTools()` (که همه‌ی Skillهای سازمان رو تبلیغ می‌کنه، صرف‌نظر از
+  grant، برای delegation)، این‌جا **فقط Skill packageهایی که به همین Agent
+  granted شدن** تبلیغ می‌شن — چون مستندات محض چیزی برای delegate کردن نداره،
+  gate کردن در لحظه‌ی تبلیغ هم ساده‌تره هم به همون اندازه درسته. نام تابع
+  همیشه با `read_skill_` شروع می‌شه — واضحه که فقط-خواندنیه.
+- **`chat-service.ts`'s `runSkillPackageRead()`**: «activation» در مدل
+  progressive disclosure استاندارد — صدا زدن این تابع هیچ side effectای
+  نداره، فقط `instructions` رو به‌عنوان نتیجه‌ی tool برمی‌گردونه (بدون
+  policy gate، بدون delegation — چون خواندن محض هیچ اکشنی نیست که نیاز
+  به تأیید یا واگذاری داشته باشه).
+- **باگ واقعی پیدا/فیکس‌شده حین تست**: `test-support/fixtures.ts`'s
+  `cleanupTestFixture()` جدول جدید `agent_skill_packages` رو نمی‌شناخت —
+  حذف یک organization با یک Skill package باقی‌مونده به خطای FK می‌خورد.
+  فیکس شد (همون الگوی موجود برای جدول `skills`).
+- **UI**: بخش جدید «Agent Skills (open standard)» در صفحه‌ی `/skills`،
+  کاملاً جدا از بخش Skills قدیمی — جدول Skill packageها با
+  grant/revoke/delete، و یک فرم دوحالته (no-code فیلددار Name/Description/
+  Instructions **یا** Import متن خام SKILL.md).
+- **تست‌های واقعی**: ۶ تست parser + ۳ تست `SkillPackageService`/
+  `SkillPackageGrantService` (Postgres واقعی) + ۲ تست جدید integration در
+  `chat-service.test.ts` (یک Skill package granted واقعاً به‌عنوان تابع
+  فقط-خواندنی تبلیغ و صدا زده می‌شه و instructionsش برمی‌گرده؛ یک Skill
+  package grant-نشده اصلاً تبلیغ نمی‌شه). smoke test واقعی end-to-end با
+  gateway واقعی (ساخت via فرم، import از متن خام، لیست، grant، revoke،
+  update، delete — همه روی Postgres واقعی).
+- **کل مجموعه‌ی gateway (۴۹ فایل، ۲۵۶ تست) + typecheck/lint هر دو ریپو
+  (gateway/web) پاس شد؛ `next build` واقعی وب هم بدون خطا.**
+- **صریحاً باقی‌مونده (عمدی، طبق تصمیم کاربر)**: اجرای `scripts/` و ذخیره‌ی
+  `references/`/`assets/` — یک تصمیم sandboxing/امنیتی جدا که عمداً از این
+  batch بیرون گذاشته شد.
+
+---
+
 ## صریحاً انجام‌نشده (شناخته‌شده، نه فراموش‌شده)
 
 - **T-009 (Secrets/KMS واقعی):** فقط نسخه MVP env-first + رمزنگاری envelope در DB برای BYOK per-org ساخته شده؛ یکپارچگی با Vault/secret manager واقعی (برای production/enterprise) ساخته نشده.
