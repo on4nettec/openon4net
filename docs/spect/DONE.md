@@ -2716,6 +2716,69 @@ skillId, excludeAgentId)` — برعکسِ `listForAgent()` موجود (که
 
 ---
 
+### RT-088 — Agent Schedule غنی‌تر (۲۰۲۶-۰۷-۱۸)
+
+> گسترش RT-007 (docs/spect/06_MEETINGS's بخش)، نه جایگزینی — self-scheduling
+> فعلی (`intervalMinutes`+`prompt` تخت) هیچ‌جا حذف نشد؛ `target`/`timing`
+> جدید کاملاً اختیاری‌ان و فقط وقتی موجود باشن اولویت دارن.
+
+- **`packages/shared/src/schemas/agent.ts`**: `AgentScheduleTargetSchema`
+  (discriminated union: `chat` با `prompt` — دقیقاً رفتار قدیمی؛ `tool` با
+  `tool: 'telegram-send'|'webhook-send'` + `params`؛ `skill` با `skillId` +
+  `params`؛ `workflow` با `workflowId`) و `AgentScheduleTimingSchema`
+  (`interval` با `intervalMinutes` — همون رفتار قدیمی، شکل جدید؛ `cron` با
+  `minute` + `hour` اختیاری (خالی=هر ساعت) + `daysOfWeek` اختیاری (خالی=هر
+  روز) + `dayOfMonth` اختیاری). عمداً یک subset دوستانه no-code، نه پیاده‌سازی
+  کامل cron syntax (بدون step/range) — پوشش می‌ده «هر روز ساعت ۹»، «هر
+  دوشنبه ساعت ۹»، «روز اول ماه نیمه‌شب» و مشابه.
+- **`organizations.timezone`** (migration جدید، پیش‌فرض `'UTC'`) — mirror
+  دقیق ستون `language` RT-083 (org-level، بدون override per-user، چون
+  scheduling سطح Agent هست نه سطح کاربر). اعتبارسنجی سمت schema با
+  `Intl.supportedValuesOf('timeZone')` واقعی (نه یک regex دستی) — یک اسم
+  timezone اشتباه رو موقع request رد می‌کنه، نه بی‌صدا ذخیره می‌کنه چیزی که
+  بعداً `Intl.DateTimeFormat` نتونه ارزیابیش کنه. `OrgService`/`Organization`
+  type دقیقاً همون الگوی `language` رو گرفتن.
+- **`services/scheduler.ts` بازنویسی شد**: `isDue(schedule, now, timezone)`
+  (خالص، export شده برای تست) — وقتی `timing` ست باشه اولویت داره، وگرنه به
+  `intervalMinutes` تخت قدیمی برمی‌گرده. برای `cron`: `Intl.DateTimeFormat`
+  با `hourCycle:'h23'` و `timeZone` سازمان، minute/hour/weekday/day رو
+  استخراج می‌کنه و با pattern می‌سنجه؛ یک گارد ۵۵ثانیه‌ای (`MIN_CRON_RE_FIRE_GAP_MS`)
+  جلوی دوباره‌اجرایی توی همون پنجره‌ی ~۶۰ثانیه‌ای تطبیق minute (۲ تیک پشت‌سرهم
+  با cadence ۳۰ثانیه‌ای) رو می‌گیره. `executeTarget()` روی نوع `target` dispatch
+  می‌کنه: `chat` → همون `ChatService.chat()` قدیمی؛ `tool` → مستقیم
+  `executeTool()` (tool-dispatcher.ts، بدون چرخه‌ی چت)؛ `skill` →
+  `executeSkill()` مستقیم؛ `workflow` → `WorkflowExecutor.start()` (همون
+  چیزی که workflow-trigger-scheduler.ts خودش برای triggerهای زمان‌بندی‌شده
+  استفاده می‌کنه).
+- **UI**: صفحه‌ی `/agents`'s فرم Schedule کاملاً بازطراحی شد — انتخاب
+  «When» (Every N minutes / Specific time-day، با فیلدهای hour/minute/
+  daysOfWeek چک‌باکسی/dayOfMonth برای حالت دوم) و انتخاب «What to run»
+  (Chat message / Tool مستقیم با یک textarea JSON برای params / Skill از
+  یک select واقعی لیست Skillهای سازمان / Workflow از یک select واقعی لیست
+  Workflowهای سازمان). خلاصه‌ی جمع‌شده‌ی کارت هم به‌روز شد («at 09:00» یا
+  «every 60m» به‌جای همیشه فقط interval). صفحه‌ی `/settings` یک انتخابگر
+  timezone (لیست curated از IANA رایج، سرور همچنان با لیست کامل واقعی
+  اعتبارسنجی می‌کنه) کنار انتخابگر زبان موجود گرفت.
+- **تست‌های واقعی**: ۱۲ تست خالص `isDue()` (رفتار legacy بدون تغییر، cron با
+  minute/hour/daysOfWeek/dayOfMonth هرکدوم جدا، گارد ضد دوباره‌اجرایی، و
+  **تبدیل timezone واقعی** — Asia/Tehran یعنی UTC+۳:۳۰، تست می‌کنه همون لحظه
+  در Asia/Tehran «۹ صبح» حساب می‌شه ولی در UTC نه) + ۲ تست جدید `OrgService`
+  برای timezone (پیش‌فرض UTC، update مستقل از name/settings/language).
+- **smoke test واقعی end-to-end (نه mock، نه unit)**: یک agent واقعی روی
+  یک gateway واقعی ساخته شد، یک schedule واقعی با `timing.cron` دقیقاً
+  برابر با دقیقه/ساعت «همین الان» (UTC) و `target.tool: webhook-send` تنظیم
+  شد، ۴۰ ثانیه صبر شد (بدون هیچ mock روی زمان یا تیک زمان‌بند)، و
+  scheduler واقعی (همون تیک ۳۰ثانیه‌ای production) واقعاً pattern رو تشخیص
+  داد، webhook واقعی به postman-echo.com فرستاد، و `lastRunAt` رو در دیتابیس
+  واقعی ست کرد.
+- **باگ‌های واقعی این batch**: هیچ‌کدوم پیدا نشد — تمام تست‌ها از همون اول
+  پاس شدن (برخلاف batchهای قبلی این نشست که هرکدوم حداقل یک باگ واقعی رو
+  حین تست پیدا کردن).
+- **کل مجموعه‌ی gateway (۵۱ فایل، ۲۷۰ تست) + typecheck/lint هر دو ریپو
+  (gateway/web) پاس شد؛ `next build` واقعی وب هم بدون خطا.**
+
+---
+
 ## صریحاً انجام‌نشده (شناخته‌شده، نه فراموش‌شده)
 
 - **T-009 (Secrets/KMS واقعی):** فقط نسخه MVP env-first + رمزنگاری envelope در DB برای BYOK per-org ساخته شده؛ یکپارچگی با Vault/secret manager واقعی (برای production/enterprise) ساخته نشده.
