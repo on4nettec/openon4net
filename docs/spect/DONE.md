@@ -585,10 +585,82 @@ CI») مستند شده. فیکس واقعی (مثلاً `typecheck: {dependsOn:
 
 ### باقی‌مانده
 
-- CP-SP-03 (Managed AI Gateway routing/failover) و CP-SP-04 (پرداخت واقعی) — عمداً شروع نشده، طبق backlog جزو Should/Later هستند نه MVP-lite.
+- CP-SP-03 (Managed AI Gateway) — ✅ انجام شد، پایین‌تر ببینید. CP-SP-04 (پرداخت واقعی) هنوز عمداً شروع نشده، طبق backlog جزو Should/Later هست.
 - `web/` هنوز docker-compose/Dockerfile ندارد (فقط `gateway/` دیپلوی می‌شود).
 - `web/` هنوز در مرورگر واقعی باز نشده (CP-002 در `docs/spect/TODO-openon4net-platform.md`).
 - Rate limiter هنوز به سقف نرسیده تا 429 واقعی دیده بشه.
+
+---
+
+## Control Plane (Plane 2) — CP-012 Managed AI Gateway (۲۰۲۶-۰۷-۱۸، از `docs/spect/TODO-openon4net-platform.md` بخش C)
+
+✅ انجام شد — طبق درخواست صریح کاربر برای رفع وابستگی RT-078. دامنه‌ی واقعی
+همون backlog مشخص `docs/sprint-plan/04_control-plane-backlog.md`'s E-063
+(US-630..633) است، **نه** کل سند آرمانی `02_ARCHITECTURE/02-ai-gateway.md`
+(که semantic cache، circuit breaker state machine، intent classifier، و
+providerهای غیر از ۴ تای موجود مثل Gemini/Runway/Grok رو هم توصیف می‌کنه —
+اون‌ها ساخته نشدن، عمداً).
+
+- **Migration `0007_ai_gateway.sql`**: `organizations.ai_gateway_enabled`
+  (پیش‌فرض `false` — طبق اصل صریح معماری در `13-four-plane-architecture.md`
+  §5.3 و `02-ai-gateway.md` §1.1، BYOK همیشه پیش‌فرض می‌مونه، managed مطلقاً
+  opt-in است، US-633)، `ai_gateway_provider_configs` (زنجیره‌ی ordered
+  provider با `priority`، طبق همون الگوی envelope-encryption موجود
+  Runtime's `llm_configs` — کد `lib/crypto.ts` عیناً کپی شد، نه import
+  مشترک، چون هر Plane سرویس مستقلیه با کلید master خودش)،
+  `ai_gateway_usage_events` (US-632).
+- **`ai-gateway-service.ts`**: `routeCompletion()` زنجیره رو به ترتیب
+  priority امتحان می‌کنه، هر خطایی (نه فقط retryable) رو fallback به بعدی
+  می‌کنه (US-630/631) — استثنا: `InsufficientBalanceError` بلافاصله throw
+  می‌شه چون امتحان provider بعدی کمکی نمی‌کنه (wallet یکیه). موفقیت اول:
+  هزینه با `pricing.ts` مرکزی (که Runtime's خودِ pricing.ts صراحتاً بهش
+  ارجاع می‌داد به‌عنوان «جای واقعی pricing») محاسبه می‌شه، `debitWallet`
+  (تابع جدید در `wallet-service.ts` — قبلش فقط credit بود) صدا زده می‌شه،
+  و یک ردیف در `ai_gateway_usage_events` ثبت می‌شه (US-632). Provider
+  factory از طریق پارامتر تزریق‌پذیره (`ProviderFactory`) تا تست بتونه
+  رفتار موفقیت/شکست provider رو بدون HTTP واقعی کنترل کنه.
+- **Routes (`routes/ai-gateway.ts`)**: `GET`/`PUT /v1/ai-gateway/config`
+  (auth با `requireSession` — همون login خودسرویس CP-025 — + بررسی
+  مالکیت سازمان از طریق `activation_keys.created_by_user_id`، چون
+  session فقط `userId` داره نه `organizationId`)، `GET /v1/ai-gateway/usage`،
+  `POST /v1/ai-gateway/complete` (auth با activation key، Runtime-facing،
+  عین `/activation/check-in`/`/billing/*`).
+- **`activation-service.ts`**: `featureFlags.managedAiGateway` که قبلاً
+  همیشه `false` بود («E-063, not built yet regardless of plan») حالا
+  برای `team`/`business`/`enterprise` واقعاً `true` می‌شه (تصمیم خودم،
+  `starter` مرز رایگان طبیعی می‌مونه — کاربر می‌تونه عوضش کنه). یک تست
+  قدیمی (`activation-service.test.ts`) که انتظار `false` رو داشت آپدیت
+  شد + یک تست جدید برای `starter` اضافه شد. `checkIn()`/`authenticateActivationKey()`
+  حالا `aiGatewayEnabled` (وضعیت opt-in واقعی org، جدا از این‌که پلن
+  اجازه می‌ده یا نه) رو هم برمی‌گردونن — Runtime بعداً (RT-078) هر دو رو
+  چک می‌کنه.
+- **جانبی مهم — CI**: این اولین باری بود که `openon4net-platform` یک
+  `workspace:*` dependency واقعی گرفت (`@o2n/llm-providers`). کامنت قدیمی
+  `errors.ts` («این app توی pnpm-workspace.yaml ثبت نشده») و CI («no
+  workspace:* dependencies yet») هر دو **stale** بودن — تأیید شد
+  `pnpm-workspace.yaml` از قبل `apps/openon4net-platform/gateway` رو
+  داشت. `.github/workflows/ci.yml` به همون الگوی overlay-به-parent-monorepo
+  که Runtime's CI استفاده می‌کنه تغییر کرد (checkout parent، overlay این
+  کامیت روی `apps/openon4net-platform`، `pnpm install` از ریشه). عمداً
+  بدون `--frozen-lockfile` چون `pnpm-lock.yaml` ریشه یک diff بزرگ
+  ناشناخته‌ی از قبل موجود داره که این جلسه دست نمی‌زنه.
+- **تست واقعی**: یک دیتابیس Postgres واقعی (`o2n_control_plane` روی همون
+  container در حال اجرای Runtime، پورت ۵۴۳۲ — `.env`ش قبلاً اشتباهاً به
+  پورت ۵۵۳۲ (یک container متوقف‌شده‌ی جدای Memory) اشاره می‌کرد، fix شد
+  همین‌جا) ساخته و migrate شد. **همه‌ی ۷ migration، از جمله ۶ تای قبلی که
+  تا حالا هیچ‌وقت واقعاً روی یک DB واقعی امتحان نشده بودن، پاس شدن** — این
+  عملاً اولین بار CP-001 (راه‌اندازی end-to-end واقعی) این‌قدر واقعی تأیید
+  شد. ۱۱ تست جدید vitest (`ai-gateway-service.test.ts`) + کل مجموعه‌ی
+  موجود (۹۲ تست قبلی + خودم) = **۱۰۴/۱۰۴ پاس**. یک HTTP smoke-test واقعی
+  دستی هم انجام شد: gateway واقعی بالا اومد، یک activation key واقعی صادر
+  شد (`POST /admin/activation-keys`)، `POST /v1/ai-gateway/complete` باهاش
+  زده شد و `402 FEATURE_NOT_AVAILABLE` درست برگشت (چون org تازه‌ساز هنوز
+  opt-in نکرده).
+- **عمداً ساخته نشد (خارج scope واقعی E-063)**: صفحه‌ی تنظیمات در
+  `web/` برای این routeها (فعلاً فقط API — یک admin باید مستقیم API رو صدا
+  بزنه یا از curl استفاده کنه)؛ circuit breaker/semantic cache/prompt
+  manager (بخش‌های ۲،۵،۶ سند `02-ai-gateway.md`)؛ providerهای غیر از
+  anthropic/openai/deepseek/ollama.
 
 ---
 
