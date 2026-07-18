@@ -1973,6 +1973,51 @@ usedBudgetCents`)
 
 ---
 
+### RT-022 — Session management در UI (۲۰۲۶-۰۷-۱۸)
+
+✅ انجام شد — قبل از این، هر Agent فقط یک "مکالمه‌ی فعلی" داشت
+(`GET /v1/agents/:id/conversation`، تک‌عددی، همیشه آخرین). حالا چند
+session مستقل ممکنه.
+
+- **`services/memory-service.ts`** چهار متد جدید گرفت: `listConversations`
+  (پیش‌فرض بدون archived، `includeArchived` اختیاری)، `createConversation`
+  (صریح — متفاوت از `getOrCreateConversation` که implicit resume-or-create
+  می‌کنه)، `renameConversation`، `archiveConversation` (soft — status،
+  نه DELETE، چون messages/audit trail باید بمونه).
+- **`routes/conversations.ts`** (جدید): تمام route‌ها agent-scoped
+  (`/v1/agents/:agentId/conversations...`) همون الگوی `agent-files.ts` —
+  تا از `requireAgentAccessible` موجود استفاده کنه:
+  - `GET /v1/agents/:agentId/conversations` — لیست
+  - `POST /v1/agents/:agentId/conversations` — «+ New session» (با
+    `title` اختیاری)
+  - `GET .../conversations/:conversationId/messages` — سوییچ به یک
+    session دیگه
+  - `PATCH .../conversations/:conversationId` — rename
+  - `POST .../conversations/:conversationId/archive`
+  - `assertConversationBelongsToAgent`: یک conversation id از Agent دیگه
+    دقیقاً مثل id ناموجود ۴۰۴ می‌گیره (نه ۴۰۳) — با curl مستقیم تست شد.
+- **UI**: پنل «Sessions» توگل‌شونده کنار «Files» در صفحه‌ی چت — لیست
+  اخیر (عنوان/تعداد پیام)، دکمه‌ی «+ New session» در topbar، کلیک روی
+  یک session سوییچ می‌کنه (پیام‌هاش رو لود می‌کنه)، rename/archive
+  per-session. اگه session فعال archive بشه، خودکار به آخرین session
+  فعال برمی‌گرده (`loadHistory`).
+- **⚠️ باگ واقعی پیدا/فیکس‌شده در زیرساخت مشترک تست‌ها**: همون کلاس باگ
+  RT-031 — هیچ تست قبلی چند `conversation` واقعی برای یک fixture user
+  نساخته بود، پس این تسک اولین‌باری بود که `cleanupTestFixture`'s
+  fix (اضافه‌شده در RT-031) واقعاً زیر بار قرار گرفت؛ کار کرد، نیازی به
+  فیکس اضافه نبود.
+- **تست واقعی**: ۴ تست جدید `memory-service.test.ts` (create متمایز از
+  resume، ترتیب `updated_at`، rename + NotFoundError روی id ناموجود،
+  archive + فیلتر پیش‌فرض). کل مجموعه‌ی gateway (۴۴ فایل، ۲۲۲ تست) پاس
+  شد. HTTP smoke-test کامل end-to-end: ساخت Agent → چت پیش‌فرض (session
+  ۱) → `POST .../conversations` صریح (session ۲) → چت داخل session ۲ با
+  `conversationId` صریح → `GET .../messages` واقعاً پیام‌های همون session
+  رو برگردوند → rename → archive → `GET .../conversations` پیش‌فرض
+  واقعاً session آرشیوشده رو حذف کرد → تلاش برای گرفتن conversation
+  session ۱ از مسیر Agent دیگه واقعاً ۴۰۴ گرفت (نه ۲۰۰/۴۰۳).
+
+---
+
 ## صریحاً انجام‌نشده (شناخته‌شده، نه فراموش‌شده)
 
 - **T-009 (Secrets/KMS واقعی):** فقط نسخه MVP env-first + رمزنگاری envelope در DB برای BYOK per-org ساخته شده؛ یکپارچگی با Vault/secret manager واقعی (برای production/enterprise) ساخته نشده.
