@@ -2808,10 +2808,81 @@ UUID نامعتبر → ۴۰۰ (نه ۵۰۰)، CORS preflight از origin غیر
 پیش‌فرض ۱۶px مرورگر) — یعنی از نظر رندر بصری هیچ تفاوتی نباید ایجاد بشه،
 فقط منبع واحد شدن. `typecheck`/`lint`/`next build` هر سه واقعاً پاس شدن.
 
-**محدودیت صادقانه، نه ادعای دروغ:** تعامل بصری واقعی در مرورگر (اسکرین‌شات
-یا کلیک کردن) انجام نشده — این session ابزار مرورگر نداره. این دقیقاً
-همون کلاس محدودیتی که برای CP-002 مستند شده. RT-100 (بازبینی صفحه‌به‌صفحه
-responsive با مرورگر واقعی) به همین دلیل هنوز ⚠️ باقی می‌مونه.
+**به‌روزرسانی همون روز:** محدودیت بالا (نبود ابزار مرورگر) با نصب مستقیم
+پکیج `playwright` (نه MCP server — کاربر این گزینه رو صریحاً انتخاب کرد)
+رفع شد. جزئیات کامل زیر، بخش RT-100.
+
+---
+
+## RT-100 (تکمیل) — بازبینی responsive واقعی با Playwright؛ ۴ باگ واقعی پیدا و فیکس شد
+
+کاربر پرسید Playwright رو چطور باید استفاده کنیم؛ دو گزینه مطرح شد (نصب
+مستقیم پکیج در برابر یک MCP server رسمی) — کاربر نصب مستقیم رو انتخاب کرد.
+پکیج `playwright` در یک پوشه‌ی scratch جدا (نه داخل هیچ‌کدوم از دو ریپو)
+نصب شد؛ Chromium از قبل روی این ماشین cache شده بود (`~/AppData/Local/
+ms-playwright`)، پس دانلود جدیدی لازم نشد.
+
+**کشف جانبی قبل از تست:** پورت ۳۰۰۰ که قبلاً فرض شده بود متعلق به وب
+Runtime است، در واقع یک container Docker بی‌ربط (Open WebUI، مال خودِ
+کاربر) بود — نه چیزی که این session ساخته باشه. وب Runtime واقعی با
+`NEXT_PUBLIC_API_URL=http://localhost:4123` (پورت واقعی gateway در حال
+اجرا، نه پیش‌فرض `.env`'s ۴۰۰۰) روی پورت ۳۰۰۱ بالا آورده شد.
+
+**روش:** یک اسکریپت Node، از طریق `/v1/auth/token` (dev-auth بوت‌استرپ‌کننده)
+واقعاً لاگین کرد، یک agent واقعی ساخت، و session token رو مستقیم توی
+`localStorage` مرورگر (headless) ست کرد (بدون شبیه‌سازی فرم لاگین — دقیقاً
+همون چیزی که خودِ صفحات از `loadSession()` می‌خونن). بعد ۱۶ صفحه (همه‌ی
+صفحات اصلی وب) رو در ۴ عرض viewport گرفت: دسکتاپ (۱۴۴۰px)، بالای breakpoint
+sidebar (۹۶۰px)، زیر آن breakpoint (۸۶۰px)، و موبایل (۳۹۰px) — مجموعاً ۶۴
+اسکرین‌شات واقعی (`fullPage`), همه با Read tool واقعاً دیده شدن (نه فرض).
+
+**۴ باگ واقعی پیدا و فیکس شد:**
+
+1. **صفحه‌ی Chat اصلاً responsive نبود.** لایوت ۳پنلی (`width: 240` /
+   `flex: 1` / `width: 280`) هیچ breakpoint نداشت. در ۳۹۰px، عرض واقعی
+   سند به ۵۶۸px می‌رسید (اندازه‌گیری شد از هدر PNG) — یعنی ۱۷۸px overflow
+   افقی واقعی، با پنل session‌ها و Workspace files عملاً خارج از دید.
+   **فیکس:** flex-direction دیگه inline نیست (چون inline style همیشه روی
+   هر قانون CSS با هر @media غالبه) — به کلاس‌های `chat-layout`/
+   `chat-layout-rtl` منتقل شد در `globals.css`، همراه با `chat-panel-control`/
+   `chat-panel-main`/`chat-panel-workspace`. یک قانون جدید داخل همون
+   `@media (max-width: 900px)` که RT-097 برای sidebar ساخته بود اضافه شد:
+   زیر ۹۰۰px، `flex-direction: column` + پنل‌های کناری `width: 100%`.
+   دوباره با Playwright تأیید شد: عرض PNG حالا دقیقاً ۳۹۰px است (نه ۵۶۸).
+2. **صفر padding افقی در `<td>`های تمام جدول‌های اپ.** الگوی
+   `padding: '8px 0'` (یا `'6px 0'`/`'4px 0'`) در ۴۴+۷ مورد، توی ۱۰ فایل
+   (`approvals`, `dashboard`, `marketplace`, `marketplace/publisher`,
+   `policies`, `skill-proposals`, `skills`, `users`, `workspaces`,
+   `agents`, `workflows`) — یعنی هیچ فاصله‌ای بین ستون‌های مجاور نبود. روی
+   دسکتاپ (عرض زیاد، layout خودکار جدول جبران می‌کرد) کمتر محسوس بود، ولی
+   روی موبایل کاملاً غیرقابل‌خواندن: صفحه‌ی Users مقدار واقعی
+   «AdminAdmin» چسبیده نشون می‌داد (ستون Name «Admin» + ستون Role «Admin»
+   بدون فاصله). **فیکس:** همه به `padding: 'var(--space-*) var(--space-3)
+var(--space-*) 0'` تغییر کردن (فاصله‌ی ۱۲px بعد از هر سلول، صفر قبل از
+   اولی). دوباره با اسکرین‌شات تأیید شد — «Admin» و «Admin» حالا واضح جدا.
+3. **ردیف آپلود دو-لوگو در Settings/Branding** (`display:'flex', gap:24`
+   بدون `flexWrap`) روی موبایل کلمه‌ی «Logo» رو از چپ و «Choose File»/
+   «No file chosen» رو از راست می‌برید. **فیکس:** `flexWrap: 'wrap'` +
+   `flex: '1 1 200px'` روی هر دو فیلد (به‌جای `flex: 1` بدون basis).
+4. **ردیف category+file در Marketplace/self-hosted plugins** همون کلاس
+   باگ رو داشت (کوچیک‌تر — چند پیکسل از «No file chosen» بریده می‌شد).
+   **فیکس:** همون `flexWrap: 'wrap'`.
+
+**بازبینی بدون باگ (تأیید شد، نه فقط فرض):** Dashboard، Agents (مودال
+انتخاب زبان اول‌بار)، Skills، Workflows، Policies، Audit Log، Roles &
+Permissions (طولانی ولی بدون overflow افقی، عرض PNG دقیقاً ۳۹۰px)،
+Outcomes، Webhooks، Skill Proposals — همه در هر ۴ عرض viewport چک شدن.
+
+**بعد از هر فیکس:** `typecheck`/`lint` واقعاً روی `@o2n/web` اجرا و پاس
+شدن؛ کل ۶۴ اسکرین‌شات دوباره گرفته شد تا فیکس‌ها واقعاً روی صفحه‌ی زنده
+تأیید بشن، نه فقط روی کد. سازمان تست (`rt100-review`) و همه‌ی داده‌هاش
+بعد از پایان کار با همون ترتیب cascading delete که `cleanupTestFixture()`
+استفاده می‌کنه پاک شد.
+
+**نکته‌ی جانبی، نه باگ:** نشانگر dev-mode خود Next.js (دایره‌ی سیاه با
+حرف N، گوشه‌ی پایین‌چپ) روی چند اسکرین‌شات روی متن واقعی می‌افته — این
+فقط در `next dev` ظاهر می‌شه، در build production نیست، پس گزارش نشد
+به‌عنوان باگ اپ.
 
 ---
 
