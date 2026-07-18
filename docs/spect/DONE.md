@@ -1723,6 +1723,43 @@ feature)` — می‌خونه از `activationState.lastCheckIn?.featureFlags` (
 
 ---
 
+### RT-089 — فیکس تنظیمات LLM provider (۲۰۲۶-۰۷-۱۸)
+
+✅ انجام شد — دو باگ/خلأ واقعی که در بازبینی جلسه ۶ پیدا شده بودن.
+
+- **`packages/shared/src/schemas/config.ts`**: `LlmConfigSetSchema.apiKey`
+  از `z.string().min(1)` (همیشه اجباری) به `z.string().optional()` +
+  `superRefine` («اجباری مگر provider === 'ollama'») تغییر کرد — قانون توی
+  خودِ schema است، نه پخش‌شده روی caller. `provider-config-service.ts`'s
+  `setConfig()` وقتی apiKey خالیه و provider ollama است، از همون
+  placeholder ('ollama') استفاده می‌کنه که کامنت خودِ `registry.ts` قبلاً
+  توصیه کرده بود.
+- **`packages/llm-providers/src/models.ts` (جدید)**: `CURATED_MODELS`
+  (لیست ثابت anthropic/openai/deepseek، دقیقاً همون model IDهایی که
+  `pricing.ts` می‌شناسه — چیزی انتخاب نمی‌شه که به `DEFAULT_PRICE` بیفته)
+  - `listOllamaModels(baseUrl)` که واقعاً `/api/tags` رو صدا می‌زنه (نه
+    `/v1/models` سازگار-با-OpenAI) — یعنی **واقعاً می‌بینه چه مدلی روی این
+    instance نصبه**، نه یک لیست عمومی بی‌ربط. هیچ‌وقت throw نمی‌کنه (آرایه
+    خالی برمی‌گردونه)، پس UI می‌تونه fallback به ورودی دستی بزنه.
+  * **جانبی**: این اولین کدی بود توی این package که به `fetch`/`AbortSignal`
+    نیاز داشت — `@types/node` هیچ‌وقت دیپندنسی این package نبود (فقط
+    SDKهای anthropic/openai که خودشون HTTP رو مدیریت می‌کنن)، اضافه شد.
+- **`routes/config.ts`**: `GET /v1/config/models?provider=X&baseUrl=Y`
+  جدید.
+- **`web/app/settings/page.tsx`**: فیلد Model از `<input>` آزاد به
+  `<select>` با گزینه‌ی «Other…» (fallback دستی وقتی لیست خالیه) تغییر
+  کرد؛ فیلد API key وقتی provider=ollama دیگه `required` نیست + placeholder
+  توضیحی.
+- **تست واقعی**: کل مجموعه‌ی gateway (۳۸ فایل، ۱۹۴ تست) بعد از تغییرات
+  پاس شد. یک HTTP smoke-test کامل: ذخیره‌ی config ollama بدون apiKey
+  موفق (۲۰۰)، ذخیره‌ی anthropic بدون apiKey رد شد با پیام دقیق، لیست
+  مدل‌های curated انتخاب برای anthropic برگشت، و — جالب‌ترین بخش —
+  `GET /v1/config/models?provider=ollama` **واقعاً به یک Ollama واقعی
+  نصب‌شده روی همین دستگاه وصل شد** و لیست واقعی مدل‌های نصب‌شده
+  (`qwen2.5-coder:14b`, `gemma3:4b`, ...) رو برگردوند — نه یک mock.
+
+---
+
 ## صریحاً انجام‌نشده (شناخته‌شده، نه فراموش‌شده)
 
 - **T-009 (Secrets/KMS واقعی):** فقط نسخه MVP env-first + رمزنگاری envelope در DB برای BYOK per-org ساخته شده؛ یکپارچگی با Vault/secret manager واقعی (برای production/enterprise) ساخته نشده.
