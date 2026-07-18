@@ -1,12 +1,16 @@
 # TODO — openon4net-platform (Plane 2, قبلاً «Control Plane»)
 
-> **۲۰۲۶-۰۷-۱۷ — rename شد:** این پلین از «Control Plane» به «Platform» تغییر نام داد
-> (تصمیم جلسه ۷، `06_MEETINGS/07-platform-rename-and-mediated-cross-plane-access.md`؛
-> اجرای فیزیکی rename هم همون روز، طبق درخواست صریح کاربر). پوشه‌ی محلی الان
-> `apps/openon4net-platform/` است؛ ریپوی GitHub (`openon4net-control-plane`) هم باید
-> rename بشه — این فایل قبلاً `TODO-openon4net-control-plane.md` نام داشت. ارجاعات
-> تاریخی به «Control Plane» در `DONE.md`/جلسات قبلی عمداً دست‌نخورده موندن (لاگ
-> تاریخیه، نه چیزی که rewrite بشه) — فقط ارجاعات رو‌به‌جلو/ساختاری این‌جا به‌روز شدن.
+> **۲۰۲۶-۰۷-۱۷ — rename کامل شد:** این پلین از «Control Plane» به «Platform» تغییر نام داد
+> (تصمیم جلسه ۷، `06_MEETINGS/07-platform-rename-and-mediated-cross-plane-access.md`).
+> پوشه‌ی محلی `apps/openon4net-platform/`، ریپوی GitHub هم همون روز توسط کاربر
+> rename شد (`github.com/on4nettec/openon4net-platform`)، remote محلی هم آپدیت شد.
+> این فایل قبلاً `TODO-openon4net-control-plane.md` نام داشت. ارجاعات تاریخی به
+> «Control Plane» در `DONE.md`/جلسات قبلی عمداً دست‌نخورده موندن (لاگ تاریخیه، نه
+> چیزی که rewrite بشه) — فقط ارجاعات رو‌به‌جلو/ساختاری به‌روز شدن.
+>
+> **تصمیم گرفته شده (کاربر):** اسم‌های داخلی پکیج npm (`@o2n/control-plane-gateway`،
+> `@o2n/control-plane-web`) عمداً همون‌جوری می‌مونن — تا وقتی مشکلی ایجاد نکنن نیازی
+> به rename ندارن. pnpm/turbo از مسیر جدید درست resolve می‌کنن، تأیید شده با build واقعی.
 >
 > فایل تصمیم‌گیری، نه صف اجرا. من (Claude) هیچ‌کدوم از این ردیف‌ها رو خودم
 > شروع نمی‌کنم — منتظر می‌مونم بگی کدوم رو انجام بدم (تک‌تک یا گروهی).
