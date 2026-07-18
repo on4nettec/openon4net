@@ -2430,6 +2430,65 @@ type: 'proxy-access' }` — فیلد `type` عمداً اضافه شده که JW
 
 ---
 
+### RT-090 — جایگزینی SSE با WebSocket برای استریم چت (۲۰۲۶-۰۷-۱۸)
+
+> تصمیم قبلاً در جلسه ۶ توسط کاربر تأیید شده بود (طبق یادداشت خودِ TODO tracker) —
+> بدون نیاز به تأیید مجدد شروع شد.
+
+- **مسیر جدید**: `GET /v1/agents/:id/chat/ws` (`gateway/src/routes/chat.ts`)،
+  با `@fastify/websocket` (نسخه‌ی `^11.3.0`، سازگار با Fastify v5). مسیر
+  POST قدیمی `/chat/stream` (SSE، `text/event-stream` دستی) کامل حذف شد.
+- **مشکل auth و راه‌حل**: هندشیک WebSocket همیشه یک `GET` است و
+  `WebSocket` سازنده‌ی بومی مرورگر نمی‌تونه هدر `Authorization` سفارشی
+  بذاره — پس توکن/`organizationId` به‌عنوان query param سوار می‌شن.
+  `plugins/auth.ts`'s هوک سراسری `onRequest` یک شاخه‌ی `isWsUpgrade`
+  گرفت (چک `request.headers.upgrade === 'websocket'`) که _فقط_ برای
+  درخواست‌های upgrade واقعی query param رو می‌پذیره — یک درخواست REST
+  عادی نمی‌تونه از همین میان‌بر برای دور زدن auth هدر استفاده کنه (که
+  توی access logها هم لو می‌رفت).
+- **پروتکل**: اتصال برای کل session باز می‌مونه، نه یک اتصال جدا به ازای
+  هر پیام — کلاینت هر turn رو با یک فریم JSON
+  `{ message, conversationId? }` می‌فرسته، سرور یک رشته از فریم‌های
+  `ChatStreamEvent`-شکل (`token`/`reasoning`/`done`/`requires_approval`/
+  `error`) برمی‌گردونه. یک flag `busy` جلوی race دو `chatStream()`
+  همزمان روی یک سوکت رو می‌گیره (پیام دوم قبل از پایان اولی یک فریم
+  `error` می‌گیره، نه interleave شدن توکن‌ها).
+- **⚠️ باگ واقعی پیدا/فیکس‌شده حین نوشتن تست**: گذاشتن `requirePermission`
+  (یک تابع sync و void) به‌صورت مستقیم توی آرایه‌ی `preHandler` یک مسیر
+  websocket باعث **hang ابدی** می‌شد — Fastify تشخیص می‌ده یک هوک یا باید
+  Promise واقعی برگردونه یا آرگومان سوم (`done`) رو صدا بزنه؛ یک آرو
+  function با فقط ۱ پارامتر که `undefined` برمی‌گردونه هیچ‌کدوم رو نداره،
+  پس Fastify تا ابد منتظر می‌مونه. این باگ فقط با تست واقعی
+  (`app.injectWS()`) پیدا شد، نه با inspection — علامتش این بود که یک
+  اتصال با اجازه‌ی رد شده (۴۰۳) فوری برمی‌گشت، ولی همون اتصال با اجازه‌ی
+  قبول‌شده هیچ‌وقت جواب نمی‌داد. فیکس: `async (request) => requirePermission(...)`
+  به‌جای فرم sync.
+- **تست‌ها**: `routes/chat-ws.test.ts` (جدید، ۴ تست) — اولین تست
+  route-level این ریپو با `buildApp()` + `app.injectWS()` واقعی (نه
+  mock)، شامل: استریم واقعی token/reasoning/done، رد هندشیک بدون توکن،
+  رد هندشیک با `organizationId` ناهماهنگ با claim توکن، فریم خطا برای
+  JSON نامعتبر بدون قطع اتصال. `web/lib/api-client.ts`'s `streamChat()`
+  بازنویسی شد (WebSocket بومی به‌جای `fetch()` + پارس دستی SSE)، همون
+  امضای `StreamCallbacks` حفظ شد تا `chat/page.tsx` بدون تغییر بمونه.
+- **تست end-to-end واقعی**: یک اسکریپت Node با `WebSocket` global بومی
+  (همون کلاسی که مرورگر داره، نه یک کتابخونه‌ی جدا) — لاگین واقعی، ساخت
+  Agent واقعی، اتصال WS واقعی با query-param auth، چت واقعی با یک مدل
+  Ollama واقعی (`gemma3:4b`) — استریم token-به-token و رویداد `done`
+  تأیید شد. یک اسکریپت دوم رد هندشیک بدون توکن و رفتار busy-guard (دو
+  پیام پشت‌سرهم روی یک سوکت) رو هم تأیید کرد. `next build` واقعی وب هم
+  بدون خطا کامل شد.
+- **مستند API**: `docs/spect/04_API/00-openapi-v0.1.yaml`'s
+  `/agents/{agent_id}/chat/stream` (POST/SSE) با `/agents/{agent_id}/chat/ws`
+  (GET/WebSocket) جایگزین شد، شامل شرح کامل پروتکل فریم‌ها در `description`
+  (OpenAPI 3.0 اسکیمای بومی WS نداره).
+- **نیمه‌ی دوم عمداً باقی‌مونده**: رویدادهای real-time اجرای Tool/Skill
+  (که خودِ عنوان RT-090 هم بهش اشاره کرده) منتظر RT-085 می‌مونه — چون
+  حلقه‌ی tool/skill-calling هنوز اصلاً وجود نداره که رویدادی ازش پخش بشه؛
+  این کانال WebSocket طوری طراحی شده که وقتی RT-085 ساخته بشه، فریم‌های
+  جدیدی مثل `tool_call`/`tool_result` بدون تغییر پروتکل پایه اضافه بشن.
+
+---
+
 ## صریحاً انجام‌نشده (شناخته‌شده، نه فراموش‌شده)
 
 - **T-009 (Secrets/KMS واقعی):** فقط نسخه MVP env-first + رمزنگاری envelope در DB برای BYOK per-org ساخته شده؛ یکپارچگی با Vault/secret manager واقعی (برای production/enterprise) ساخته نشده.

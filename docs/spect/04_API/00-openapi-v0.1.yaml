@@ -143,11 +143,30 @@ paths:
         '403': { $ref: '#/components/responses/Error' }
         '402': { $ref: '#/components/responses/Error' }
 
-  /agents/{agent_id}/chat/stream:
-    post:
+  /agents/{agent_id}/chat/ws:
+    get:
       tags: [Agents]
-      summary: Stream chat response (SSE)
-      description: Server-Sent Events stream. Client must accept `text/event-stream`.
+      summary: Stream chat response (WebSocket, RT-090 — replaces the old SSE chat/stream endpoint)
+      description: >
+        WebSocket handshake (OpenAPI has no native WS schema, documented here
+        as the GET upgrade request). Since a browser's native WebSocket
+        constructor can't set an Authorization header, the bearer token and
+        organization id ride along as query params instead (`token`,
+        `organizationId`) — accepted only for actual upgrade requests, see
+        gateway/src/plugins/auth.ts.
+
+
+        Once connected, the client sends one JSON frame per chat turn:
+        `{ "message": string, "conversationId"?: string }` (same shape as
+        AgentChatRequest). The server replies with a run of JSON frames:
+        `{ "type": "token", "delta": string }`,
+        `{ "type": "reasoning", "delta": string }` (RT-084),
+        `{ "type": "done", "conversationId", "model", "costCents", "traceId", "timeMs" }`,
+        `{ "type": "requires_approval", "approvalId": string }`, or
+        `{ "type": "error", "message": string, "traceId"?: string }`. The
+        connection stays open across turns — a second message sent before
+        the previous turn reaches `done`/`requires_approval`/`error` gets
+        back an `error` frame instead of interleaving with the first.
       parameters:
         - $ref: '#/components/parameters/XOrganizationId'
         - $ref: '#/components/parameters/XWorkspaceId'
@@ -155,25 +174,21 @@ paths:
           in: path
           required: true
           schema: { type: string }
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/AgentChatRequest'
+        - name: token
+          in: query
+          required: true
+          schema: { type: string }
+          description: Bearer session token (WS handshake substitute for the Authorization header).
+        - name: organizationId
+          in: query
+          required: true
+          schema: { type: string }
       responses:
-        '200':
-          description: SSE stream
-          content:
-            text/event-stream:
-              schema:
-                type: string
-        '202':
-          description: Requires approval (no stream)
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ApprovalRequiredResponse'
+        '101':
+          description: Switching Protocols — WebSocket handshake accepted.
+        '400': { $ref: '#/components/responses/Error' }
+        '401': { $ref: '#/components/responses/Error' }
+        '403': { $ref: '#/components/responses/Error' }
 
   /memory/write:
     post:
