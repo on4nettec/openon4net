@@ -1543,6 +1543,57 @@ smoke-test واقعی روی سرور در حال اجرا: dev-login → `GET /
 
 ---
 
+### RT-098/RT-099 — صفحه‌ی Dashboard واقعی + PWA (همون batch، ۲۰۲۶-۰۷-۱۸)
+
+✅ انجام شد — آخرین دو مورد از نقد UI/UX کاربر (بعد از RT-097).
+
+- **RT-098 — `web/app/dashboard/page.tsx` (صفحه‌ی جدید)**: یک overview
+  واقعی، نه فقط تکرار `/agents`:
+  - کارت **Agents** (تعداد کل + badge فعال/pause شده)
+  - کارت **Budget used this month** (جمع `usedBudgetCents`/`monthlyBudgetCents`
+    همه‌ی Agentها + یک progress bar مشابه `BudgetBar` صفحه Agents)
+  - کارت **Pending approvals** (لینک به `/approvals`)
+  - کارت **Wallet balance** (اگه wallet سازمان هنوز `initialized` نشده،
+    «Not set up» نشون می‌ده به‌جای عدد گمراه‌کننده صفر)
+  - جدول **Recent activity** — ۸ ردیف آخر از همون `GET /v1/audit` که
+    صفحه‌ی audit استفاده می‌کنه، با لینک به audit کامل.
+  - همه‌ی fetchها `Promise.all` با `.catch()` جدا روی approvals/wallet —
+    اگه نقشی دسترسی `approvals:read`/`billing:wallet:read` نداشته باشه،
+    فقط اون کارت خالی می‌مونه، نه کل صفحه fail می‌شه.
+  - لینک `Dashboard` به اول لیست `Sidebar.tsx` اضافه شد. **تصمیم آگاهانه**:
+    ریشه (`/`) هنوز به `/agents` redirect می‌شه، نه `/dashboard` — تغییر
+    صفحه‌ی پیش‌فرض ورود یک تصمیم جداگانه است که درخواست صریح نبود.
+- **RT-099 — PWA**:
+  - `web/public/manifest.json` (نام/آیکون/`display: standalone`/
+    `start_url: /dashboard`/theme رنگ `--color-background` فعلی)
+  - `web/public/sw.js` — استراتژی عمداً محافظه‌کارانه چون این اپ کاملاً
+    session/API-محوره: `/v1/*`/`/api/*` **هیچ‌وقت cache نمی‌شن** (network
+    passthrough مستقیم، حتی رجیستر نمی‌شن رو fetch handler)؛ فقط
+    asset‌های استاتیک با نام hash-شده‌ی Next.js (`/_next/static/*`) و
+    manifest/icon‌ها cache-first می‌شن؛ ناوبری صفحه (HTML) network-first
+    با fallback به cache برای حالت آفلاین. `activate` نسخه‌های قدیمی
+    cache رو پاک می‌کنه (`CACHE_VERSION`).
+  - `web/components/RegisterServiceWorker.tsx` (کلاینت، در
+    `layout.tsx`) — `navigator.serviceWorker.register('/sw.js')`،
+    best-effort (خطا silent، چون اپ بدون service worker هم کامل کار
+    می‌کنه).
+  - **آیکون‌ها placeholder واقعی هستن، نه طراحی نهایی**: چون هیچ asset
+    برندینگ (لوگو) توی ریپو نبود (RT-030 هنوز انجام نشده) و ابزار
+    تولید تصویر در دسترس نبود، دو PNG تک‌رنگ (۱۹۲/۵۱۲px، رنگ
+    `--color-primary`) با یک اسکریپت Node مستقیم (بدون کتابخونه، PNG
+    دستی encode شده با `zlib`) ساخته شد — باید بعداً با لوگوی واقعی
+    (RT-030) جایگزین بشه.
+- **تست واقعی**: `pnpm build` (۲۳ روت، شامل `/dashboard` جدید) پاس شد.
+  `next start` واقعی اجرا شد و با curl تأیید شد: `manifest.json` با
+  `Content-Type: application/json`، هر دو PNG با `Content-Type:
+image/png`، `sw.js` با `Content-Type: application/javascript`، همه
+  `200`؛ `<link rel="manifest">` و `<meta name="theme-color">` واقعاً
+  توی HTML صفحه‌ی login رندر شدن. **تست نشده**: نصب واقعی به‌عنوان PWA
+  روی یک دستگاه موبایل/دسکتاپ واقعی (نیاز به HTTPS واقعی و مرورگر — این
+  محیط فقط localhost HTTP داره)، و رفتار آفلاین واقعی service worker.
+
+---
+
 ## صریحاً انجام‌نشده (شناخته‌شده، نه فراموش‌شده)
 
 - **T-009 (Secrets/KMS واقعی):** فقط نسخه MVP env-first + رمزنگاری envelope در DB برای BYOK per-org ساخته شده؛ یکپارچگی با Vault/secret manager واقعی (برای production/enterprise) ساخته نشده.
