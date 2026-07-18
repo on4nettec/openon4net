@@ -100,6 +100,24 @@ export class ActivationRequiredError extends O2NError {
   }
 }
 
+/**
+ * RT-028/RT-078 — per docs/spect/02_ARCHITECTURE/02-ai-gateway.md §1.2: the
+ * Programmer Agent role and Development-category Skills/Plugins require the
+ * org's plan to include the Managed AI Gateway (CP-012's
+ * featureFlags.managedAiGateway from activation check-in), independent of
+ * any RBAC permission the requesting user otherwise has.
+ */
+export class FeatureNotAvailableError extends O2NError {
+  constructor(feature: string) {
+    super(
+      'FEATURE_NOT_AVAILABLE',
+      `Feature "${feature}" is not available on this organization's plan`,
+      402,
+    );
+    this.name = 'FeatureNotAvailableError';
+  }
+}
+
 /** MKT-020 — a plugin upgrade requests permissions the org's currently-active version didn't have; the marketplace service's own PermissionDiffRequiredError, re-thrown Runtime-side with the same shape. */
 export class PermissionDiffRequiredError extends O2NError {
   constructor(addedPermissions: string[], fromVersion: string, toVersion: string) {
