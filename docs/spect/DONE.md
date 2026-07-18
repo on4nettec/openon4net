@@ -2195,6 +2195,59 @@ organization.language`) رو خودش می‌گیره (همون fetch سازما
 
 ---
 
+### زیرساخت — کشف/فیکس: CI واقعاً از ۱۲ تیر (۲۰۲۶-۰۷-۱۲) خراب بوده (۲۰۲۶-۰۷-۱۸)
+
+⚠️ **کشف مهم، نه یک تسک از لیست بخش A** — حین بررسی pnpm-lock.yaml
+(که برای RT-027 لازم شد commit بشه، پایین‌تر توضیح داده شده)، متوجه
+شدم CI مدتیه واقعاً سبز نمی‌شه. با چک کردن تاریخچه‌ی کامل run‌های CI
+از GitHub API، مشخص شد: از commit «chore: add skil[l]» در
+۲۰۲۶-۰۷-۱۲ تا همین الان (تقریباً ۴۰ run پشت‌سرهم، شامل کل کار جلسه‌ی
+قبل — RT-034 تا RT-083 — و کل کار همین جلسه)، CI هیچ‌وقت واقعاً سبز
+نشده. دو مشکل جدا، هر دو واقعی:
+
+1. **مرحله‌ی «Install dependencies» (`pnpm install --frozen-lockfile`)**:
+   از commit RT-031 به بعد fail می‌کرد، چون `pnpm-lock.yaml` این
+   جلسه اصلاً commit نشده بود (طبق یک قاعده‌ی قبلی که دلیلش این بود
+   که یه diff بزرگ نامفهوم از قبل توی این فایل بود) — درحالی‌که
+   وابستگی‌های جدید واقعی (adm-zip، @aws-sdk/*، @fastify/multipart،
+   ...) به `gateway/package.json` اضافه می‌شدن. **فیکس**: واقعاً
+   `pnpm install` کامل روی روت اجرا شد (تأیید شد "Lockfile is up to
+   date")، بعد `pnpm install --frozen-lockfile` محلی موفق تأیید شد،
+   بعد commit شد — این‌بار برخلاف قاعده‌ی قبلی، چون آن قاعده مستقیماً
+   داشت باعث این خرابی می‌شد.
+2. **مرحله‌ی «Lint, typecheck, test»**: از ۲۰۲۶-۰۷-۱۲ به این‌ور همیشه
+   fail می‌کرده، چون workflow (`ci.yml`) اصلاً هیچ‌وقت Postgres/Redis
+   واقعی نداشته — تست‌های gateway (`test-support/db.ts`, `redis.ts`)
+   به یک دیتابیس/Redis واقعی نیاز دارن، و بدون اون‌ها هر تستی که یک
+   fixture می‌ساخت با `ECONNREFUSED 127.0.0.1:5432/6379` fail می‌شد،
+   صرف‌نظر از این‌که خودِ تست چی چک می‌کرد.
+   - **فیکس** در `.github/workflows/ci.yml`: اضافه شدن
+     `services: { postgres: postgres:16, redis: redis:7-alpine }` +
+     `env: { DATABASE_URL, REDIS_URL }` سطح job + یک مرحله‌ی جدید
+     «Run database migrations» (مستقیم `node scripts/migrate.mjs`،
+     نه `pnpm run migrate`، چون آن npm script نیاز به یک فایل
+     `--env-file=../.env` داره که توی این checkout وجود نداره —
+     خودِ اسکریپت فقط `process.env.DATABASE_URL` رو می‌خونه که از
+     قبل ست شده) قبل از مرحله‌ی تست.
+   - تست‌های وابسته به MinIO عمداً همچنان توی CI skip می‌مونن
+     (همون الگوی `describeIfMinio`/`minioAvailable` که قبلاً برای
+     محیط محلی بدون MinIO هم استفاده می‌شد) — MinIO service container
+     اضافه نشد، چون پیچیدگیش (image/healthcheck) برای این batch
+     ارزشش رو نداشت؛ همون‌طور تست‌های `pg_dump`/`pg_restore` هم اگه
+     runner این باینری‌ها رو نداشته باشه skip می‌مونن.
+
+- **تست واقعی قبل از push**: دقیقاً همین توالی رو با کانتینرهای
+  تازه/خالی `postgres:16`/`redis:7-alpine` (نه dev containerهای
+  دائمی) محلی شبیه‌سازی کردم: `migrate.mjs` همه‌ی ۳۰ migration رو
+  تمیز apply کرد (۰۰۰۸ که به `vector` نیاز داره طبق همون رفتار
+  همیشگی skip شد)، بعد کل مجموعه‌ی gateway (۴۴ فایل، ۲۲۳ تست، ۷
+  skip) پاس شد — دقیقاً همون توالی که این workflow الان اجرا می‌کنه.
+  Push شد و «Install dependencies»/«Build» توی CI واقعی سبز شدن؛
+  انتظار می‌ره «Lint, typecheck, test» هم توی اولین run بعد از این
+  فیکس سبز بشه (تأیید نهایی هنوز در انتظار یک push بعدی است).
+
+---
+
 ## صریحاً انجام‌نشده (شناخته‌شده، نه فراموش‌شده)
 
 - **T-009 (Secrets/KMS واقعی):** فقط نسخه MVP env-first + رمزنگاری envelope در DB برای BYOK per-org ساخته شده؛ یکپارچگی با Vault/secret manager واقعی (برای production/enterprise) ساخته نشده.
