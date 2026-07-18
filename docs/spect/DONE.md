@@ -2329,6 +2329,107 @@ reasoning` (جدا از `event: token`).
 
 ---
 
+### CP-032 / RT-092 / CP-034 / RT-093 — توکن امنیتی proxy بعد از activation + first-run activation UI + عبور اجباری Marketplace از Platform (۲۰۲۶-۰۷-۱۸)
+
+> تصمیم معماری: کاربر صریحاً «طراحی و بساز» رو انتخاب کرد (مشابه CP-012) — یعنی
+> اجازه‌ی طراحی دقیق پروتکل (شکل توکن، TTL، rotation) + ساخت کل زنجیره،
+> نه فقط یک تسک منفرد.
+
+- **CP-032 (Platform) — صدور توکن امنیتی**: `gateway/src/services/proxy-token-service.ts`
+  دو تابع `issueProxyToken(env, organizationId)` و `verifyProxyToken(env, token)`.
+  توکن یک JWT کوتاه‌عمر (**۲ ساعت**) با `JWT_SECRET` موجود Platform امضا می‌شه
+  (نه یک secret جدا — کمترین سطح جدید ممکن)، payload‌ش `{ sub: organizationId,
+type: 'proxy-access' }` — فیلد `type` عمداً اضافه شده که JWT کاربر عادی هرگز
+  به‌جای این توکن قابل استفاده نباشه (تست جدا داره). صادر می‌شه در هر
+  `POST /activation/check-in` موفق و برمی‌گرده توی پاسخ به Runtime، به اسم
+  `securityToken`. همون‌جا یک باگ preexisting هم فیکس شد: `checkIn()` مقدار
+  `aiGatewayEnabled` رو محاسبه می‌کرد ولی هیچ‌وقت واقعاً برنمی‌گردوند.
+  ۵ تست جدید (`proxy-token-service.test.ts`): round-trip، رد secret اشتباه،
+  تفکیک JWT کاربر از JWT proxy، ورودی نامعتبر، انقضا.
+
+- **RT-092 (Runtime) — صفحه‌ی first-run activation**: جدول singleton
+  `migrations/0031_activation_config.sql` (`activation_config`، `id=1` با
+  CHECK، یعنی فقط یک ردیف ممکنه وجود داشته باشه)، کلید فعال‌سازی
+  envelope-encrypted دقیقاً با همون الگوی KMS registry موجود (مثل
+  `llm_configs`/`sso_configs` — `activation-config-service.ts`). نکته‌ی مهم
+  طراحی: `POST /v1/activation/configure` قبل از ذخیره یک check-in **واقعی**
+  به Platform می‌زنه — کد نامعتبر هرگز ذخیره نمی‌شه. `GET /v1/activation/status`
+  برای نمایش وضعیت فعلی. `activation-scheduler.ts` حالا اول کلید رو از DB
+  می‌خونه (نه فقط env var دستی قبلی) و بعد از هر check-in موفق
+  `markConfigured()` صدا می‌زنه. UI: بخش «Activation» در
+  `web/app/settings/page.tsx` (نمایش وضعیت + فرم وارد کردن کد).
+  ۳ تست جدید `activation-config-service.test.ts`.
+
+- **CP-034 (Platform) — لایه‌ی proxy**: route عمومی
+  `ALL /v1/proxy/marketplace/*` (`routes/proxy.ts`) — توکن CP-032 رو از
+  هدر `Authorization: Bearer` می‌گیره و `verifyProxyToken` می‌کنه، درخواست
+  رو با `MARKETPLACE_API_KEY` **خودِ Platform** (هرگز به Runtime نشون داده
+  نمی‌شه) به Marketplace واقعی forward می‌کنه، پاسخ رو عیناً برمی‌گردونه.
+  متریک جدید `proxyRequestsTotal` (label `service`/`outcome`، در
+  `observability/metrics.ts`). Platform's `env.ts` حالا یک کپی مستقل از
+  `MARKETPLACE_API_KEY` داره (قبلاً فقط Runtime این secret رو نگه می‌داشت).
+  **تصمیم مقیاس**: عمداً فقط Marketplace — Memory هنوز هیچ client‌ای در
+  Runtime نداره که «مهاجرت» بشه، پس اون نیمه از تسک اصلی خارج از scope
+  موند و علتش همین‌جا مستند شد نه این‌که سکوت بشه.
+  **تنش best-effort در برابر hard-fail** (که در TODO تراکر علناً پرچم شده
+  بود قبل از شروع): activation check-in همچنان best-effort/غیرمسدودکننده
+  می‌مونه (عملیات هسته‌ای چت/Agent هرگز نباید به در دسترس بودن Platform
+  وابسته باشه)، ولی تماس‌های Marketplace از طریق proxy درست hard-fail
+  می‌کنن وقتی Platform در دسترس نیست — این رگرسیون «self-host-first» نیست،
+  چون رسیدن به Marketplace ذاتاً یک وابستگی بیرونیه صرف‌نظر از واسطه بودنش؛
+  CP-034 فقط تغییر می‌ده Runtime با **کی** حرف بزنه، نه اینکه وابستگی
+  بیرونی وجود داره یا نه. این استدلال مستقیماً توی JSDoc خودِ `proxy.ts`
+  هم نوشته شده. اولین تست سطح route در کل این ریپو
+  (`routes/proxy.test.ts` — `buildApp()` + `.inject()`، ۴ تست).
+
+- **RT-093 (Runtime) — سوییچ marketplace-client**: `marketplaceRequest()`
+  یک پارامتر اختیاری چهارم `securityToken` گرفت. وقتی `securityToken` و
+  `CONTROL_PLANE_URL` هر دو موجود باشن، درخواست از
+  `${CONTROL_PLANE_URL}/v1/proxy${path}` عبور می‌کنه (نه
+  `MARKETPLACE_SERVICE_URL` مستقیم). فقط ۹ متد **authenticated**
+  (`installPlugin`, `installSkill`, `updatePluginInstallConfig`,
+  `ratePlugin`, `rateSkill`, `submitPlugin`, `listPublisherPlugins`,
+  `submitSkill`, `listPublisherSkills`) این پارامتر رو گرفتن؛ ۴ متد
+  discovery فقط-خواندنی (`listPlugins`, `listSkills`, `getPlugin`,
+  `getSkill`) عمداً **دست‌نخورده موندن** چون endpointهای browse Marketplace
+  عمومی و بدون auth طراحی شدن — `routes/marketplace.ts` نیازی به
+  `MARKETPLACE_SERVICE_URL` برای این‌ها همچنان داره (این یک URL عمومیه، نه
+  secret). بدون توکن (self-host بدون activation)، رفتار قبلی مستقیم با
+  `MARKETPLACE_API_KEY` محلی عیناً حفظ شده — رگرسیون‌ای برای orgهای
+  self-host خالص نیست. ۳ تست جدید در `marketplace-client.test.ts` (بخش
+  «RT-093 — CP-034 proxy routing»): مسیر proxy واقعاً استفاده می‌شه با auth
+  درست، fallback به مسیر مستقیم وقتی توکنی نیست، discovery هرگز proxy رو
+  لمس نمی‌کنه.
+
+- **تست end-to-end واقعی (نه فقط unit)**: یک فرآیند fake-Marketplace واقعی
+  (`http.createServer` روی پورت ۴۲۰۰، هندل `POST .../install` و
+  `GET .../plugins/:id`)، یک Platform واقعی (پورت ۴۱۰۰، با
+  `MARKETPLACE_SERVICE_URL`/`MARKETPLACE_API_KEY` اشاره‌شده به fake سرور)،
+  و یک Runtime واقعی (پورت ۴۱۲۳، با `CONTROL_PLANE_URL` اشاره‌شده به
+  Platform و **بدون** `MARKETPLACE_API_KEY` محلی — دقیقاً برای اثبات این‌که
+  دیگه لازم نیست). صدور کلید activation واقعی، check-in واقعی، لاگین واقعی
+  Runtime، و در نهایت `POST /v1/marketplace/plugins/p1/install` واقعاً
+  `200 { installId: 'fake-install-1', pluginId: 'p1', isActive: true }`
+  برگردوند — زنجیره‌ی کامل Runtime → CP-034 proxy (با توکن CP-032، بدون
+  secret محلی) → fake-Marketplace تأیید شد.
+  یک باگ self-caused حین تست (نه باگ کد واقعی) پیدا و فیکس شد: مسیر
+  install اول `getPlugin()` (discovery فقط-خواندنی، برای قیمت) رو صدا
+  می‌زنه که همچنان به `MARKETPLACE_SERVICE_URL` واقعی نیاز داره؛ گذاشتن
+  یک آدرس مرده اونجا (برای تست «proxy لازم نیست») باعث خطای گمراه‌کننده
+  می‌شد، نه چیزی که واقعاً معنی‌دار باشه.
+  همچنین یک stale process روی پورت ۴۱۰۰ (از یک smoke-test قبلی) پیدا و
+  kill شد که باعث می‌شد curlها به یک نمونه‌ی قدیمی با کانفیگ اشتباه بخورن
+  — الگوی تکراری این نشست (چک `netstat`/لاگ برای `EADDRINUSE`).
+  بعد از تست: تمام دادهٔ سازمان‌های smoke-test (Runtime: `rt092-runtime-smoke`,
+  `rt093-runtime-smoke`, `rt093-runtime-smoke2`؛ Platform: `RT093 Smoke Org`)
+  از هر دو دیتابیس واقعی پاک شد، پردازش‌های smoke-test متوقف شدن.
+
+- **تست‌های کامل قبل از commit**: Platform gateway ۱۱۳ تست (۱۴ فایل) پاس،
+  Runtime gateway ۲۳۲ تست (۴۶ فایل، ۷ skip از قبل) پاس، typecheck و lint
+  هر دو ریپو تمیز.
+
+---
+
 ## صریحاً انجام‌نشده (شناخته‌شده، نه فراموش‌شده)
 
 - **T-009 (Secrets/KMS واقعی):** فقط نسخه MVP env-first + رمزنگاری envelope در DB برای BYOK per-org ساخته شده؛ یکپارچگی با Vault/secret manager واقعی (برای production/enterprise) ساخته نشده.
