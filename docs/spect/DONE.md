@@ -1803,6 +1803,27 @@ feature)` — می‌خونه از `activationState.lastCheckIn?.featureFlags` (
 
 ---
 
+### RT-023 — Agent picker/modal با workspace اختصاصی ۱:۱ (۲۰۲۶-۰۷-۱۸)
+
+✅ انجام شد — `web/app/agents/page.tsx`.
+
+- دکمه‌ی `+ New agent` (و کل فرم ساخت) حالا فقط برای `session.role === 'admin'`
+  رندر می‌شه (قبلاً به همه‌ی کاربرها با `agents:create` نشون داده می‌شد).
+- فرم ساخت Agent دیگه picker دستی workspace نداره — به‌جاش، موقع submit
+  اول یک workspace اختصاصی می‌سازه (`POST /v1/workspaces`، اسم
+  `{agentName} Workspace`) و بعد Agent رو با همون `workspaceId` می‌سازه
+  (`POST /v1/agents`) — یعنی رابطه‌ی ۱:۱ واقعی، نه یک پیش‌فرض روی
+  workspace مشترک.
+- کد مرده‌ی مرتبط پاک شد: state/effectهای `workspaces`/`workspaceId` که
+  فقط برای اون picker حذف‌شده وجود داشتن، و import بی‌استفاده‌ی `Workspace`
+  type.
+- **تست واقعی**: `pnpm build` پاس شد. HTTP smoke-test end-to-end با
+  gateway واقعی: `POST /v1/workspaces` → workspace ساخته شد → `POST
+/v1/agents` با همون `workspaceId` → Agent با موفقیت به همون workspace
+  اختصاصی بایند شد (تأیید در پاسخ JSON).
+
+---
+
 ## صریحاً انجام‌نشده (شناخته‌شده، نه فراموش‌شده)
 
 - **T-009 (Secrets/KMS واقعی):** فقط نسخه MVP env-first + رمزنگاری envelope در DB برای BYOK per-org ساخته شده؛ یکپارچگی با Vault/secret manager واقعی (برای production/enterprise) ساخته نشده.
