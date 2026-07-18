@@ -4,18 +4,64 @@ import type {
   LlmCompletionResult,
   LlmProvider,
   LlmStreamChunk,
+  LlmToolCall,
 } from '../types.js';
 import { LlmProviderError } from '../types.js';
 
+/**
+ * RT-085 — Anthropic has no native 'tool' message role: a tool result is a
+ * `user` message whose content is a `tool_result` block, and an assistant
+ * message that called tools carries `tool_use` blocks alongside (or instead
+ * of) its text. `splitSystem` maps LlmMessage's simpler role set onto that
+ * shape; system messages are pulled out separately (Anthropic's `system` is
+ * a top-level request field, not a message in the array).
+ */
 function splitSystem(messages: LlmCompletionRequest['messages']): {
   system: string | undefined;
-  rest: { role: 'user' | 'assistant'; content: string }[];
+  rest: Anthropic.MessageParam[];
 } {
   const system = messages.find((m) => m.role === 'system')?.content;
   const rest = messages
     .filter((m) => m.role !== 'system')
-    .map((m) => ({ role: m.role as 'user' | 'assistant', content: m.content }));
+    .map((m): Anthropic.MessageParam => {
+      if (m.role === 'tool') {
+        return {
+          role: 'user',
+          content: [{ type: 'tool_result', tool_use_id: m.toolCallId ?? '', content: m.content }],
+        };
+      }
+      if (m.role === 'assistant' && m.toolCalls?.length) {
+        const blocks: (Anthropic.TextBlockParam | Anthropic.ToolUseBlockParam)[] = [];
+        if (m.content) blocks.push({ type: 'text', text: m.content });
+        for (const tc of m.toolCalls) {
+          blocks.push({ type: 'tool_use', id: tc.id, name: tc.name, input: tc.arguments });
+        }
+        return { role: 'assistant', content: blocks };
+      }
+      return { role: m.role as 'user' | 'assistant', content: m.content };
+    });
   return { system, rest };
+}
+
+function toAnthropicTools(tools: LlmCompletionRequest['tools']): Anthropic.Tool[] | undefined {
+  if (!tools?.length) return undefined;
+  return tools.map((t) => ({
+    name: t.name,
+    description: t.description,
+    input_schema: t.parameters as Anthropic.Tool['input_schema'],
+  }));
+}
+
+function extractToolCalls(content: Anthropic.ContentBlock[]): LlmToolCall[] | undefined {
+  const toolUseBlocks = content.filter(
+    (block): block is Anthropic.ToolUseBlock => block.type === 'tool_use',
+  );
+  if (toolUseBlocks.length === 0) return undefined;
+  return toolUseBlocks.map((block) => ({
+    id: block.id,
+    name: block.name,
+    arguments: block.input as Record<string, unknown>,
+  }));
 }
 
 /**
@@ -32,30 +78,34 @@ function splitSystem(messages: LlmCompletionRequest['messages']): {
  * deepseek-reasoner, some Ollama models) is the real, working half of RT-084
  * for now.
  */
-export function createAnthropicProvider(apiKey: string): LlmProvider {
-  const client = new Anthropic({ apiKey });
+export function createAnthropicProvider(apiKey: string, baseURL?: string): LlmProvider {
+  const client = new Anthropic({ apiKey, ...(baseURL ? { baseURL } : {}) });
 
   return {
     name: 'anthropic',
 
     async complete(req: LlmCompletionRequest): Promise<LlmCompletionResult> {
       const { system, rest } = splitSystem(req.messages);
+      const tools = toAnthropicTools(req.tools);
       try {
         const response = await client.messages.create({
           model: req.model,
           max_tokens: req.maxTokens ?? 1024,
           ...(system !== undefined ? { system } : {}),
+          ...(tools ? { tools } : {}),
           messages: rest,
         });
         const content = response.content
           .filter((block): block is Anthropic.TextBlock => block.type === 'text')
           .map((block) => block.text)
           .join('');
+        const toolCalls = extractToolCalls(response.content);
         return {
           content,
           model: response.model,
           inputTokens: response.usage.input_tokens,
           outputTokens: response.usage.output_tokens,
+          ...(toolCalls ? { toolCalls } : {}),
         };
       } catch (err) {
         throw new LlmProviderError(

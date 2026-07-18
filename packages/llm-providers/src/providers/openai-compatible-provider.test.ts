@@ -137,4 +137,159 @@ describe('openai-compatible-provider (RT-084 reasoning_content)', () => {
       { delta: 'is 4.' },
     ]);
   });
+
+  describe('RT-085 — tool calling', () => {
+    it('complete() sends tools in OpenAI function-calling shape and parses tool_calls back out', async () => {
+      let receivedBody: Record<string, unknown> | undefined;
+      server = createServer(async (req, res: ServerResponse) => {
+        receivedBody = JSON.parse(await readBody(req)) as Record<string, unknown>;
+        res.setHeader('Content-Type', 'application/json');
+        res.end(
+          JSON.stringify({
+            id: 'x',
+            model: 'gpt-4o-mini',
+            choices: [
+              {
+                message: {
+                  role: 'assistant',
+                  content: null,
+                  tool_calls: [
+                    {
+                      id: 'call_1',
+                      type: 'function',
+                      function: {
+                        name: 'webhook-send',
+                        arguments: '{"url":"https://example.com","payload":{"a":1}}',
+                      },
+                    },
+                  ],
+                },
+              },
+            ],
+            usage: { prompt_tokens: 20, completion_tokens: 8 },
+          }),
+        );
+      });
+      const port = await listen(server);
+      const provider = createOpenAiCompatibleProvider(
+        'openai',
+        'test-key',
+        `http://127.0.0.1:${port}`,
+      );
+
+      const result = await provider.complete({
+        model: 'gpt-4o-mini',
+        messages: [{ role: 'user', content: 'send a webhook' }],
+        tools: [
+          {
+            name: 'webhook-send',
+            description: 'Sends a webhook',
+            parameters: { type: 'object', properties: {} },
+          },
+        ],
+      });
+
+      expect(receivedBody?.tools).toEqual([
+        {
+          type: 'function',
+          function: {
+            name: 'webhook-send',
+            description: 'Sends a webhook',
+            parameters: { type: 'object', properties: {} },
+          },
+        },
+      ]);
+      expect(result.toolCalls).toEqual([
+        {
+          id: 'call_1',
+          name: 'webhook-send',
+          arguments: { url: 'https://example.com', payload: { a: 1 } },
+        },
+      ]);
+      expect(result.content).toBe('');
+    });
+
+    it('complete() round-trips an assistant tool-call message and a tool-result message correctly', async () => {
+      let receivedMessages: unknown[] | undefined;
+      server = createServer(async (req, res: ServerResponse) => {
+        const body = JSON.parse(await readBody(req)) as { messages: unknown[] };
+        receivedMessages = body.messages;
+        res.setHeader('Content-Type', 'application/json');
+        res.end(
+          JSON.stringify({
+            id: 'x',
+            model: 'gpt-4o-mini',
+            choices: [{ message: { role: 'assistant', content: 'Sent!' } }],
+            usage: { prompt_tokens: 5, completion_tokens: 2 },
+          }),
+        );
+      });
+      const port = await listen(server);
+      const provider = createOpenAiCompatibleProvider(
+        'openai',
+        'test-key',
+        `http://127.0.0.1:${port}`,
+      );
+
+      await provider.complete({
+        model: 'gpt-4o-mini',
+        messages: [
+          { role: 'user', content: 'send a webhook' },
+          {
+            role: 'assistant',
+            content: '',
+            toolCalls: [
+              { id: 'call_1', name: 'webhook-send', arguments: { url: 'https://example.com' } },
+            ],
+          },
+          { role: 'tool', content: '{"statusCode":200}', toolCallId: 'call_1' },
+        ],
+      });
+
+      expect(receivedMessages).toEqual([
+        { role: 'user', content: 'send a webhook' },
+        {
+          role: 'assistant',
+          content: null,
+          tool_calls: [
+            {
+              id: 'call_1',
+              type: 'function',
+              function: { name: 'webhook-send', arguments: '{"url":"https://example.com"}' },
+            },
+          ],
+        },
+        { role: 'tool', content: '{"statusCode":200}', tool_call_id: 'call_1' },
+      ]);
+    });
+
+    it('complete() leaves toolCalls undefined when the model just answers normally', async () => {
+      server = createServer((req, res: ServerResponse) => {
+        res.setHeader('Content-Type', 'application/json');
+        res.end(
+          JSON.stringify({
+            id: 'x',
+            model: 'gpt-4o-mini',
+            choices: [{ message: { role: 'assistant', content: 'Hi there!' } }],
+            usage: { prompt_tokens: 3, completion_tokens: 2 },
+          }),
+        );
+      });
+      const port = await listen(server);
+      const provider = createOpenAiCompatibleProvider(
+        'openai',
+        'test-key',
+        `http://127.0.0.1:${port}`,
+      );
+
+      const result = await provider.complete({
+        model: 'gpt-4o-mini',
+        messages: [{ role: 'user', content: 'hi' }],
+        tools: [{ name: 'webhook-send', description: 'Sends a webhook', parameters: {} }],
+      });
+
+      expect(result.toolCalls).toBeUndefined();
+      expect(result.content).toBe('Hi there!');
+    });
+  });
 });

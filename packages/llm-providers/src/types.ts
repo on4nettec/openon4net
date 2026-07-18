@@ -1,12 +1,36 @@
+/**
+ * RT-085 — a callable function the model may invoke instead of answering
+ * directly. `parameters` is a JSON Schema object (not a Zod schema) since
+ * that's the wire format every provider's tool-calling API expects.
+ */
+export interface LlmToolDefinition {
+  name: string;
+  description: string;
+  parameters: Record<string, unknown>;
+}
+
+/** RT-085 — one function call the model asked for; `arguments` is already parsed JSON, not a raw string. */
+export interface LlmToolCall {
+  id: string;
+  name: string;
+  arguments: Record<string, unknown>;
+}
+
 export interface LlmMessage {
-  role: 'system' | 'user' | 'assistant';
+  role: 'system' | 'user' | 'assistant' | 'tool';
   content: string;
+  /** RT-085 — set when role === 'tool': which LlmToolCall.id this message answers. */
+  toolCallId?: string;
+  /** RT-085 — set when role === 'assistant' and the model chose to call tools instead of (or alongside) answering in `content`. */
+  toolCalls?: LlmToolCall[];
 }
 
 export interface LlmCompletionRequest {
   model: string;
   messages: LlmMessage[];
   maxTokens?: number;
+  /** RT-085 — omit entirely (not an empty array) when no tools should be offered this turn; providers treat absence and `[]` differently. */
+  tools?: LlmToolDefinition[];
 }
 
 export interface LlmCompletionResult {
@@ -23,6 +47,8 @@ export interface LlmCompletionResult {
    * implemented here — see anthropic-provider.ts's comment for why.
    */
   reasoning?: string;
+  /** RT-085 — present when the model chose to call one or more tools instead of answering; `content` is typically empty in that case. */
+  toolCalls?: LlmToolCall[];
 }
 
 export interface LlmStreamChunk {
