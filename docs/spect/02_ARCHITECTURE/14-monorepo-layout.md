@@ -9,6 +9,7 @@
 ## ۱) هدف
 
 این سند ساختار monorepo را برای پیاده‌سازی O₂N مشخص می‌کند تا:
+
 - مرزبندی ۴ Plane در کد هم واضح باشد
 - تیم/Claude بداند هر چیز کجا باید پیاده شود
 - نام‌گذاری سرویس‌ها و اپ‌ها یکدست باشد
@@ -24,12 +25,12 @@
 
 هر Plane یک واحد دیپلوی مستقل با مالکیت متفاوت است، نه یک ماژول از یک محصول واحد:
 
-| Plane | کجا اجرا می‌شود؟ | مدل مالی |
-|---|---|---|
-| **Runtime** (Plane 1) | روی سیستم/سرور خود کاربر (self-hosted) | رایگان — نصب و اکتیو رایگان است |
-| **Control Plane** (Plane 2) | زیرساخت مرکزی شرکت on4net | فروش پلن pay-as-you-go / subscription + اکتیو رایگان Runtime |
-| **Memory** (Plane 3) | زیرساخت مرکزی شرکت on4net (اختیاری) | فقط برای کاربرانی که پلن خریده‌اند |
-| **Marketplace** (Plane 4) | زیرساخت مرکزی شرکت on4net | تسویه/پرداخت از طریق کیف‌پول Control Plane |
+| Plane                       | کجا اجرا می‌شود؟                       | مدل مالی                                                     |
+| --------------------------- | -------------------------------------- | ------------------------------------------------------------ |
+| **Runtime** (Plane 1)       | روی سیستم/سرور خود کاربر (self-hosted) | رایگان — نصب و اکتیو رایگان است                              |
+| **Control Plane** (Plane 2) | زیرساخت مرکزی شرکت on4net              | فروش پلن pay-as-you-go / subscription + اکتیو رایگان Runtime |
+| **Memory** (Plane 3)        | زیرساخت مرکزی شرکت on4net (اختیاری)    | فقط برای کاربرانی که پلن خریده‌اند                           |
+| **Marketplace** (Plane 4)   | زیرساخت مرکزی شرکت on4net              | تسویه/پرداخت از طریق کیف‌پول Control Plane                   |
 
 چون Runtime روی سرور مشتری نصب می‌شود ولی بقیه‌ی Planeها روی زیرساخت شرکت اجرا می‌شوند، **هرکدام docker-compose و migration جدای خودشان را دارند** — یک docker-compose واحد برای کل سیستم غلط است.
 
@@ -52,7 +53,7 @@
 │    - Plugin sandbox      │      از طریق Control Plane    │
 │                          │                              ▼
 │  web (Next.js)           │                  ┌────────────────────────────┐
-│  mobile (Flutter/Dart)   │                  │  openon4net-control-plane   │  SaaS مرکزی
+│  mobile (Flutter/Dart)   │                  │  openon4net-platform   │  SaaS مرکزی
 └─────────────────────────┘                  │                              │
                                               │  gateway:                   │
                                               │   - activation/license      │
@@ -81,7 +82,7 @@
                                               └────────────────────────────┘
 ```
 
-نکته‌ی مهم: عبارت «gateway» در این سند به معنای **سرویس بک‌اند/API همان Plane** است (مثل یک نام مستعار برای «api»)، نه یک مفهوم سراسری واحد. «AI Gateway» (روتینگ بین چند LLM) فقط داخل `openon4net-control-plane/gateway` پیاده می‌شود؛ `openon4net-runtime/gateway` صرفاً یک کانکتور ساده‌ی مستقیم به یک LLM (BYOK) دارد.
+نکته‌ی مهم: عبارت «gateway» در این سند به معنای **سرویس بک‌اند/API همان Plane** است (مثل یک نام مستعار برای «api»)، نه یک مفهوم سراسری واحد. «AI Gateway» (روتینگ بین چند LLM) فقط داخل `openon4net-platform/gateway` پیاده می‌شود؛ `openon4net-runtime/gateway` صرفاً یک کانکتور ساده‌ی مستقیم به یک LLM (BYOK) دارد.
 
 ---
 
@@ -97,7 +98,7 @@ openon4net/
 │   │   ├── migrations/                # SQL migrations مخصوص Runtime (DB محلی مشتری)
 │   │   └── docker-compose.yml         # بسته‌ی نصب مستقل: postgres + redis + minio + gateway + web
 │   │
-│   ├── openon4net-control-plane/      # Plane 2 — SaaS مرکزی on4net
+│   ├── openon4net-platform/      # Plane 2 — SaaS مرکزی on4net
 │   │   ├── gateway/                   # activation + billing/wallet + managed AI Gateway
 │   │   ├── web/                       # پنل مدیریت پلن/اکتیویشن/کردیت
 │   │   ├── migrations/                # SQL migrations مخصوص Control Plane
@@ -132,26 +133,34 @@ openon4net/
 ## ۵) Mapping سرویس‌ها به Planeها (جزئیات مسئولیت)
 
 ### ۵.۱) `apps/openon4net-runtime` (Plane 1)
+
 مسئول:
+
 - `gateway`: Agents/Chat/Workflow/Skill/Plugin execution، Governance/Audit/Approvals
 - حافظه‌ی محلی: **فقط** Short Memory + Conversation Memory + Project Memory + Personal Knowledge (نه Company/Global Knowledge — آن مال Plane 3 است)
 - اتصال مستقیم BYOK به یک LLM (بدون routing/fallback پیچیده)
 - `web` و `mobile`: دو کلاینت روی همان API
 
-### ۵.۲) `apps/openon4net-control-plane` (Plane 2)
+### ۵.۲) `apps/openon4net-platform` (Plane 2)
+
 مسئول:
+
 - activation/license (رایگان) برای Runtime
 - credits ledger / wallet / billing (پولی — pay-as-you-go یا subscription)
 - **Managed AI Gateway**: تنها جایی که routing/fallback/cost-tracking بین چند LLM پیاده می‌شود (طبق `02-ai-gateway.md`)؛ یا بر اساس نوع درخواست خودکار انتخاب می‌کند یا کاربر مستقیم مدل را مشخص می‌کند
 
 ### ۵.۳) `apps/openon4net-memory` (Plane 3)
+
 مسئول (سرویس مدیریت‌شده، اختیاری، بعد از MVP):
+
 - Company Knowledge + Global Knowledge — به‌ازای هر شرکت/کاربر توسط Control Plane پروویژن می‌شود
 - storage/index/search برای لایه‌های بلندمدت حافظه
 - فقط برای کاربرانی در دسترس است که از طریق Control Plane پلن خریده‌اند
 
 ### ۵.۴) `apps/openon4net-marketplace` (Plane 4)
+
 مسئول:
+
 - publisher portal + submissions
 - review pipeline + signing
 - artifact registry + listings/search/ranking
@@ -162,6 +171,7 @@ openon4net/
 ## ۶) نکته اجرایی درباره همین ریپو
 
 در این ریپو فعلاً تمرکز روی **مستندات** است و `.gitignore` ممکن است پوشه‌های `apps/` را ignore کند. برای شروع پیاده‌سازی واقعی:
+
 - `.gitignore` را اصلاح کنید تا `apps/` و `packages/` track شوند
 - MVP (طبق `09_TASKS/08-scope-guardrails-mvp.md`) فقط `apps/openon4net-runtime` را کامل می‌سازد؛ Control Plane در MVP به‌صورت حداقلی (activation ساده + wallet read-only، بدون managed AI Gateway واقعی) پیاده می‌شود؛ Memory و Marketplace در MVP ساخته نمی‌شوند
 

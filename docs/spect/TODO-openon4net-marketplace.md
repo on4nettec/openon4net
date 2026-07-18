@@ -31,7 +31,7 @@
 > به فایل ریشه‌ی مونوریپو نیاز دارن (`pnpm-workspace.yaml`) صراحتاً
 > علامت‌گذاری شدن.
 >
-> این فایل خواهر `TODO-openon4net-runtime.md`، `TODO-openon4net-control-plane.md`
+> این فایل خواهر `TODO-openon4net-runtime.md`، `TODO-openon4net-platform.md`
 > و `TODO-openon4net-memory.md` است، همون فرمت.
 
 ---
@@ -114,7 +114,7 @@
 
 > طبق `06_MEETINGS/06-agent-definition-review-and-runtime-gaps.md`: Control Plane قراره
 > بعد از تأیید activation code یک توکن امنیتی اختصاصی برای ارتباط Marketplace/Control-Plane
-> صادر کنه (`CP-032` در `TODO-openon4net-control-plane.md`)، به‌جای secret ثابت فعلی
+> صادر کنه (`CP-032` در `TODO-openon4net-platform.md`)، به‌جای secret ثابت فعلی
 > (`MARKETPLACE_API_KEY`). سمت Marketplace (پذیرش/verify این توکن به‌جای فقط API key ثابت)
 > بعد از مشخص‌شدن پروتکل دقیق در CP-032 به‌عنوان یک MKT-xxx شماره‌دار می‌شه — الان فقط برای
 > آگاهی ثبت شد.

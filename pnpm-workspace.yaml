@@ -1,7 +1,7 @@
 packages:
   - 'apps/openon4net-runtime/gateway'
   - 'apps/openon4net-runtime/web'
-  - 'apps/openon4net-control-plane/gateway'
-  - 'apps/openon4net-control-plane/web'
+  - 'apps/openon4net-platform/gateway'
+  - 'apps/openon4net-platform/web'
   - 'apps/openon4net-memory/service'
   - 'packages/*'

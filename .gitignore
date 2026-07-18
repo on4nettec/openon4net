@@ -11,7 +11,7 @@ coverage/
 
 # Not-yet-built planes (register as submodules when their sprint starts).
 # openon4net-runtime is NOT listed here — it is a registered git submodule.
-/apps/openon4net-control-plane/
+/apps/openon4net-platform/
 /apps/openon4net-memory/
 /apps/openon4net-marketplace/
 /apps/openon4net-runtime/

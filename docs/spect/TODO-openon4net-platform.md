@@ -1,5 +1,13 @@
-# TODO — openon4net-control-plane (Plane 2)
+# TODO — openon4net-platform (Plane 2, قبلاً «Control Plane»)
 
+> **۲۰۲۶-۰۷-۱۷ — rename شد:** این پلین از «Control Plane» به «Platform» تغییر نام داد
+> (تصمیم جلسه ۷، `06_MEETINGS/07-platform-rename-and-mediated-cross-plane-access.md`؛
+> اجرای فیزیکی rename هم همون روز، طبق درخواست صریح کاربر). پوشه‌ی محلی الان
+> `apps/openon4net-platform/` است؛ ریپوی GitHub (`openon4net-control-plane`) هم باید
+> rename بشه — این فایل قبلاً `TODO-openon4net-control-plane.md` نام داشت. ارجاعات
+> تاریخی به «Control Plane» در `DONE.md`/جلسات قبلی عمداً دست‌نخورده موندن (لاگ
+> تاریخیه، نه چیزی که rewrite بشه) — فقط ارجاعات رو‌به‌جلو/ساختاری این‌جا به‌روز شدن.
+>
 > فایل تصمیم‌گیری، نه صف اجرا. من (Claude) هیچ‌کدوم از این ردیف‌ها رو خودم
 > شروع نمی‌کنم — منتظر می‌مونم بگی کدوم رو انجام بدم (تک‌تک یا گروهی).
 > بعد از هر تسک، وضعیتش اینجا و خلاصه‌اش در `docs/spect/DONE.md` به‌روز می‌شه.
@@ -18,7 +26,7 @@
 > داده شد؛ کلاینت activation سمت Runtime (T-CP-007) پیاده‌سازی و تست شد —
 > ببینید `TODO-openon4net-runtime.md`'s RT-034 و `DONE.md`.
 >
-> **محدوده:** همه‌ی ردیف‌های بخش A فقط داخل `apps/openon4net-control-plane/`
+> **محدوده:** همه‌ی ردیف‌های بخش A فقط داخل `apps/openon4net-platform/`
 > اجرا می‌شن — نه `openon4net-runtime`، نه فایل‌های ریشه مونوریپو. ردیف‌هایی
 > که خارج از این محدوده‌ن (بخش B) صراحتاً علامت‌گذاری شدن.
 >

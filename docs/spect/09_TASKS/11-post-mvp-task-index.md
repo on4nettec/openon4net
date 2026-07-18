@@ -33,18 +33,18 @@
 
 ## 2) Plane 2 — Control Plane / Monetization & Governance
 
-| Task   | عنوان                               | چرا post-MVP است؟                         | منبع                                          |
-| ------ | ----------------------------------- | ----------------------------------------- | --------------------------------------------- |
-| CP-006 | Observability فراتر از trace-id     | نیاز به monitoring جدی‌تر بعد از MVP-lite | `docs/spect/TODO-openon4net-control-plane.md` |
-| CP-007 | مستندسازی/بهبود rate limiter        | hardening برای مقیاس بالاتر               | `docs/spect/TODO-openon4net-control-plane.md` |
-| CP-011 | Admin auth واقعی‌تر                 | چند admin و audit کامل‌تر                 | `docs/spect/TODO-openon4net-control-plane.md` |
-| CP-012 | Managed AI Gateway                  | routing/failover/cost tracking مدیریت‌شده | `docs/spect/TODO-openon4net-control-plane.md` |
-| CP-013 | Billing واقعی                       | payment provider + ledger + settlement    | `docs/spect/TODO-openon4net-control-plane.md` |
-| CP-014 | رفع race در `turbo.json`            | hardening build pipeline و workflow       | `docs/spect/TODO-openon4net-control-plane.md` |
-| CP-015 | fix اعتبارسنجی UUID در admin routes | bugfix کیفیتی قبل از scale-up             | `docs/spect/TODO-openon4net-control-plane.md` |
-| CP-016 | تست‌های واقعی برای `web/`           | پوشش سطح UI/interaction                   | `docs/spect/TODO-openon4net-control-plane.md` |
-| CP-017 | healthcheck واقعی برای compose      | اطمینان از readiness سرویس‌ها             | `docs/spect/TODO-openon4net-control-plane.md` |
-| CP-018 | CORS allowlist صریح                 | کاهش ریسک امنیتی در deployment            | `docs/spect/TODO-openon4net-control-plane.md` |
+| Task   | عنوان                               | چرا post-MVP است؟                         | منبع                                     |
+| ------ | ----------------------------------- | ----------------------------------------- | ---------------------------------------- |
+| CP-006 | Observability فراتر از trace-id     | نیاز به monitoring جدی‌تر بعد از MVP-lite | `docs/spect/TODO-openon4net-platform.md` |
+| CP-007 | مستندسازی/بهبود rate limiter        | hardening برای مقیاس بالاتر               | `docs/spect/TODO-openon4net-platform.md` |
+| CP-011 | Admin auth واقعی‌تر                 | چند admin و audit کامل‌تر                 | `docs/spect/TODO-openon4net-platform.md` |
+| CP-012 | Managed AI Gateway                  | routing/failover/cost tracking مدیریت‌شده | `docs/spect/TODO-openon4net-platform.md` |
+| CP-013 | Billing واقعی                       | payment provider + ledger + settlement    | `docs/spect/TODO-openon4net-platform.md` |
+| CP-014 | رفع race در `turbo.json`            | hardening build pipeline و workflow       | `docs/spect/TODO-openon4net-platform.md` |
+| CP-015 | fix اعتبارسنجی UUID در admin routes | bugfix کیفیتی قبل از scale-up             | `docs/spect/TODO-openon4net-platform.md` |
+| CP-016 | تست‌های واقعی برای `web/`           | پوشش سطح UI/interaction                   | `docs/spect/TODO-openon4net-platform.md` |
+| CP-017 | healthcheck واقعی برای compose      | اطمینان از readiness سرویس‌ها             | `docs/spect/TODO-openon4net-platform.md` |
+| CP-018 | CORS allowlist صریح                 | کاهش ریسک امنیتی در deployment            | `docs/spect/TODO-openon4net-platform.md` |
 
 ### موارد control-plane که قبلاً از MVP عبور کرده‌اند
 

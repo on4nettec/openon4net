@@ -16,7 +16,7 @@
 
 - `docs/sprint-plan/03_sprint-plan.md` → `T-001..T-008`
 - `docs/spect/TODO-openon4net-runtime.md` → `RT-001..RT-010`
-- `docs/spect/TODO-openon4net-control-plane.md` → `CP-001..CP-005`
+- `docs/spect/TODO-openon4net-platform.md` → `CP-001..CP-005`
 
 ---
 
@@ -46,7 +46,7 @@
 - `docs/sprint-plan/03_sprint-plan.md` → `T-051..T-076`
 - `docs/spect/TODO-openon4net-runtime.md` → `RT-025..RT-031`
 - `docs/spect/TODO-openon4net-marketplace.md` → `MKT-001..MKT-011`
-- `docs/spect/TODO-openon4net-control-plane.md` → `CP-006..CP-018`
+- `docs/spect/TODO-openon4net-platform.md` → `CP-006..CP-018`
 
 ---
 
@@ -61,7 +61,7 @@
 
 - `docs/sprint-plan/03_sprint-plan.md` → `T-077..T-104`
 - `docs/spect/TODO-openon4net-runtime.md` → بخش‌های workspace/agent access/branding/context
-- `docs/spect/TODO-openon4net-control-plane.md` → policy/budget/approval/admin hardening
+- `docs/spect/TODO-openon4net-platform.md` → policy/budget/approval/admin hardening
 
 ---
 
@@ -76,7 +76,7 @@
 
 - `docs/sprint-plan/03_sprint-plan.md` → `T-105..T-132`
 - `docs/spect/TODO-openon4net-marketplace.md` → `MKT-012..MKT-016`
-- `docs/spect/TODO-openon4net-control-plane.md` → `CP-019..CP-024`
+- `docs/spect/TODO-openon4net-platform.md` → `CP-019..CP-024`
 
 ---
 
@@ -89,7 +89,7 @@
 **Backlogهای اصلی:**
 
 - `docs/sprint-plan/03_sprint-plan.md` → `T-133..T-160`
-- `docs/spect/TODO-openon4net-control-plane.md` → security/ops/readiness tasks
+- `docs/spect/TODO-openon4net-platform.md` → security/ops/readiness tasks
 
 ---
 
