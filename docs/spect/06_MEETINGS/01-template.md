@@ -57,10 +57,11 @@
 
 ## جلسات برگزار شده
 
-| #   | تاریخ      | موضوع                                                                                                               | فایل                                                         |
-| --- | ---------- | ------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------ |
-| ۲   | ۲۰۲۶-۰۷-۱۲ | مدل کسب‌وکار Skills/Plugins در Marketplace (رایگان/فروشی) + CLI Plugin                                              | `06_MEETINGS/02-skills-plugins-marketplace-model.md`         |
-| ۳   | ۲۰۲۶-۰۷-۱۳ | Fine-tuning برای سازمان‌های بزرگ (Q&A) + مرز multi-model routing بین Runtime/Control-Plane + پلن‌های reseller/هاست  | `06_MEETINGS/03-finetuning-and-model-routing.md`             |
-| ۴   | ۲۰۲۶-۰۷-۱۶ | اکوسیستم Plugin (معماری، مدل نصب/امنیت)                                                                             | `06_MEETINGS/04-plugin-ecosystem-architecture.md`            |
-| ۵   | ۲۰۲۶-۰۷-۱۷ | مدل کامل ثبت‌نام/activation در Control Plane + تفاوت شخصی/سازمانی + چندزبانگی (i18n)                                | `06_MEETINGS/05-self-service-signup-and-activation-model.md` |
-| ۶   | ۲۰۲۶-۰۷-۱۷ | بازبینی تعریف رسمی Agent + خلأهای Runtime (tool-calling، delegation، Skill builder، Schedule، WebSocket، i18n کامل) | `06_MEETINGS/06-agent-definition-review-and-runtime-gaps.md` |
+| #   | تاریخ      | موضوع                                                                                                               | فایل                                                                |
+| --- | ---------- | ------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------- |
+| ۲   | ۲۰۲۶-۰۷-۱۲ | مدل کسب‌وکار Skills/Plugins در Marketplace (رایگان/فروشی) + CLI Plugin                                              | `06_MEETINGS/02-skills-plugins-marketplace-model.md`                |
+| ۳   | ۲۰۲۶-۰۷-۱۳ | Fine-tuning برای سازمان‌های بزرگ (Q&A) + مرز multi-model routing بین Runtime/Control-Plane + پلن‌های reseller/هاست  | `06_MEETINGS/03-finetuning-and-model-routing.md`                    |
+| ۴   | ۲۰۲۶-۰۷-۱۶ | اکوسیستم Plugin (معماری، مدل نصب/امنیت)                                                                             | `06_MEETINGS/04-plugin-ecosystem-architecture.md`                   |
+| ۵   | ۲۰۲۶-۰۷-۱۷ | مدل کامل ثبت‌نام/activation در Control Plane + تفاوت شخصی/سازمانی + چندزبانگی (i18n)                                | `06_MEETINGS/05-self-service-signup-and-activation-model.md`        |
+| ۶   | ۲۰۲۶-۰۷-۱۷ | بازبینی تعریف رسمی Agent + خلأهای Runtime (tool-calling، delegation، Skill builder، Schedule، WebSocket، i18n کامل) | `06_MEETINGS/06-agent-definition-review-and-runtime-gaps.md`        |
+| ۷   | ۲۰۲۶-۰۷-۱۷ | جای AI Gateway + تغییر نام Control Plane به Platform + عبور اجباری ترافیک Runtime↔Memory/Marketplace از Platform    | `06_MEETINGS/07-platform-rename-and-mediated-cross-plane-access.md` |
