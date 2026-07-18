@@ -2144,6 +2144,57 @@ configSchema }`).
 
 ---
 
+### RT-091 — i18n: زیرساخت مصرف واقعی + Sidebar/چت (۲۰۲۶-۰۷-۱۸، subset)
+
+⚠️ **subset واقعی، نه کامل** — کشف مهم: RT-083 در جلسه‌ی قبل
+`GET /v1/locales/:lang` (reference `en.json` + ترجمه‌ی AI on-demand،
+cache‌شده) رو ساخته بود، ولی **هیچ صفحه‌ای توی وب اصلاً این endpoint
+رو صدا نمی‌زد** — یعنی کل ویژگی i18n تا این لحظه کد مرده بود؛ فقط
+جهت RTL/LTR (`isRtlLanguage`/`applyDocumentDirection`) واقعی بود، نه
+متن ترجمه‌شده.
+
+- **`web/lib/i18n.ts`**'s `useLocaleStrings(language)`: هوک جدید،
+  `t(key, fallback)` برمی‌گردونه. `en` فوری از reference resolve
+  می‌شه؛ زبان‌های دیگه از بک‌اند fetch (و در یک Map سطح-ماژول cache)
+  می‌شن — چون Sidebar روی هر صفحه از نو mount می‌شه (این اپ shared
+  layout نداره)، بدون cache هر navigation یک fetch جدید می‌زد.
+  همیشه non-blocking: قبل از resolve شدن، یا اگه key نبود، `fallback`
+  برمی‌گرده — یعنی برای کاربر انگلیسی دقیقاً همون چیزی که همیشه
+  بوده رو می‌بینه.
+- **`gateway/locales/en.json`**: ۱۸ کلید `nav.*` جدید اضافه شد (یک
+  به یک با `Sidebar.tsx`'s `NAV_LINKS` + sign out + collapse/expand
+  tooltip + منوی موبایل) — قبلاً فقط ۷ کلید chat/settings/login
+  داشت که هیچ‌کدوم مصرف نمی‌شدن.
+- **`components/Sidebar.tsx`**: حالا زبان مؤثر (`user.language ??
+organization.language`) رو خودش می‌گیره (همون fetch سازمانی که
+  از قبل برای لوگو داشت، فقط با `getMe()` هم ترکیب شد) و همه‌ی
+  nav labelها/sign out/tooltipها رو از `t()` می‌گیره. چون Sidebar
+  **روی همه‌ی صفحات authenticated رندر می‌شه**، این یعنی منوی
+  ناوبری الان واقعاً روی هر صفحه‌ای ترجمه می‌شه — نه فقط چت.
+- **صفحه‌ی چت**: کلیدهای از قبل موجود ولی مرده‌ی `chat.*`
+  (title/backToAgents/inputPlaceholder/send) الان واقعاً استفاده
+  می‌شن.
+- **⚠️ صراحتاً باقی‌مونده**: محتوای خودِ هر صفحه (جدول‌ها، برچسب
+  فرم‌ها، دکمه‌ها) در Skills، Marketplace، Marketplace/publisher،
+  Users، Roles، Policies، Workflows، Webhooks، Outcomes، Audit،
+  Workspaces، Approvals، Skill Proposals، Dashboard، و بخش عمده‌ی
+  Settings هنوز انگلیسی hardcode هستن — هر کدوم به یک pass جدا
+  برای استخراج کلید نیاز دارن (ده‌ها رشته در هر صفحه)، کاری واقعی
+  و قابل‌توجه که این تسک عمداً موکول به بعد کرد، نه کاری که «فراموش»
+  شده باشه.
+- **تست واقعی**: `locale-service.test.ts` (۵ تست، از قبل) بدون
+  تغییر پاس شد. `npm run build` وب (۲۳ صفحه) موفق — چون Sidebar
+  shared component است، این یعنی import جدید توی همه‌ی صفحات compile
+  شد. HTTP smoke-test: `GET /v1/locales/en` واقعاً همه‌ی کلیدهای
+  جدید `nav.*` رو برگردوند؛ یک فایل cache شبیه‌سازی‌شده‌ی فارسی
+  (`locales/generated/fa.json`، بعداً حذف شد) گذاشته شد و
+  `GET /v1/locales/fa` واقعاً `source: "cached"` با محتوای فارسی
+  برگردوند — مسیر non-English backend تأیید شد. **محدودیت تست**:
+  بدون ابزار مرورگر، رندر واقعی متن ترجمه‌شده در UI (نه فقط پاسخ
+  API) تست نشد.
+
+---
+
 ## صریحاً انجام‌نشده (شناخته‌شده، نه فراموش‌شده)
 
 - **T-009 (Secrets/KMS واقعی):** فقط نسخه MVP env-first + رمزنگاری envelope در DB برای BYOK per-org ساخته شده؛ یکپارچگی با Vault/secret manager واقعی (برای production/enterprise) ساخته نشده.
