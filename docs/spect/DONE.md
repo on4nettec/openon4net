@@ -2270,6 +2270,65 @@ organization.language`) رو خودش می‌گیره (همون fetch سازما
 
 ---
 
+### RT-084 — فرایند فکری قابل‌مشاهده (۲۰۲۶-۰۷-۱۸، subset واقعی)
+
+⚠️ **subset واقعی، نه کامل** — دو تصمیم معماری سند صراحتاً می‌خواست
+(«باید تصمیم گرفته بشه») این‌جا واقعاً گرفته شد، با دلیل مشخص، نه حدس:
+
+- **تصمیم ذخیره‌سازی**: جدول `messages` با یک `role` جدید به اسم
+  `'thought'` — نه جدول جدا (`agent_thoughts`). چون `messages.role`
+  یک `VARCHAR(20)` بدون CHECK constraint بود، هیچ migration لازم
+  نبود؛ فقط `MessageRole` (packages/shared) یک مقدار جدید گرفت.
+  `'thought'` هیچ‌وقت به تاریخچه‌ی replay‌شده به مدل برنمی‌گرده
+  (`toLlmRole()`، دقیقاً همون رفتار `'tool'`).
+- **تصمیم provider**: پیاده‌سازی extended thinking واقعی Anthropic
+  عمداً **رد شد** — نسخه‌ی نصب‌شده‌ی `@anthropic-ai/sdk` (۰.۳۰.۱) کلاً
+  از قبل از این قابلیت است (`ContentBlock` فقط `TextBlock |
+ToolUseBlock`، نه در stable نه در beta). ارتقاء SDK (۰.۳۰ → ۰.۱۱x+،
+  حدود ۸۰ نسخه‌ی minor) ریسک واقعی داره روی هر ویژگی دیگه‌ای که از
+  قبل به Anthropic متکیه — یک تسک جدا و عمداً موکول‌شده، نه بخشی از
+  این batch.
+- **مسیر واقعی که کار می‌کنه**: `packages/llm-providers`'s
+  `openai-compatible-provider.ts` حالا فیلد غیراستاندارد
+  `reasoning_content` رو می‌خونه (هم `complete()` هم `stream()`) —
+  همون فیلدی که DeepSeek's `deepseek-reasoner` و بعضی مدل‌های Ollama
+  واقعاً برمی‌گردونن. `LlmCompletionResult.reasoning?` و
+  `LlmStreamChunk.isReasoning?` فیلدهای جدید (`@o2n/llm-providers`).
+- **`chat-service.ts`**: `persistTurn()` اگه `reasoning` داشته باشه،
+  یک ردیف `'thought'` درست قبل از ردیف `'agent'` می‌نویسه (همون
+  تراکنش). `chatStream()` یک نوع رویداد SSE جدید داره: `event:
+reasoning` (جدا از `event: token`).
+- **⚠️ باگ واقعی پیدا/فیکس‌شده حین نوشتن تست**: Postgres's `NOW()`
+  توی یک تراکنش **فریز**‌شده (زمان شروع تراکنش، نه زمان واقعی هر
+  statement) — یعنی ردیف `'thought'` و ردیف `'agent'` که هر دو توی
+  همون تراکنش نوشته می‌شن دقیقاً همون `created_at` رو می‌گرفتن، و
+  ترتیبشون توی `ORDER BY created_at` واقعاً نامشخص بود (می‌تونست
+  agent قبل از thought بیاد). فیکس: `memory-service.ts`'s
+  `appendMessage` حالا از `clock_timestamp()` (ساعت واقعی هر
+  statement) به‌جای DEFAULT ستون (`NOW()`) استفاده می‌کنه — این یعنی
+  دو insert پشت‌سرهم همیشه به ترتیب واقعی‌شون مرتب می‌شن.
+- **UI**: صفحه‌ی چت یک بلوک مجزا («🧠 Show/Hide reasoning»، collapsed
+  به‌طور پیش‌فرض) **بالای** حباب پاسخ Agent نشون می‌ده — نه داخل همون
+  حباب، طبق «مستقل از پیام‌های عادی». هم استریم زنده (`onReasoningToken`)
+  هم بارگذاری تاریخچه (`toDisplayMessages()` که ردیف `'thought'` رو با
+  ردیف `'agent'` بعدی جفت می‌کنه، چون همیشه بلافاصله قبلش نوشته می‌شه)
+  پشتیبانی می‌شه.
+- **تست واقعی**: ۳ تست جدید `openai-compatible-provider.test.ts`
+  (HTTP واقعی روی یک `http.createServer` محلی — همون الگوی
+  `activation-client.test.ts` — هم `complete()` هم `stream()`، شامل
+  حالت بدون `reasoning_content`) + ۲ تست جدید `chat-service.test.ts`
+  (اولین تست این فایل که اصلاً وجود داشت — `ChatService` قبلاً هیچ
+  تستی نداشت). از یک `FakeProviderConfigService` (subclass، نه cast،
+  چون `ProviderConfigService` فیلد private داره) با یک fake
+  `LlmProvider` تزریق‌شده استفاده کرد — دقیقاً همون الگوی
+  `fakeProviderFactory` که CP-012's `ai-gateway-service.test.ts`
+  ساخته بود. کل مجموعه‌ی gateway (۴۵ فایل، ۲۲۹ تست) + llm-providers
+  (۳ تست) پاس شد. HTTP smoke-test واقعی روی چت معمولی/استریم (بدون
+  reasoning، چون Ollama محلی مدل reasoning ساختاریافته نداره) تأیید
+  کرد هیچ regression‌ای نیومده.
+
+---
+
 ## صریحاً انجام‌نشده (شناخته‌شده، نه فراموش‌شده)
 
 - **T-009 (Secrets/KMS واقعی):** فقط نسخه MVP env-first + رمزنگاری envelope در DB برای BYOK per-org ساخته شده؛ یکپارچگی با Vault/secret manager واقعی (برای production/enterprise) ساخته نشده.
