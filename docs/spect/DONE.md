@@ -2018,6 +2018,51 @@ session مستقل ممکنه.
 
 ---
 
+### RT-021 — صفحه Chat: چیدمان دائمی ۳پنلی (۲۰۲۶-۰۷-۱۸)
+
+✅ انجام شد — طبق `docs/spect/00_VISION/05-ux-ui-design.md`'s §5.1
+(«ساختار صفحه Chat — Agent / Session / Workspace»). قبل از این، پنل‌های
+Sessions (RT-022) و Files (RT-025) toggle بودن، نه بخشی از یک چیدمان
+ثابت. این تسک بدون backend جدید فقط UI رو بازآرایی کرد و دو تیکه‌ی
+missing سند رو اضافه کرد: سوییچر Agent و مدال ساخت Agent مستقیم از
+همین صفحه.
+
+- **پنل چپ (Control)**: به‌جای toggle، همیشه رندر می‌شه. شامل:
+  - `<select>` سوییچ Agent — تغییرش با `router.push` به
+    `/agents/:id/chat` می‌ره (صفحه از نو mount می‌شه، همون معماری
+    App Router موجود؛ سوییچ soft بین state مشترک نبود چون هر Agent
+    مستقل خودش تمام state رو (پیام‌ها/session‌ها/فایل‌ها) از سرور
+    می‌خونه)
+  - دکمه‌ی `+` کنار dropdown، فقط `session.role === 'admin'` — یک
+    فرم فشرده‌ی ساخت Agent (نام + نقش از `AGENT_ROLE_CATALOG` + Other)
+    که دقیقاً همون الگوی `/agents` صفحه رو تکرار می‌کنه (workspace
+    اختصاصی ۱:۱ خودکار، RT-023)، بعد از ساخت خودش با `router.push` به
+    چت Agent جدید می‌ره
+  - `+ New session` + لیست sessionهای اخیر (از RT-022، فقط جابه‌جا شده
+    از پنل toggle به این پنل دائمی)
+- **پنل وسط (Chat)**: بدون تغییر منطقی — همون streaming/approval/rate-limit
+  که از قبل بود.
+- **پنل راست (Workspace)**: فایل‌های Agent (از RT-025)، حالا با دکمه‌ی
+  «↻ Refresh» صریح به‌جای فقط لود اول توگل. عملیات «open» (لینک
+  presigned) به‌جای «Download» به سند نزدیک‌تره.
+- **RTL mirroring**: کانتینر ۳پنل با `flexDirection: isRtlLanguage(...)
+? 'row-reverse' : 'row'` — طبق سند («Control سمت راست، Workspace سمت
+  چپ»)، بدون نیاز به duplicate کردن JSX پنل‌ها به ترتیب متفاوت.
+- **⚠️ محدودیت صادقانه در تست**: این محیط ابزار مرورگر (Playwright و
+  مشابه) نداره. verification واقعی انجام‌شده:
+  - TypeScript/ESLint تمیز، `next build` production کامل موفق (۲۳
+    صفحه، از جمله `/agents/[id]/chat`)
+  - گیتوی + وب دوتاشون واقعاً بالا اومدن (پورت‌های جدا، `NEXT_PUBLIC_API_URL`
+    به سمت گیتوی محلی) و `curl` صفحه‌ی چت واقعاً `200` گرفت، بدون
+    exception توی لاگ dev server (`next dev`'s "Compiled" پاک بود)
+  - داده‌ای که این پنل‌ها نشون می‌دن (agents/sessions/files) از قبل با
+    curl واقعی در RT-022/RT-025 تأیید شده بود
+  - چیزی که **تست نشده**: کلیک واقعی روی dropdown/دکمه‌ها توی مرورگر،
+    ظاهر بصری واقعی، RTL mirroring به چشم دیدن. این باید توسط شما با
+    مرورگر واقعی چک بشه.
+
+---
+
 ## صریحاً انجام‌نشده (شناخته‌شده، نه فراموش‌شده)
 
 - **T-009 (Secrets/KMS واقعی):** فقط نسخه MVP env-first + رمزنگاری envelope در DB برای BYOK per-org ساخته شده؛ یکپارچگی با Vault/secret manager واقعی (برای production/enterprise) ساخته نشده.
