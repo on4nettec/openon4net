@@ -2063,6 +2063,49 @@ missing سند رو اضافه کرد: سوییچر Agent و مدال ساخت A
 
 ---
 
+### RT-027 — تکمیل: Upload ZIP دستی برای پلاگین self-hosted (۲۰۲۶-۰۷-۱۸)
+
+✅ کامل شد — مسیر Marketplace (RT-035/RT-036) از قبل انجام شده بود؛
+این بخش فقط تیکه‌ی باقی‌مونده («Upload ZIP دستی») رو بست.
+
+- **`POST /v1/plugins/upload`** (`routes/local-plugins.ts`، multipart،
+  سقف ۵ مگابایت): ادمین یک `.zip` از پروژه‌ی scaffold‌شده با
+  `create-o2n-plugin` (`packages/create-o2n-plugin`) آپلود می‌کنه —
+  همون که یک `manifest.json` در ریشه‌اش داره (`{ id, name, version,
+description, author, license, permissions, models, hooks,
+configSchema }`).
+  - **⚠️ تصمیم امنیتی صریح**: فقط `manifest.json` از zip خونده می‌شه —
+    هیچ entry دیگه‌ای (مثل `actions/*.ts`) هیچ‌وقت روی دیسک extract
+    نمی‌شه. یعنی کلاً سطح حمله‌ی zip-slip/path-traversal (که در هر
+    zip-extractor عمومی معمول‌ترین باگ امنیتیه) از اساس وجود نداره —
+    نه فیکس شده، از اول طراحی نشده.
+  - `manifest.name` → `name`، `manifest.description` (اگه رشته باشه)
+    → `description`، خودِ کل JSON پارس‌شده → ستون `manifest` (همون
+    شکلی که مسیر JSON دستی از قبل ذخیره می‌کرد). `category` یک فیلد
+    فرم جدا (نه بخشی از zip) چون مفهوم متفاوتیه (تاکسونومی
+    `PLUGIN_CATEGORIES`، نه چیزی که scaffold تولید می‌کنه).
+  - gating لایسنس RT-028 (دسته‌ی `devops` نیاز به Managed AI Gateway)
+    از مسیر JSON قبلی به یک تابع مشترک (`assertPluginCategoryAllowed`)
+    refactor شد تا مسیر zip هم دقیقاً همون رفتار رو بگیره، بدون کپی
+    منطق.
+  - وابستگی جدید: `adm-zip` (zero-dependency، sync، فقط برای خوندن یک
+    entry، بدون نیاز به هیچ extract-to-disk).
+- **UI**: بخش «Self-hosted plugins» جدید در صفحه‌ی Marketplace —
+  فیلد آپلود zip + انتخاب category اختیاری + لیست پلاگین‌های
+  self-hosted موجود + حذف.
+- **تست واقعی**: کل مجموعه‌ی gateway (۴۴ فایل، ۲۲۲ تست) پاس شد (بدون
+  تست جدید — این کدبیس routeها رو با HTTP smoke-test تست می‌کنه، نه
+  Fastify-level automated test، دقیقاً مثل بقیه‌ی routeهای موجود).
+  HTTP smoke-test واقعی end-to-end با یک zip واقعی (ساخته‌شده با
+  `adm-zip`، دقیقاً مطابق شکل scaffold): آپلود موفق → `GET /v1/plugins`
+  واقعاً پلاگین رو با name/description/category/manifest درست
+  برگردوند. چهار مسیر خطا هم جداگانه تست شد: zip نامعتبر (نه یک zip
+  واقعی) → ۴۰۰، zip بدون `manifest.json` در ریشه → ۴۰۰، category
+  نامعتبر → ۴۰۰، category=`devops` بدون لایسنس → ۴۰۲
+  (`FEATURE_NOT_AVAILABLE`، دقیقاً مثل مسیر JSON).
+
+---
+
 ## صریحاً انجام‌نشده (شناخته‌شده، نه فراموش‌شده)
 
 - **T-009 (Secrets/KMS واقعی):** فقط نسخه MVP env-first + رمزنگاری envelope در DB برای BYOK per-org ساخته شده؛ یکپارچگی با Vault/secret manager واقعی (برای production/enterprise) ساخته نشده.
