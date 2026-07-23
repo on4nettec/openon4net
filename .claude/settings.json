@@ -1,0 +1,8 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(git commit -m ' *)",
+      "Bash(awk '/^## ۵\\\\. فاز ۳/{flag=1} /^## ۶\\\\. فاز ۴/{flag=0} flag' docs/spect/01_ROADMAP/01-roadmap-12-months.md)"
+    ]
+  }
+}

@@ -15,7 +15,7 @@
 - `01_storyboard.md`: سناریوهای کاربری (User Journeys) که خروجی‌شان «اپیک/استوری» می‌شود.
 - `02_backlog.md`: اپیک‌ها، یوزر استوری‌ها، و تفکیک به تسک‌های قابل تحویل — مخصوص `apps/openon4net-runtime` (Plane 1).
 - `03_sprint-plan.md`: برنامه اسپرینت‌ها (۲ هفته‌ای)، اهداف، و ظرفیت/ریسک‌ها — مخصوص `apps/openon4net-runtime` (Plane 1).
-- `04_control-plane-backlog.md`: اپیک/استوری/تسک/اسپرینت مخصوص `apps/openon4net-control-plane` (Plane 2) — namespace شناسه‌های جدا (`E-06#`/`US-6##`/`T-CP-###`/`CP-SP-##`) تا با Runtime تداخل نکند.
+- `04_control-plane-backlog.md`: اپیک/استوری/تسک/اسپرینت مخصوص `apps/openon4net-Platform` (Plane 2) — namespace شناسه‌های جدا (`E-06#`/`US-6##`/`T-CP-###`/`CP-SP-##`) تا با Runtime تداخل نکند.
 - `traceability.md`: نگاشت Spec → Epic → Sprint برای اطمینان از پوشش کامل.
 - `production-readiness/`: شاخص‌های تولید (SLO/SLA، release gates، امنیت/کامپلاینس، runbooks، ظرفیت/هزینه).
 - `templates.md`: قالب‌های استاندارد برای استوری/تسک/اسپرینت.
