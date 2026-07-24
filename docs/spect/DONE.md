@@ -2972,6 +2972,112 @@ percent)` — گرد به بالا، همون قرارداد `pricing.ts`'s `cal
 
 ---
 
+### CP-063 + CP-057 — Instagram DM و WhatsApp Channel Plugin سمت Platform (بخش K، جلسه ۱۵) (۲۰۲۶-۰۷-۲۳)
+
+> چهارمین و پنجمین پلاگین واقعی رجیستری CP-052. **یافته‌ی معماری مهم که در
+> جلسه ۱۵ صریح تصمیم‌گیری نشده بود ولی از واقعیت API متا استخراج شد:** متا
+> فقط **یک** callback URL وب‌هوک به‌ازای هر App قبول می‌کنه — یعنی
+> Messenger/Instagram/WhatsApp همه از همون یک اپ Meta (`META_APP_SECRET`/
+> `META_WEBHOOK_VERIFY_TOKEN` مشترک CP-062) و همون یک مسیر
+> `POST /v1/plugins/facebook/webhook` وب‌هوک دریافت می‌کنن — یک وب‌هوک جدا
+> برای Instagram/WhatsApp اصلاً هیچ‌وقت ترافیک واقعی نمی‌گرفت. برای همین
+> `routes/facebook-plugin.ts` تعمیم داده شد به یک **دیسپچر مشترک** که بر
+> اساس فیلد سطح-بالای `object` توی بدنه‌ی payload (`page` / `instagram` /
+> `whatsapp_business_account`) تصمیم می‌گیره کدوم connector service صدا
+> بشه؛ `routes/instagram-plugin.ts` و `routes/whatsapp-plugin.ts` فقط
+> setup/list/revoke دارن، نه مسیر وب‌هوک جدا.
+
+- **مهاجرت‌ها**: `0020_instagram_connections.sql` (`ig_business_account_id`
+  یکتای سراسری + `page_access_token_encrypted`)، `0021_whatsapp_connections.sql`
+  (`waba_id` + `phone_number_id` یکتای سراسری + `access_token_encrypted`،
+  بدون Page — WhatsApp ساختار entity کاملاً متفاوتی داره).
+- **`lib/meta-graph-client.ts`** با ۴ متد جدید تعمیم داده شد (نه فایل کلاینت
+  جدا، چون سه محصول عضو همون خانواده‌ی Graph API متا هستن):
+  `getInstagramAccountInfo` (کشف IG Business Account متصل به یک Page از
+  طریق `fields=instagram_business_account{id,username}`)، `getPhoneNumberInfo`،
+  `subscribeWabaWebhook`/`unsubscribeWabaWebhook` (`POST/DELETE
+/{waba-id}/subscribed_apps` — متفاوت از سطح-Page چون WhatsApp اصلاً Page
+  نداره). اشتراک وب‌هوک Instagram DM **دوباره از همون** `subscribeWebhook`
+  سطح-Page استفاده می‌کنه (فیلد `messages` هم Messenger هم IG DM رو پوشش
+  می‌ده وقتی Page یک IG Business Account متصل داره).
+- **`services/instagram-connector-service.ts`**، **`services/whatsapp-connector-service.ts`**:
+  دقیقاً همون شکل facebook-connector-service.ts (connect/list/get/revoke +
+  `findOrganizationBy*`، یکتایی سراسری، rollback روی خطای subscribe،
+  `FeatureNotAvailableError` اگه اپ متا تنظیم نشده).
+- **ثبت در رجیستری CP-052**: `instagram-connector`، `whatsapp-connector`.
+- **وب**: `app/plugins/instagram/page.tsx` (فرم تک-فیلدی مثل Facebook)،
+  `app/plugins/whatsapp/page.tsx` (فرم سه-فیلدی: WABA id، Phone Number id،
+  access token).
+- ✅ **تست واقعی**: ۱۵ تست سرویس جدید (۸ Instagram + ۷ WhatsApp، Postgres
+  واقعی + Meta client fake) + ۲ تست مسیر جدید توی همون
+  `facebook-plugin.test.ts` که دیسپچ درست بر اساس `object` رو با کلاینت WS
+  واقعی اثبات می‌کنن (یک اتصال IG واقعی + یک اتصال WhatsApp واقعی، امضای
+  HMAC واقعی محاسبه شد). کل سوییت گیت‌وی (۳۳ فایل/۲۶۲ تست) سبز. `next build`
+  واقعی موفق (هر دو صفحه‌ی جدید build شدن). Lint/typecheck هر دو پروژه سبز.
+  smoke تست زنده با `curl`: handshake با verify token غلط ۴۰۳ داد،
+  `POST /v1/plugins/whatsapp/connections` بدون session درست ۴۰۱ داد.
+
+---
+
+### CP-066 + CP-064 + CP-065 — YouTube/TikTok/LinkedIn Connector Plugin سمت Platform (بخش K، جلسه ۱۵) (۲۰۲۶-۰۷-۲۳)
+
+> ششم/هفتم/هشتمین پلاگین واقعی رجیستری CP-052. برخلاف CP-057/CP-063
+> (Meta family)، این سه از **الگوی Google (CP-054)** پیروی می‌کنن —
+> پلاگین Platform-side تکی بدون جفت Runtime، چون TikTok/LinkedIn/YouTube
+> پلتفرم انتشار محتوان نه گفتگو (تصمیم همون‌روزه‌ی جلسه ۱۵).
+
+- **یافته‌ی مهم**: YouTube Data API خودش یک **API گوگله** — به‌جای ساخت
+  یک OAuth app جدا و جدید، `lib/google-oauth-client.ts` (همون کلاینت
+  CP-054) با یک متد جدید (`fetchYoutubeChannel`) تعمیم داده شد و
+  `youtube-connector-service.ts` همون `GOOGLE_OAUTH_CLIENT_ID/SECRET` رو
+  reuse می‌کنه — فقط یک `GOOGLE_OAUTH_YOUTUBE_REDIRECT_URI` جدا لازم بود
+  (Google الزام می‌کنه هر redirect URI دقیقاً از پیش ثبت بشه، ولی یک
+  پروژه‌ی واحد می‌تونه چند redirect URI ثبت‌شده داشته باشه). این یعنی
+  `youtube_connections` یک جدول/رجیستری/UI جدا داره ولی هیچ اپ گوگل جدیدی
+  لازم نیست بسازن — org فقط یک redirect URI دوم به همون OAuth client
+  اضافه می‌کنه.
+- **مهاجرت‌ها**: `0022_youtube_connections.sql`، `0023_tiktok_connections.sql`،
+  `0024_linkedin_connections.sql`. یکتایی هر سه **به‌ازای هر org** (نه
+  سراسری مثل Facebook/Instagram/WhatsApp) چون این پلتفرم‌ها یک کاربر رو
+  می‌تونن هم‌زمان به چند org متفاوت (چند برند/مشتری) وصل کنن — مثل الگوی
+  Google، نه الگوی Channel.
+- **`lib/tiktok-oauth-client.ts`**، **`lib/linkedin-oauth-client.ts`**: دو
+  کلاینت تزریق‌پذیر جدید (OAuth app واقعاً جدا برای هرکدوم،
+  `TIKTOK_OAUTH_CLIENT_KEY/SECRET`، `LINKEDIN_OAUTH_CLIENT_ID/SECRET`).
+  **یافته‌ی واقعی LinkedIn**: جریان استاندارد ۳-مرحله‌ای OAuth لینکدین
+  اصلاً refresh token برنمی‌گردونه (access token ~۶۰ روزه) — برای همین
+  `linkedin_connections` ستون `refresh_token_encrypted` نداره؛ این رفتار
+  واقعی API‌شونه، نه یک ساده‌سازی.
+- **`services/youtube-connector-service.ts`**، **`tiktok-connector-service.ts`**،
+  **`linkedin-connector-service.ts`**: دقیقاً همون شکل
+  google-connector-service.ts (state امضاشده‌ی ۱۰دقیقه‌ای، `handleCallback`،
+  `ON CONFLICT ... DO UPDATE` برای reconnect، `FeatureNotAvailableError` اگه
+  اپ تنظیم نشده).
+- **ثبت در رجیستری CP-052**: `youtube-connector`، `tiktok-connector`،
+  `linkedin-connector`.
+- **وب**: `app/plugins/youtube/page.tsx`، `app/plugins/tiktok/page.tsx`،
+  `app/plugins/linkedin/page.tsx` — نسخه‌ی ساده‌شده‌ی صفحه‌ی Google (یک
+  دکمه‌ی «Connect»، بدون چک‌باکس انتخاب سرویس چون هرکدوم فقط یک scope
+  ثابت دارن).
+- ✅ **تست واقعی**: ۲۰ تست سرویس جدید (۷ YouTube + ۷ TikTok + ۷ LinkedIn،
+  Postgres واقعی + client fake تزریقی برای هرکدوم، شامل تأیید state جعلی،
+  reconnect به‌جای duplicate، و رفتار FeatureNotAvailableError). کل سوییت
+  گیت‌وی (۳۶ فایل/۲۸۳ تست) سبز. `next build` واقعی موفق (هر سه صفحه‌ی
+  جدید build شدن، مجموع ۸ صفحه‌ی پلاگین). Lint/typecheck هر دو پروژه سبز.
+
+> **صریحاً انجام‌نشده همین بخش (نه فراموش‌شده)**: CP-058 (Discord)،
+> CP-059 (Google Chat)، CP-060 (WeChat) عمداً ساخته نشدن. هر سه، برخلاف
+> همه‌ی connector pluginهای بالا، یک الگوی معماری واقعاً جدید نیاز دارن که
+> هیچ جلسه‌ای تصمیمش نگرفته: Discord پیام‌های معمولیش رو فقط از طریق یک
+> اتصال WebSocket **Gateway دائمی و خروجی** (نه وب‌هوک ورودی) می‌ده —
+> معماری کاملاً متفاوت از همه‌ی الگوهای موجود؛ Google Chat هویت وب‌هوک رو
+> با یک JWT audience-check تأیید می‌کنه (نه secret ساده)؛ WeChat پیام‌ها
+> رو با XML+امضای اختصاصی خودش می‌فرسته. طبق قاعده‌ی «اول جلسه، بعد ساخت»،
+> این سه به‌جای حدس‌زدن یک طرح امنیتی/معماری جدید، به‌عنوان آیتم جلسه‌ی
+> بعدی علامت‌گذاری شدن (به‌روزرسانی در TODO-openon4net-platform.md بخش K).
+
+---
+
 ### RT-090 — جایگزینی SSE با WebSocket برای استریم چت (۲۰۲۶-۰۷-۱۸)
 
 > تصمیم قبلاً در جلسه ۶ توسط کاربر تأیید شده بود (طبق یادداشت خودِ TODO tracker) —
@@ -3434,6 +3540,7 @@ Outcomes، Webhooks، Skill Proposals — همه در هر ۴ عرض viewport چ
 - **RBAC — Policy Layer (ABAC، §6 سند `10-rbac-and-policy.md`):** جدول `roles`/`role_permissions`/`user_role_bindings` («minimum» §4/§8)، UI مدیریت نقش‌ها، ساخت/تغییر‌نقش/غیرفعال‌سازی کاربر (RT-004)، و ساخت/حذف نقش سفارشی (RT-003) ساخته و تست شده (بالا). جدول `policies` با یک subset حداقلی از شرایط ABAC (`cost_gt_cents`, `outside_hours`) در RT-008 ساخته و تست شده (بالا) — condition typeهای بیشتر (layer/tag/environment) هنوز نیست. همچنین هنوز نیست: حذف فیزیکی کاربر (فقط soft-deactivate — عمدی، به‌خاطر FK با audit_logs/conversations)، و per-user credential واقعی (auth هنوز یک API key مشترک org-wide هست، فقط email مشخص می‌کنه کدوم کاربر — RT-012).
 - **حافظه معنایی/vector search:** برای Layer 2 (Conversation Memory) در Runtime ساخته و تست شده (بالا) — عمداً فقط با openai/ollama کار می‌کند. Layers 3-6 (Project/Company/Personal/Global Knowledge) و Neo4j Memory Graph از 2026-07-12 در `apps/openon4net-memory` ساخته شدن (بخش «Memory (Plane 3)» بالا) — مسیر ILIKE fallback تست شده، مسیر semantic واقعی هنوز end-to-end تست نشده.
 - **اجرای پلاگین/marketplace:** خارج از scope فعلی.
+- **CP-058 (Discord)، CP-059 (Google Chat)، CP-060 (WeChat) Channel Plugin سمت Platform:** عمداً ساخته نشدن — هر سه نیاز به یک الگوی معماری جدید دارن که هیچ جلسه‌ای تصمیمش نگرفته (Discord: WebSocket Gateway دائمی خروجی به‌جای وب‌هوک ورودی؛ Google Chat: تأیید JWT audience-check؛ WeChat: XML+امضای اختصاصی). جزئیات و دلیل کامل در بخش «CP-066 + CP-064 + CP-065» بالا (۲۰۲۶-۰۷-۲۳).
 - **Memory / Marketplace:** طبق تصمیم صریح کاربر، فقط با درخواست جداگانه پیش می‌رود. Memory از 2026-07-09 با اسکلت contract شروع شد و طبق `docs/spect/09_TASKS/08-scope-guardrails-mvp.md` §3.3/§5 عمداً متوقف بود، تا این‌که در 2026-07-12 کاربر صریحاً guardrail رو عبور داد و backend واقعی Layers 3-6 + Memory Graph ساخته شد (MEM-008..013، جزئیات در بخش «Memory (Plane 3)» بالا). Marketplace از 2026-07-10 شروع شده — MVP-lite برای Plane 4 طبق §۵ واقعاً «کار کردن» می‌خواد نه فقط contract، پس MKT-002..MKT-006 پیاده‌سازی واقعی روی Postgres است (جزئیات در بخش «Marketplace (Plane 4)» بالا). ثبت رسمی در `pnpm-workspace.yaml` ریشه (MKT-001) و بخش‌های B/C Marketplace هنوز باقی‌ان. (Control Plane از 2026-07-09 شروع شده — جزئیات در بخش بالا.)
 
 ---
