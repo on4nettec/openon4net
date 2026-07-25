@@ -3534,6 +3534,135 @@ Outcomes، Webhooks، Skill Proposals — همه در هر ۴ عرض viewport چ
 
 ---
 
+## Runtime backlog (بخش‌های L/M/N، جلسات ۱۰-۱۴) — RT-108/109/111/112/113/119/122/123/124 (۲۰۲۶-۰۷-۲۵)
+
+> اولین کار این جلسه در پلین Runtime (نه Platform) — کاربر مستقیم لینک
+> GitHub Project «openon4net-runtime» (۵۷ تسک Backlog) رو داد و خواست همه
+> انجام بشه. با توجه به حجم واقعی (چند تسک L/XL — visual workflow builder،
+> review pipeline، revenue-share ledger، ۸ پلاگین provider/media، ۸ پلاگین
+> channel سمت Runtime) امکان تکمیل هر ۵۷ تسک در یک نشست نبود؛ به ترتیب
+> اولویت (P0 اول) تا جایی که context اجازه داد پیش رفتم. تسک‌های ساخته‌نشده
+> در بخش «صریحاً انجام‌نشده» پایین این فایل فهرست شدن.
+
+### RT-108 — Webhook relay persistent WebSocket client (سمت Runtime)
+
+- `services/plugin-relay-client.ts`: اتصال WebSocket دائمی خروجی به
+  `/v1/plugin-relay/ws` سمت Platform (CP-046/CP-053، که همون کامنت کدش از
+  قبل نوشته بود «RT-108, not built yet» — منتظر همین کار بود)، با همون
+  اعتبارسنجی activation-key Bearer که بقیه‌ی مسیرهای Platform-facing دارن.
+  reconnect با تأخیر ثابت، heartbeat ping، و چک دوره‌ای «آیا activation
+  تنظیم شده» قبل از هر تلاش اتصال (اگه تنظیم نشده، اصلاً تلاش نمی‌کنه).
+- فریم `{type:'webhook', data:{runtimeWebhookToken, payload}}` مستقیماً
+  `dispatchInboundWebhook()` رو صدا می‌زنه (منطق یکسان با
+  `POST /v1/webhooks/:token`، جدا شده به `services/webhook-dispatch-service.ts`)
+  — نه یک درخواست HTTP loopback به خودش.
+- وابستگی حل‌شده: نیاز به پکیج `ws` (Node، نه global WebSocket که header
+  سفارشی پشتیبانی نمی‌کنه) — به `gateway/package.json` اضافه شد (نسخه‌ی
+  یکسان با Platform).
+- ✅ **تست واقعی**: یک `WebSocketServer` واقعی جای Platform می‌شینه،
+  اتصال با هدر `Authorization: Bearer` واقعی تأیید می‌شه، یک فریم
+  webhook واقعی فرستاده می‌شه و از طریق `lastTriggeredAt` روی
+  دیتابیس واقعی تأیید می‌شه که `dispatchInboundWebhook` واقعاً صدا خورده.
+
+### RT-109 — افزودن target_type «tool» به webhook endpoints
+
+- مهاجرت `0034_webhook_endpoint_tool_target.sql`: ستون `tool_name` +
+  `target_id` nullable شد + یک `CHECK` constraint که شکل صحیح هرکدوم از
+  سه نوع رو enforce می‌کنه.
+- بدنه‌ی POST ورودی مستقیماً params همون tool می‌شه (نه یک workflow
+  تک-مرحله‌ای دور یک tool call) — از طریق همون `tool-dispatcher.ts`ی
+  از قبل موجود، بدون تغییر در dispatcher.
+- ✅ تست واقعی (سرویس + دیسپچ سرویس، شامل یک فراخوانی واقعی webhook-send
+  به postman-echo.com، همون قرارداد تست‌های موجود این کدبیس).
+
+### RT-111 — حذف کامل مسیر مستقیم Runtime→Marketplace
+
+- تصمیم صریح جلسه ۱۱: نه fallback، حذف کامل. `MARKETPLACE_SERVICE_URL`/
+  `MARKETPLACE_API_KEY` کاملاً از `env.ts` حذف شدن — هر فراخوانی
+  Marketplace، حتی خواندنی (`listPlugins`/`listSkills`/`getPlugin`/
+  `getSkill` که قبلاً هیچ‌وقت token نمی‌خواستن)، الان از طریق پروکسی
+  CP-034 پلتفرم (`${CONTROL_PLANE_URL}/v1/proxy`) با یک security token
+  واقعی از activation check-in می‌ره. Activation الان برای **هر** دسترسی
+  Marketplace اجباریه، نه فقط install/rate/publish.
+- سه محل دیگه که به Marketplace وصل می‌شن (`routes/plugin-grants.ts`،
+  `services/plugin-invoker.ts` — resolve کردن manifest یک پلاگین
+  Marketplace-based برای اجرای step) هم همین تغییر رو گرفتن.
+- ✅ تست واقعی: `marketplace-client.test.ts` کامل بازنویسی شد (بدون
+  فرض مسیر مستقیم قدیمی)، به‌علاوه fixture یک `ActivationState` واقعی
+  با یک check-in موفق شبیه‌سازی‌شده در `plugin-invoker.test.ts` و
+  `workflow-executor.test.ts`.
+
+### RT-112 — قرارداد «LLM Provider Plugin» + انتقال تنظیم provider به سطح Agent
+
+- **یافته‌ی مهم**: تمام adapterهای completion واقعی (anthropic/openai/
+  deepseek) از قبل کامل و تست‌شده بودن (`packages/llm-providers`) — کار
+  واقعی RT-112 فقط «قالب‌بندی» اونها به‌عنوان پلاگین‌های جدا-ثبت‌شده بود،
+  نه نوشتن منطق completion جدید.
+- `registry.ts` از یک switch-statement سخت‌کد به یک رجیستری واقعی
+  (`Map<string, LlmProviderPlugin>`) بازنویسی شد — `getProvider()` قدیمی
+  به‌عنوان یک shim سازگار نگه داشته شد. `SupportedProvider` از یک union
+  بسته به `string` باز شد (اعتبارسنجی واقعی الان runtime، از روی خودِ
+  رجیستریه، نه یک لیست هاردکد جدا که باید هر provider جدید یادش بمونه
+  به‌روزش کنه).
+- **جدول جدید `agent_llm_configs`** (مهاجرت `0035`): همون شکل ستون
+  `llm_configs` (شامل KMS envelope encryption metadata از روز اول)، ولی
+  کلیدش `agent_id`ه نه `organization_id`. زنجیره‌ی fallback در
+  `provider-config-service.ts`'s `resolve()`: override خودِ Agent →
+  override سازمان (`llm_configs` قبلی) → پیش‌فرض env. دو Agent توی یک
+  سازمان الان می‌تونن هم‌زمان provider متفاوت داشته باشن.
+- مسیر جدید `GET/PUT/DELETE /v1/agents/:id/llm-config`.
+  `chat-service.ts` تغییر کرد تا `agent.id` رو به `resolve()` پاس بده.
+- `LlmConfigSetSchema` (در `@o2n/shared`) از یک enum بسته‌ی ۴تایی به
+  `z.string().min(1)` باز شد — اعتبارسنجی واقعی «provider معتبره» الان
+  توی `provider-config-service.ts` از روی رجیستری واقعی چک می‌شه، نه یک
+  enum مشترک که هر provider plugin جدید مجبورش کنه این پکیج رو ویرایش کنه.
+- ✅ تست واقعی: ۷ تست سرویس جدید (زنجیره‌ی fallback سه‌سطحی، دو Agent
+  مستقل توی یک سازمان، ماسک‌شدن کلید، حذف override) + ۶ تست رجیستری —
+  Postgres واقعی، بدون mock.
+
+### RT-113 + RT-122 + RT-123 + RT-124 — پلاگین‌های Provider: Anthropic، OpenAI، DeepSeek، Groq
+
+- هر چهارتا به‌عنوان اثر جانبی مستقیم بازطراحی رجیستری RT-112 کامل شدن —
+  هرکدوم یک فایل `providers/*-plugin.ts` جدا با `configSchema` مستقل
+  (Anthropic/OpenAI موجود بودن، migration واقعی؛ DeepSeek که provider
+  اختصاصی نداشت الان یک ورودی رجیستری جدا داره؛ Groq کاملاً جدیده —
+  OpenAI-compatible، فقط base URL فرق داره — و اثبات کرد که اضافه‌کردن
+  provider جدید بعد از RT-112 واقعاً فقط «یک فایل جدید + یک خط ثبت» لازم
+  داره، بدون دست‌زدن به هیچ schema مشترکی).
+- `routes/config.ts`'s `GET /v1/config/models` برای providerهای بدون
+  لیست curated (مثل Groq) به‌جای خطای سخت، آرایه‌ی خالی برمی‌گردونه
+  (همون قرارداد «UI به ورودی دستی برگرده» که `listOllamaModels` قبلاً
+  داشت) — به‌جای پیام خطای قدیمی که فقط ۴ provider اول رو اسم می‌برد.
+- ⚠️ **ناتمام آگاهانه**: Groq به `CURATED_MODELS`/`pricing.ts` اضافه نشد
+  (لیست مدل دستی وارد می‌شه، هزینه به سطل پیش‌فرض قیمت می‌افته) — یک
+  کار جدا و کوچیک برای بعد.
+
+### RT-119 — PluginManifestSchema (Zod) در @o2n/plugin-sdk
+
+- `packages/plugin-sdk/src/manifest.ts`: schema واقعی روی تمام فیلدهای
+  بخش ۵ سند معماری + `schemaVersion` (فعلاً فقط `1`) + semver واقعی روی
+  `version` (regex) + enum بسته برای `permissions[]` (از
+  `07-connectors-and-tools.md` §4 — ۱۱ مقدار واقعی مستندشده، نه حدسی) +
+  enum بسته برای `hooks[]` (⚠️ فقط `after:agent-response` واقعاً مستند
+  بود؛ ۳ مقدار دیگه — قبل/بعد پیام و tool call — استنتاج آگاهانه از
+  چرخه‌ی واقعی `chat-service.ts`، نه یک تصمیم جلسه — مشخصاً کامنت‌گذاری
+  شد که extensible نگه داشته بشه) + `keywords[]` آزاد (جلسه ۱۵) +
+  `installTarget: 'platform'|'runtime'` اجباری (جلسه ۱۵).
+- ✅ تست واقعی: ۱۱ تست (نمونه‌ی دقیق manifest سند معماری، رد semver
+  نامعتبر، رد permission/hook ناشناس، قبول keyword آزاد، رد schemaVersion
+  اشتباه).
+- ⚠️ **enforcement واقعی هنوز نه** — این فقط خودِ schema بود (RT-119).
+  RT-120 (اعمال روی مسیرهای نصب Runtime)، RT-121 (دستور `validate` در
+  CLI)، RT-118 (ثبت Marketplace در root workspace)، MKT-030 (اعمال روی
+  Marketplace) هنوز ساخته نشدن.
+
+**تأیید نهایی**: کل سوییت گیت‌وی Runtime (۵۳ فایل/۲۸۰ تست) سبز، به‌علاوه
+`packages/llm-providers` (۳ فایل/۱۵ تست)، `packages/plugin-sdk` (۱ فایل/۱۱
+تست)، `packages/shared`، `packages/create-o2n-plugin` — همه build/typecheck/lint
+سبز.
+
+---
+
 ## صریحاً انجام‌نشده (شناخته‌شده، نه فراموش‌شده)
 
 - **T-009 (Secrets/KMS واقعی):** فقط نسخه MVP env-first + رمزنگاری envelope در DB برای BYOK per-org ساخته شده؛ یکپارچگی با Vault/secret manager واقعی (برای production/enterprise) ساخته نشده.
@@ -3541,6 +3670,7 @@ Outcomes، Webhooks، Skill Proposals — همه در هر ۴ عرض viewport چ
 - **حافظه معنایی/vector search:** برای Layer 2 (Conversation Memory) در Runtime ساخته و تست شده (بالا) — عمداً فقط با openai/ollama کار می‌کند. Layers 3-6 (Project/Company/Personal/Global Knowledge) و Neo4j Memory Graph از 2026-07-12 در `apps/openon4net-memory` ساخته شدن (بخش «Memory (Plane 3)» بالا) — مسیر ILIKE fallback تست شده، مسیر semantic واقعی هنوز end-to-end تست نشده.
 - **اجرای پلاگین/marketplace:** خارج از scope فعلی.
 - **CP-058 (Discord)، CP-059 (Google Chat)، CP-060 (WeChat) Channel Plugin سمت Platform:** عمداً ساخته نشدن — هر سه نیاز به یک الگوی معماری جدید دارن که هیچ جلسه‌ای تصمیمش نگرفته (Discord: WebSocket Gateway دائمی خروجی به‌جای وب‌هوک ورودی؛ Google Chat: تأیید JWT audience-check؛ WeChat: XML+امضای اختصاصی). جزئیات و دلیل کامل در بخش «CP-066 + CP-064 + CP-065» بالا (۲۰۲۶-۰۷-۲۳).
+- **باقی‌مانده‌ی Backlog پلین Runtime (۲۰۲۶-۰۷-۲۵، از ۵۷ تسک Backlog پروژه‌ی GitHub «openon4net-runtime»):** ۹ تسک انجام شد (RT-108/109/111/112/113/119/122/123/124، جزئیات بالا). حجم واقعی باقی‌مونده اجازه نداد همه‌ی ۵۷ تا در یک نشست تموم بشن — این‌ها هنوز ⏳ان: RT-110 (hybrid REST/WS برای web)، RT-114..117 (Channel Plugin contract سمت Runtime + تأیید device/sender + binding)، RT-118/120/121/MKT-030 (enforcement کامل PluginManifestSchema — فقط خودِ schema یعنی RT-119 ساخته شد)، RT-125..131 (پلاگین‌های provider باقی‌مونده: Gemini/Mistral/Azure/Fireworks/Perplexity/Cohere)، RT-132..139 (توسعه‌ی category enum + قرارداد کامل Media Generation Provider + ۶ پلاگین تصویر/ویدیو/صدا)، RT-140..147 (۸ پلاگین Channel سمت Runtime، جفت CP-056..063)، ۵ تسک Workflow Engine (loop/retry/subworkflow/NL-builder/visual-builder)، و تسک‌های Marketplace واقعی (MKT-004/005/012..016/027/029/031/032). اولویت‌بندی/جزئیات هرکدوم در `TODO-openon4net-runtime.md`.
 - **Memory / Marketplace:** طبق تصمیم صریح کاربر، فقط با درخواست جداگانه پیش می‌رود. Memory از 2026-07-09 با اسکلت contract شروع شد و طبق `docs/spect/09_TASKS/08-scope-guardrails-mvp.md` §3.3/§5 عمداً متوقف بود، تا این‌که در 2026-07-12 کاربر صریحاً guardrail رو عبور داد و backend واقعی Layers 3-6 + Memory Graph ساخته شد (MEM-008..013، جزئیات در بخش «Memory (Plane 3)» بالا). Marketplace از 2026-07-10 شروع شده — MVP-lite برای Plane 4 طبق §۵ واقعاً «کار کردن» می‌خواد نه فقط contract، پس MKT-002..MKT-006 پیاده‌سازی واقعی روی Postgres است (جزئیات در بخش «Marketplace (Plane 4)» بالا). ثبت رسمی در `pnpm-workspace.yaml` ریشه (MKT-001) و بخش‌های B/C Marketplace هنوز باقی‌ان. (Control Plane از 2026-07-09 شروع شده — جزئیات در بخش بالا.)
 
 ---

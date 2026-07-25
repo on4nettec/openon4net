@@ -3,6 +3,8 @@
  * No sandboxed execution: Runtime does not load or run a built Plugin yet (see 09-plugin-sandbox.md).
  */
 
+export * from './manifest.js';
+
 export interface PluginContext {
   config: Record<string, unknown>;
   tools: Record<string, (params: Record<string, unknown>) => Promise<unknown>>;

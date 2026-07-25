@@ -5,9 +5,16 @@ import { z } from 'zod';
 // requires a non-empty string); every other provider still requires a real
 // key. superRefine (not .optional()) so the "required unless ollama" rule
 // lives in the schema, not scattered across every caller.
+//
+// RT-112 — `provider` is a plain non-empty string, not a closed enum: each
+// new LLM Provider Plugin (RT-113/122-131) registers itself in
+// @o2n/llm-providers's registry.ts, and the actual "is this a real,
+// registered provider" check happens there (provider-config-service.ts
+// calls getProviderPlugin()) — a shared package like this one shouldn't
+// need editing every time a new provider plugin is added.
 export const LlmConfigSetSchema = z
   .object({
-    provider: z.enum(['anthropic', 'openai', 'deepseek', 'ollama']),
+    provider: z.string().min(1),
     model: z.string().min(1),
     apiKey: z.string().optional(),
     baseUrl: z.string().url().optional(),

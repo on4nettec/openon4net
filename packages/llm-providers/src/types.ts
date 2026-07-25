@@ -70,6 +70,32 @@ export interface LlmProvider {
   stream(req: LlmCompletionRequest): AsyncIterable<LlmStreamChunk>;
 }
 
+/**
+ * RT-112 — the "LLM Provider Plugin" contract (meeting 12/14): one plugin
+ * per commercial provider (not two generic protocol-based plugins),
+ * registered in the first-party registry.ts (a module registry, same
+ * "not third-party dynamic code loading" scope decision as Platform's
+ * CP-052 plugin-registry-service.ts — real sandboxed plugin execution is
+ * still deferred, see 02_ARCHITECTURE/09-plugin-sandbox.md). Distinct from
+ * RT-079's HTTP-tool plugin contract (`manifest.provider: {type:'http',
+ * baseUrl}`) — that one wraps a generic HTTP call, this one wraps a real
+ * completion-API adapter (an LlmProvider).
+ */
+export interface LlmProviderConfigField {
+  key: string;
+  label: string;
+  type: 'string' | 'password' | 'number';
+  required: boolean;
+}
+
+export interface LlmProviderPlugin {
+  /** Stable id, e.g. "anthropic" — what agent_llm_configs.provider stores. */
+  id: string;
+  name: string;
+  configSchema: LlmProviderConfigField[];
+  createProvider(config: Record<string, string>): LlmProvider;
+}
+
 export class LlmProviderError extends Error {
   constructor(
     public provider: string,
