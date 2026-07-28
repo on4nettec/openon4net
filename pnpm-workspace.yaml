@@ -4,4 +4,5 @@ packages:
   - 'apps/openon4net-platform/gateway'
   - 'apps/openon4net-platform/web'
   - 'apps/openon4net-memory/service'
+  - 'apps/openon4net-marketplace/service'
   - 'packages/*'
