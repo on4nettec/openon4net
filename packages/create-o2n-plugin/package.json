@@ -9,6 +9,9 @@
   "scripts": {
     "test": "vitest run --passWithNoTests"
   },
+  "dependencies": {
+    "@o2n/plugin-sdk": "workspace:*"
+  },
   "devDependencies": {
     "vitest": "^2.1.4"
   }

@@ -245,6 +245,9 @@ importers:
       '@o2n/llm-providers':
         specifier: workspace:*
         version: link:../../../packages/llm-providers
+      '@o2n/plugin-sdk':
+        specifier: workspace:*
+        version: link:../../../packages/plugin-sdk
       '@o2n/shared':
         specifier: workspace:*
         version: link:../../../packages/shared
@@ -333,6 +336,10 @@ importers:
         version: 5.9.3
 
   packages/create-o2n-plugin:
+    dependencies:
+      '@o2n/plugin-sdk':
+        specifier: workspace:*
+        version: link:../plugin-sdk
     devDependencies:
       vitest:
         specifier: ^2.1.4
