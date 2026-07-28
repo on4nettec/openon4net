@@ -12,7 +12,19 @@ describe('registry (RT-112)', () => {
     const ids = listProviderPlugins()
       .map((p) => p.id)
       .sort();
-    expect(ids).toEqual(['anthropic', 'deepseek', 'groq', 'ollama', 'openai']);
+    expect(ids).toEqual([
+      'anthropic',
+      'azure-openai',
+      'cohere',
+      'deepseek',
+      'fireworks',
+      'gemini',
+      'groq',
+      'mistral',
+      'ollama',
+      'openai',
+      'perplexity',
+    ]);
   });
 
   it('getProviderPlugin returns the plugin definition, including its configSchema', () => {

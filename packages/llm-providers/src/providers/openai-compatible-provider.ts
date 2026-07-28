@@ -59,18 +59,13 @@ function parseToolCalls(
 }
 
 /**
- * Works for any provider that speaks the OpenAI chat-completions wire format:
- * OpenAI itself (default baseURL), DeepSeek (https://api.deepseek.com),
- * Ollama's OpenAI-compatible endpoint (http://localhost:11434/v1), or any
- * other self-hosted OpenAI-compatible gateway — just point baseURL at it.
+ * RT-127 — split out of createOpenAiCompatibleProvider so
+ * azure-openai-provider.ts can reuse the exact same message/tool-call
+ * translation against an `AzureOpenAI` client (which extends `OpenAI` with
+ * the same `.chat.completions.create` surface, just different auth/URL
+ * construction internally) instead of duplicating this logic.
  */
-export function createOpenAiCompatibleProvider(
-  name: string,
-  apiKey: string,
-  baseURL?: string,
-): LlmProvider {
-  const client = new OpenAI({ apiKey, ...(baseURL ? { baseURL } : {}) });
-
+export function createProviderFromOpenAiClient(name: string, client: OpenAI): LlmProvider {
   return {
     name,
 
@@ -132,4 +127,19 @@ function isRetryable(err: unknown): boolean {
     return err.status === 429 || err.status === 503;
   }
   return true;
+}
+
+/**
+ * Works for any provider that speaks the OpenAI chat-completions wire format:
+ * OpenAI itself (default baseURL), DeepSeek (https://api.deepseek.com),
+ * Ollama's OpenAI-compatible endpoint (http://localhost:11434/v1), or any
+ * other self-hosted OpenAI-compatible gateway — just point baseURL at it.
+ */
+export function createOpenAiCompatibleProvider(
+  name: string,
+  apiKey: string,
+  baseURL?: string,
+): LlmProvider {
+  const client = new OpenAI({ apiKey, ...(baseURL ? { baseURL } : {}) });
+  return createProviderFromOpenAiClient(name, client);
 }

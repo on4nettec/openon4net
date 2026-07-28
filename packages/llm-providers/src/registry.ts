@@ -3,6 +3,12 @@ import { openaiProviderPlugin } from './providers/openai-plugin.js';
 import { deepseekProviderPlugin } from './providers/deepseek-plugin.js';
 import { ollamaProviderPlugin } from './providers/ollama-plugin.js';
 import { groqProviderPlugin } from './providers/groq-plugin.js';
+import { geminiProviderPlugin } from './providers/gemini-plugin.js';
+import { mistralProviderPlugin } from './providers/mistral-plugin.js';
+import { azureOpenAiProviderPlugin } from './providers/azure-openai-plugin.js';
+import { fireworksProviderPlugin } from './providers/fireworks-plugin.js';
+import { perplexityProviderPlugin } from './providers/perplexity-plugin.js';
+import { cohereProviderPlugin } from './providers/cohere-plugin.js';
 import type { LlmProvider, LlmProviderPlugin } from './types.js';
 
 /**
@@ -39,6 +45,12 @@ registerProviderPlugin(openaiProviderPlugin);
 registerProviderPlugin(deepseekProviderPlugin);
 registerProviderPlugin(ollamaProviderPlugin);
 registerProviderPlugin(groqProviderPlugin);
+registerProviderPlugin(geminiProviderPlugin);
+registerProviderPlugin(mistralProviderPlugin);
+registerProviderPlugin(azureOpenAiProviderPlugin);
+registerProviderPlugin(fireworksProviderPlugin);
+registerProviderPlugin(perplexityProviderPlugin);
+registerProviderPlugin(cohereProviderPlugin);
 
 /**
  * Sprint 0 is BYOK-only: exactly one provider is active per Agent (RT-112
