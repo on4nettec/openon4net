@@ -3663,6 +3663,104 @@ Outcomes، Webhooks، Skill Proposals — همه در هر ۴ عرض viewport چ
 
 ---
 
+## Platform backlog باقی‌مانده — CP-009/011/014/051/061 (۲۰۲۶-۰۷-۲۹)
+
+> کاربر خواست ادامه‌ی کار روی Platform (نه Runtime) تا رسیدن به limit، بدون
+> سؤال. بعد از این ۵ تسک، بررسی کردم و باقی‌مونده‌ی بخش‌های B/C واقعاً
+> block شده — نه یک توقف دلخواه، جزئیات پایین.
+
+### CP-009 — بسته شد (stale)
+
+ریپوی `openon4net-platform` از خیلی وقت پیش کامیت‌های واقعی زیادی داره
+(بیش از CP-032 تا CP-066)؛ همیشه فقط با درخواست صریح کامیت شده. ایشو با
+توضیح بسته شد.
+
+### CP-014 — فیکس race در `turbo.json` ریشه
+
+`typecheck.dependsOn` از `["^build"]` (فقط build وابستگی‌های بالادستی) به
+`["^build", "build"]` (+ build خودِ همون پکیج) تغییر کرد — برای پکیج‌های
+Next.js مثل `@o2n/control-plane-web`، `tsc --noEmit` دیگه وسط بازنویسیِ
+`.next/types/` توسط `next build` fail نمی‌کنه. تأیید شد با
+`npx turbo run typecheck --filter=@o2n/control-plane-web` — ترتیب واقعی
+build→typecheck در خروجی مشاهده شد.
+
+### CP-051 — پلاگین «on4net AI Gateway»
+
+- ثبت در رجیستری CP-052: کلید `ai-gateway`، دسته `llm-provider` (طبق
+  taxonomy RT-132).
+- «نصب» = صدور توکن روی مکانیزم از قبل کامل‌ساخته‌شده‌ی RT-101/CP-036
+  (`ai_gateway_tokens` + `issueToken`/`listTokens`/`revokeToken`) — هیچ
+  backend جدیدی لازم نبود، فقط expose کردنش.
+- صفحه‌ی جدید `web/app/plugins/ai-gateway/page.tsx`: انتخاب org → انتخاب
+  workspace (تازه، `listWorkspaces` قبلاً هیچ‌جا توی وب مصرف نمی‌شد) →
+  فرم صدور توکن (نام + سقف بودجه‌ی اختیاری) → جدول توکن‌ها با دکمه‌ی
+  Revoke.
+- ✅ build/typecheck/lint سبز، `next build` واقعی موفق.
+
+### CP-011 — Admin auth واقعی (چند ادمین جدا + audit)
+
+> جایگزین یک static shared-secret تکی (`ADMIN_API_KEY`) با هویت‌های ادمین
+> واقعی + audit trail — طبق تصمیم promote شده به P1.
+
+- مهاجرت `0025_admin_users.sql`: جدول `admin_users` (ایمیل/پسورد-هش/نام،
+  جدا از `users` سلف‌سرویس چون ادمین‌های on4net operator-level هستن، نه
+  یک نقش org-scoped) + `admin_audit_logs` (جدا از `audit_logs` سازمانی،
+  چون اکشن‌های ادمین اکثراً به یک org خاص مقید نیستن).
+- `services/admin-user-service.ts`: همون الگوی argon2 hashing و JWT
+  session که `auth-service.ts` برای کاربران سلف‌سرویس داره — بدون
+  self-signup (ادمین جدید یا با یک ادمین موجود ساخته می‌شه، یا برای
+  bootstrap اولین‌بار با همون `ADMIN_API_KEY` قدیمی). توکن JWT یک claim
+  `role: 'platform-admin'` داره تا هرگز با session JWT یک کاربر سلف‌سرویس
+  قاطی نشه (هر دو با همون `JWT_SECRET` امضا می‌شن).
+- `plugins/admin-auth.ts` بازنویسی شد: `requireAdminAuth` الان یا JWT
+  ادمین واقعی رو قبول می‌کنه یا `ADMIN_API_KEY` قدیمی رو (سازگاری با
+  ops script/bootstrap)، و **هر فراخوانی موفق رو خودش audit-log می‌کنه**
+  (یک لاگ عمومی برای هر ۲۶ نقطه‌ی فراخوانی، به‌جای لاگ دستی توی هرکدوم).
+  همه‌ی ۲۶ محل فراخوانی (۸ فایل route) به امضای async جدید مهاجرت کردن.
+- `routes/admin-users.ts`: `POST /admin/auth/login` (تنها مسیر بدون auth)،
+  `POST /admin/users`، `GET /admin/users`، `POST /admin/users/:id/revoke`،
+  `GET /admin/audit-logs`.
+- **وب**: فرم ورود ادمین (`app/admin/page.tsx`) از یک input تک‌فیلدی
+  API-key به یک فرم واقعی ایمیل+پسورد تغییر کرد (با یک لینک fallback برای
+  حالت API-key قدیمی) — چون هر دو روی همون هدر `Authorization: Bearer`
+  کار می‌کنن، هیچ مصرف‌کننده‌ی دیگه‌ی API لازم نبود تغییر کنه.
+- ✅ **تست واقعی**: ۱۱ تست سرویس (hashing، جلوگیری از ایمیل تکراری،
+  رد پسورد کوتاه، login/reject، revoke) + ۳ تست audit-service (ترتیب،
+  clamp) + ۵ تست route (HTTP واقعی: bootstrap با کلید قدیمی → ساخت اولین
+  ادمین → login → session جدید یک route دیگه رو مستقل مجاز می‌کنه →
+  audit log هویت درست رو نشون می‌ده: `null` برای کلید قدیمی، `adminUserId`
+  واقعی برای JWT → revoke جلوی login بعدی رو می‌گیره). **smoke تست زنده**
+  هم روی گیت‌وی واقعی اجرا شد (curl: bootstrap → login → audit-logs با
+  هویت درست) — داده‌ی تست بعدش پاک شد. کل سوییت گیت‌وی (۳۹ فایل/۳۰۲ تست)
+  سبز.
+
+### CP-061 — iMessage سمت Platform: مستندسازی block (نه ساخت)
+
+سؤال feasibility این تسک همون یافته‌ی RT-145 (سمت Runtime) رو داره:
+`docs/spect/02_ARCHITECTURE/18-imessage-channel-feasibility.md` — اپل هیچ
+API عمومی Business Messaging یا webhook رسمی نداره. یک کامنت با ارجاع به
+همون سند روی ایشو گذاشته شد؛ ایشو باز موند (⚠️، نه بسته) چون این «رد شده»
+نیست، «فعلاً بدون یک قرارداد gateway شخص‌ثالث واقعی build نشو» است.
+
+### چرا ادامه ندادم — باقی‌مونده‌ی بخش‌های B/C واقعاً block شده
+
+- **CP-002** (تعامل واقعی مرورگر): از قبل ❌/بلاک‌شده ثبت شده بود، هیچ
+  تغییری در scope این جلسه.
+- **CP-010** (تصمیم submodule واقعی): یک تصمیم معماری با تبعات
+  hard-to-reverse روی ساختار git ریشه — عمداً بدون تصمیم کاربر پیش نرفتم.
+- **CP-013** (Billing واقعی): صراحتاً پشت یک guardrail («بعد از ۲-۳ مشتری
+  واقعی») — این جلسه اون guardrail رو رد نمی‌کنه.
+- **CP-049** (روش‌های شارژ کیف‌پول، بانک/کریپتو): «گسترش عملیاتی CP-013»
+  طبق خودِ سند — پشت همون guardrail.
+- **CP-043** (Model Fusion): خودِ سند صریحاً می‌گه مکانیزم دقیق fusion
+  (نمایش مقایسه‌ای در مقابل مدل داور) «هنوز تصمیم‌گیری نشده — باز قبل از
+  پیاده‌سازی» — یک fork معماری واقعی، نه یک جزئیات کم‌ریسک قابل‌تصمیم
+  خودم.
+- **CP-050** (سیستم افیلیت): خودِ سند صریحاً می‌گه «نیاز به یک دور Q&A
+  جدا قبل از پیاده‌سازی» (سطح‌بندی تک/چندسطحی، روش دقیق پرداخت پورسانت).
+
+---
+
 ## صریحاً انجام‌نشده (شناخته‌شده، نه فراموش‌شده)
 
 - **T-009 (Secrets/KMS واقعی):** فقط نسخه MVP env-first + رمزنگاری envelope در DB برای BYOK per-org ساخته شده؛ یکپارچگی با Vault/secret manager واقعی (برای production/enterprise) ساخته نشده.
