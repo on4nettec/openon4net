@@ -239,6 +239,9 @@ importers:
       '@node-saml/node-saml':
         specifier: ^5.1.0
         version: 5.1.0
+      '@o2n/channel-providers':
+        specifier: workspace:*
+        version: link:../../../packages/channel-providers
       '@o2n/governance':
         specifier: workspace:*
         version: link:../../../packages/governance

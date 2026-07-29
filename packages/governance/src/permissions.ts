@@ -61,6 +61,9 @@ export const DEFAULT_ROLE_PERMISSIONS: Record<UserRole, string[]> = {
     // RT-080: per-agent Plugin grants — same wildcard convention as skills:*
     // above, added fresh (no pre-existing gap here since the feature is new).
     'plugins:*',
+    // RT-114/115/116: Channel Plugin config + mandatory sender approval +
+    // Device<->Agent binding — same wildcard convention, added fresh.
+    'channels:*',
   ],
   manager: [
     'agents:create',
